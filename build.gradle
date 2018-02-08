@@ -23,8 +23,8 @@ springBoot {
 }
 */
 
-sourceCompatibility = 1.9
-targetCompatibility = 1.9
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -32,9 +32,4 @@ repositories {
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-websocket")
-    compile("org.webjars:webjars-locator")
-    compile("org.webjars:sockjs-client:1.0.2")
-    compile("org.webjars:stomp-websocket:2.3.3")
-    compile("org.webjars:bootstrap:3.3.7")
-    compile("org.webjars:jquery:3.1.0")
 }

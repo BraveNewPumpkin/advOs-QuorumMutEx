@@ -16,6 +16,7 @@ public class RootController {
     @SendTo("/")
     public Message connect(ConnectMessage message) throws Exception {
         Thread.sleep(1000); // simulated delay TODO: remove
+        //TODO: check round number vs current round number. if greater push onto queue
         return new ConnectResponse(thisNodeInfo.getUid(), message.getSourceUID());
     }
 
