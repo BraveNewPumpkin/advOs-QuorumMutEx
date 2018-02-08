@@ -10,13 +10,13 @@ public class NodeConfigurator {
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo() {
         //TODO read from config
-        int uid = 1;
+        int uid = 123;
         String hostName = "localhost";
-        int port = 8080;
+        int port = 3332;
 
         ThisNodeInfo thisNodeInfo = new ThisNodeInfo(uid, hostName, port);
 
-        thisNodeInfo.addNeighbor(new NodeInfo(2, "localhost", 8081));
+        thisNodeInfo.addNeighbor(new NodeInfo(5, "localhost", 5678));
 
         return thisNodeInfo;
     }
