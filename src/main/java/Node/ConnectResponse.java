@@ -1,3 +1,4 @@
+package Node;
 
 public final class ConnectResponse extends Message {
     final String header = "CONNECTED";

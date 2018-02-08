@@ -1,4 +1,4 @@
-
+package Node;
 
 public abstract class Message {
 

@@ -11,15 +11,20 @@ buildscript {
 }
 
 apply plugin: 'java'
-apply plugin: 'eclipse'
+apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 
 jar {
-    baseName = 'gs-messaging-stomp-websocket'
     version =  '0.1.0'
 }
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+/*
+springBoot {
+    mainClass = 'Application'
+}
+*/
+
+sourceCompatibility = 1.9
+targetCompatibility = 1.9
 
 repositories {
     mavenCentral()
