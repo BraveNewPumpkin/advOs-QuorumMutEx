@@ -12,13 +12,7 @@ public class Application {
     public static void main(String[] args) {
 
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        //ApplicationContext context = new AnnotationConfigApplicationContext(Application.class);
         RootController rootController = context.getBean(RootController.class);
-        try{
-            Thread.sleep(30000);
-        }catch(InterruptedException e){
-            log.warn();
-        }
         rootController.sendLeaderElection();
     }
 }

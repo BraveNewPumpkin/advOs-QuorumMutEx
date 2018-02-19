@@ -59,6 +59,7 @@ public class WebSocketConnector {
                     .build()
                     .toUriString();
             try {
+                Thread.sleep(30000);
                 final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
                 //wait for other instances to spin up
                 if(!connectionTimeoutLatch.await(30, TimeUnit.SECONDS)) {
@@ -66,6 +67,8 @@ public class WebSocketConnector {
                 }
                 final StompSession session = future.get(30, TimeUnit.SECONDS);
                 sessions.add(session);
+            }catch(InterruptedException e){
+                log.warn("thread interrupted!");
             }catch(Throwable t) {
                 log.error(t.getMessage());
             }

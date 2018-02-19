@@ -1,22 +1,37 @@
 package Node;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 @Configuration
+@Slf4j
 public class NodeConfigurator {
+    @Value( "${this.port:3332}" )
+    private int thisPort;
+
+    @Value( "${neighbor.port:5678}" )
+    private int neighborPort;
+
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    public ThisNodeInfo getThisNodeInfo() {
+    public ThisNodeInfo getThisNodeInfo() throws UnknownHostException{
+        String hostName = InetAddress.getLocalHost().getHostName();
+        //TODO remove
+        log.error("hostname: " + hostName);
+
         //TODO read from config
         int uid = 123;
-        String hostName = "localhost";
-        int port = 3332;
+        hostName = "localhost";
 
-        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(uid, hostName, port);
+        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(uid, hostName, thisPort);
 
-        thisNodeInfo.addNeighbor(new NodeInfo(5, "localhost", 5678));
+        thisNodeInfo.addNeighbor(new NodeInfo(5, "localhost", neighborPort));
 
         return thisNodeInfo;
     }
