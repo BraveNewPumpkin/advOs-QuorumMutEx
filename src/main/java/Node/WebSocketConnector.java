@@ -32,7 +32,6 @@ public class WebSocketConnector {
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     ThisNodeInfo thisNodeInfo;
 
-
     @Bean
     @Qualifier("Node/WebSocketConnector/sessions")
     public List<StompSession> getSessions() throws InterruptedException, TimeoutException, ExecutionException {
@@ -40,28 +39,27 @@ public class WebSocketConnector {
         //lambda to open connection and start sessions
         Consumer<NodeInfo> sessionBuildingLambda = rethrowConsumer(neighbor -> {
             final CountDownLatch connectionTimeoutLatch = new CountDownLatch(1);
-            StompSessionHandler sessionHandler = new NodeStompSessionHandler(connectionTimeoutLatch);
-            WebSocketClient client = new StandardWebSocketClient();
-            List<Transport> transports = new ArrayList<>(1);
+            final StompSessionHandler sessionHandler = new NodeStompSessionHandler(connectionTimeoutLatch);
+            final WebSocketClient client = new StandardWebSocketClient();
+            final List<Transport> transports = new ArrayList<>(1);
             transports.add(new WebSocketTransport(client));
-            SockJsClient sockJsClient = new SockJsClient(transports);
-            WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
+            final SockJsClient sockJsClient = new SockJsClient(transports);
+            final WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
             stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
-            //TODO look up how to specify port
-            String uri = UriComponentsBuilder.newInstance()
+            final String uri = UriComponentsBuilder.newInstance()
                     .scheme("ws")
-                    .userInfo(String.valueOf(neighbor.getUid()))
+                    .userInfo("node" + String.valueOf(neighbor.getUid()))
                     .host(neighbor.getHostName())
                     .port(neighbor.getPort())
                     .build()
                     .toUriString();
-            ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
+            final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
             //wait for other instances to spin up
             if(!connectionTimeoutLatch.await(30000, TimeUnit.SECONDS)) {
                 throw new TimeoutException("failed ot connect in 30 seconds");
             }
-            StompSession session = future.get();
+            final StompSession session = future.get();
             sessions.add(session);
         });
         //run the lambda in parallel for each neighboring node
