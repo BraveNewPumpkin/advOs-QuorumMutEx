@@ -1,5 +1,6 @@
 package Node;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -26,11 +27,14 @@ import java.util.function.Consumer;
 import static Node.LambdaExceptionUtil.rethrowConsumer;
 
 @Configuration
+@Slf4j
 public class WebSocketConnector {
+    //private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(WebSocketConnector.class);
+    //private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
     @Autowired
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    ThisNodeInfo thisNodeInfo;
+    private ThisNodeInfo thisNodeInfo;
 
     @Bean
     @Qualifier("Node/WebSocketConnector/sessions")
@@ -54,13 +58,17 @@ public class WebSocketConnector {
                     .port(neighbor.getPort())
                     .build()
                     .toUriString();
-            final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
-            //wait for other instances to spin up
-            if(!connectionTimeoutLatch.await(30000, TimeUnit.SECONDS)) {
-                throw new TimeoutException("failed ot connect in 30 seconds");
+            try {
+                final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
+                //wait for other instances to spin up
+                if(!connectionTimeoutLatch.await(30, TimeUnit.SECONDS)) {
+                    throw new TimeoutException("failed ot connect in 30 seconds");
+                }
+                final StompSession session = future.get(30, TimeUnit.SECONDS);
+                sessions.add(session);
+            }catch(Throwable t) {
+                log.error(t.getMessage());
             }
-            final StompSession session = future.get();
-            sessions.add(session);
         });
         //run the lambda in parallel for each neighboring node
         thisNodeInfo.getNeighbors().parallelStream().forEach(sessionBuildingLambda);

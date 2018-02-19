@@ -1,5 +1,6 @@
 package Node;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessagingException;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import java.util.List;
 
 @Controller
+@Slf4j
 public class RootController {
     @Autowired
     private RootService rootService;
@@ -37,7 +39,10 @@ public class RootController {
 
     //TODO make this a real messsage, connect isn't needed
     public void sendLeaderElection() throws MessagingException {
-        System.out.println("connected? " + sessions.get(0).isConnected());
+        //TODO remove
+        Boolean isConnected = (sessions.isEmpty() || sessions.get(0).isConnected());
+        log.info("connected? " + isConnected);
+
         //method 1 of broadcasting
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
             LeaderElectionMessage message = new LeaderElectionMessage(thisNodeInfo.getUid(), neighbor.getUid());

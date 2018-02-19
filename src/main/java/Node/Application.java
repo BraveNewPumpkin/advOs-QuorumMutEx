@@ -8,8 +8,9 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 @SpringBootApplication
 public class Application {
     public static void main(String[] args) {
-        ApplicationContext context = new AnnotationConfigApplicationContext(Application.class);
-        SpringApplication.run(Application.class, args);
+
+        ApplicationContext context = SpringApplication.run(Application.class, args);
+        //ApplicationContext context = new AnnotationConfigApplicationContext(Application.class);
         RootController rootController = context.getBean(RootController.class);
         rootController.sendLeaderElection();
     }

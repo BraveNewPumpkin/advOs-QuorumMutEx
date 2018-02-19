@@ -26,7 +26,7 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/info")
+        registry.addEndpoint("/topic/leaderElection")
                 .setHandshakeHandler(handshakeHandler())
                 .setAllowedOrigins("*")
                 .withSockJS();
