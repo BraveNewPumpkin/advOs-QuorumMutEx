@@ -7,10 +7,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.stereotype.Controller;
-
-import java.util.List;
 
 @Controller
 @Slf4j
@@ -25,9 +22,9 @@ public class RootController {
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     private ThisNodeInfo thisNodeInfo;
 
-    @Autowired
-    @Qualifier("Node/WebSocketConnector/sessions")
-    private List<StompSession> sessions;
+//    @Autowired
+//    @Qualifier("Node/WebSocketConnector/sessions")
+//    private List<StompSession> sessions;
 
     @MessageMapping("/topic/leaderElection")
     @SendTo("/topic/leaderElection")
@@ -39,20 +36,15 @@ public class RootController {
 
     //TODO make this a real messsage, connect isn't needed
     public void sendLeaderElection() throws MessagingException {
-        //TODO remove
-        Boolean isConnected = (sessions.isEmpty() || sessions.get(0).isConnected());
-        log.info("connected? " + isConnected);
-
         //method 1 of broadcasting
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
             LeaderElectionMessage message = new LeaderElectionMessage(thisNodeInfo.getUid(), neighbor.getUid());
             template.convertAndSend("/topic/leaderElection", message);
         });
         //method 2 of broadcasting
-        /*
-        final LeaderElectionMessage leaderElectionMessage = new LeaderElectionMessage(thisNodeInfo.getUid(), 0);
-
-        sessions.get(0).send("/topic/leaderElection", leaderElectionMessage);
-        */
+//        final LeaderElectionMessage leaderElectionMessage = new LeaderElectionMessage(thisNodeInfo.getUid(), 0);
+//        sessions.parallelStream().forEach(session -> {
+//            session.send("/topic/leaderElection", leaderElectionMessage);
+//        });
     }
 }

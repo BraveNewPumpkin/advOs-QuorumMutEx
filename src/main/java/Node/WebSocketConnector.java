@@ -19,12 +19,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-
-import static Node.LambdaExceptionUtil.rethrowConsumer;
 
 @Configuration
 @Slf4j
@@ -38,16 +34,17 @@ public class WebSocketConnector {
 
     @Bean
     @Qualifier("Node/WebSocketConnector/sessions")
-    public List<StompSession> getSessions() throws InterruptedException, TimeoutException, ExecutionException {
+    public List<StompSession> getSessions() {
         ConcurrentLinkedQueue<StompSession> sessions = new ConcurrentLinkedQueue<>();
         //lambda to open connection and start sessions
-        Consumer<NodeInfo> sessionBuildingLambda = rethrowConsumer(neighbor -> {
+        Consumer<NodeInfo> sessionBuildingLambda = (neighbor -> {
             final CountDownLatch connectionTimeoutLatch = new CountDownLatch(1);
             final StompSessionHandler sessionHandler = new NodeStompSessionHandler(connectionTimeoutLatch);
-            final WebSocketClient client = new StandardWebSocketClient();
             final List<Transport> transports = new ArrayList<>(1);
+            final WebSocketClient client = new StandardWebSocketClient();
             transports.add(new WebSocketTransport(client));
             final SockJsClient sockJsClient = new SockJsClient(transports);
+//            final WebSocketClient sockJsClient = new SockJsClient(transports);
             final WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
             stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
@@ -59,16 +56,13 @@ public class WebSocketConnector {
                     .build()
                     .toUriString();
             try {
-                Thread.sleep(30000);
                 final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
                 //wait for other instances to spin up
-                if(!connectionTimeoutLatch.await(30, TimeUnit.SECONDS)) {
-                    throw new TimeoutException("failed ot connect in 30 seconds");
+                if(!connectionTimeoutLatch.await(5, TimeUnit.SECONDS)) {
+                    log.error("failed ot connect in 5 seconds");
                 }
-                final StompSession session = future.get(30, TimeUnit.SECONDS);
+                final StompSession session = future.get(5, TimeUnit.SECONDS);
                 sessions.add(session);
-            }catch(InterruptedException e){
-                log.warn("thread interrupted!");
             }catch(Throwable t) {
                 log.error(t.getMessage());
             }
