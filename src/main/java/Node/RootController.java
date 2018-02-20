@@ -28,7 +28,8 @@ public class RootController {
 
     @MessageMapping("/topic/leaderElection")
     @SendTo("/topic/leaderElection")
-    public Message leaderElection(LeaderElectionMessage message) throws Exception {
+    public NodeMessage leaderElection(LeaderElectionMessage message) throws Exception {
+        log.trace("received and routed leader election message");
         rootService.leaderElection(message);
         //TODO: check round number vs current round number. if greater push onto queue
         return new LeaderElectionResponse(thisNodeInfo.getUid(), message.getSourceUID());
@@ -38,6 +39,8 @@ public class RootController {
     public void sendLeaderElection() throws MessagingException {
         //method 1 of broadcasting
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
+            //TODO: convert to debug
+            log.trace("creating leader election message");
             LeaderElectionMessage message = new LeaderElectionMessage(thisNodeInfo.getUid(), neighbor.getUid());
             template.convertAndSend("/topic/leaderElection", message);
         });

@@ -32,8 +32,7 @@ public class WebSocketConnector {
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     private ThisNodeInfo thisNodeInfo;
 
-    @Bean
-    @Qualifier("Node/WebSocketConnector/sessions")
+    //DO NOT DECLARE AS @BEAN. Must have tight control over when this runs (after delay to let other instances spin up)
     public List<StompSession> getSessions() {
         ConcurrentLinkedQueue<StompSession> sessions = new ConcurrentLinkedQueue<>();
         //lambda to open connection and start sessions
@@ -56,6 +55,7 @@ public class WebSocketConnector {
                     .build()
                     .toUriString();
             try {
+                log.trace("starting stomp connection");
                 final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
                 //wait for other instances to spin up
                 if(!connectionTimeoutLatch.await(5, TimeUnit.SECONDS)) {

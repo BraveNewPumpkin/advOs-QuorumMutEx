@@ -1,11 +1,11 @@
 package Node;
 
-public abstract class Message {
+public abstract class NodeMessage {
 
     private int sourceUID;
     private int targetUID;
 
-    public Message(int sourceUID, int targetUID){
+    public NodeMessage(int sourceUID, int targetUID){
         this.setSourceUID(sourceUID);
         this.setTargetUID(targetUID);
     }

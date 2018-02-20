@@ -16,15 +16,19 @@ public class Application {
         ApplicationContext context = SpringApplication.run(Application.class, args);
         WebSocketConnector webSocketConnector = context.getBean(WebSocketConnector.class);
         Thread thread = new Thread(() -> {
+            log.trace("before sleep to allow other instances to spin up");
             try {
                 Thread.sleep(30000);
             } catch (InterruptedException e) {
-                log.info("thread interrupted!");
+                log.debug("thread interrupted!");
             }
+            log.trace("before getting sessions");
             List<StompSession> sessions = webSocketConnector.getSessions();
             RootController rootController = context.getBean(RootController.class);
+            log.trace("before sending leader election message");
             rootController.sendLeaderElection();
         });
+        log.trace("before running sendLeaderElection thread");
         thread.start();
     }
 }
