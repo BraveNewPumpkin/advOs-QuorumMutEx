@@ -3,6 +3,7 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -33,12 +34,12 @@ public class WebSocketConnector {
     private ThisNodeInfo thisNodeInfo;
 
     //DO NOT DECLARE AS @BEAN. Must have tight control over when this runs (after delay to let other instances spin up)
-    public List<StompSession> getSessions() {
+    public List<StompSession> getSessions(ApplicationContext context) {
         ConcurrentLinkedQueue<StompSession> sessions = new ConcurrentLinkedQueue<>();
         //lambda to open connection and start sessions
         Consumer<NodeInfo> sessionBuildingLambda = (neighbor -> {
             final CountDownLatch connectionTimeoutLatch = new CountDownLatch(1);
-            final StompSessionHandler sessionHandler = new NodeStompSessionHandler(connectionTimeoutLatch);
+            final StompSessionHandler sessionHandler = new NodeStompSessionHandler(context, connectionTimeoutLatch);
             final List<Transport> transports = new ArrayList<>(1);
             final WebSocketClient client = new StandardWebSocketClient();
             transports.add(new WebSocketTransport(client));

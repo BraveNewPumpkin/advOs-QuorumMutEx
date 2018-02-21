@@ -7,7 +7,6 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @Slf4j
@@ -27,7 +26,7 @@ public class RootController {
 //    private List<StompSession> sessions;
 
     @MessageMapping("/leaderElection")
-    public NodeMessage leaderElection(LeaderElectionMessage message) throws Exception {
+    public NodeMessage leaderElection(LeaderElectionMessage message) {
         //TODO: change to trace
         log.error("---------received and routed leader election message");
         rootService.leaderElection(message);
@@ -39,11 +38,11 @@ public class RootController {
         //method 1 of broadcasting
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
             //TODO: change to trace
-            log.error("---------creating leader election message");
+            log.error("--------creating leader election message");
             LeaderElectionMessage message = new LeaderElectionMessage(thisNodeInfo.getUid(), neighbor.getUid());
             template.convertAndSend("/topic/leaderElection", message);
             //TODO: change to trace
-            log.error("---------after sending leader election message");
+            log.error("--------after sending leader election message");
         });
         //method 2 of broadcasting
 //        final LeaderElectionMessage leaderElectionMessage = new LeaderElectionMessage(thisNodeInfo.getUid(), 0);

@@ -5,6 +5,8 @@ public abstract class NodeMessage {
     private int sourceUID;
     private int targetUID;
 
+    public NodeMessage(){}
+
     public NodeMessage(int sourceUID, int targetUID){
         this.setSourceUID(sourceUID);
         this.setTargetUID(targetUID);

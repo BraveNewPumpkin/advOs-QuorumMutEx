@@ -26,7 +26,7 @@ public class ElectNewLeader implements Runnable{
         //TODO: change to trace
         log.error("--------before getting sessions");
         WebSocketConnector webSocketConnector = context.getBean(WebSocketConnector.class);
-        List<StompSession> sessions = webSocketConnector.getSessions();
+        List<StompSession> sessions = webSocketConnector.getSessions(context);
         //TODO: change to trace
         log.error("-------before sleep to allow other instances to SUBSCRIBE");
         try {
