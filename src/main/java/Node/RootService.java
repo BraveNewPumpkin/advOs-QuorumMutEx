@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RootService {
     public void leaderElection(LeaderElectionMessage message) throws InterruptedException {
-        log.warn("processing leader election message");
+        //TODO: convert to trace
+        log.error("--------processing leader election message");
         //TODO implement
-        Thread.sleep(1000); // simulated delay TODO: remove
     }
 }

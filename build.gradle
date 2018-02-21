@@ -43,5 +43,6 @@ lombok {
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-websocket")
+    compile("org.springframework.boot:spring-boot-starter-logging")
     compile 'org.projectlombok:lombok:1.16.20'
 }

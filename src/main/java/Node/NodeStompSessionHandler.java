@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.stomp.*;
 
 import java.lang.reflect.Type;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 
 @Slf4j
@@ -29,8 +30,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public Type getPayloadType(StompHeaders stompHeaders) {
+        //TODO: convert to trace
+        log.error("--------getting payload type");
         Type payloadType = Object.class;
-        if(stompHeaders.getSubscription().equals("/topic/leaderElection")) {
+        if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             payloadType = LeaderElectionMessage.class;
         }
         return payloadType;
@@ -38,8 +41,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public void handleFrame(StompHeaders stompHeaders, Object message) {
+        //TODO: convert to trace
+        log.error("--------handling frame. destination: " + stompHeaders.getDestination());// + " message: " + ((LinkedHashMap<String, String>)message).toString());
         //TODO delegate to controller
-        if(stompHeaders.getSubscription().equals("/topic/leaderElection")) {
+        if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             try {
                 rootService.leaderElection((LeaderElectionMessage)message);
             } catch (InterruptedException e) {

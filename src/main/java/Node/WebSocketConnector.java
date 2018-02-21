@@ -52,6 +52,7 @@ public class WebSocketConnector {
                     .userInfo("node" + String.valueOf(neighbor.getUid()))
                     .host(neighbor.getHostName())
                     .port(neighbor.getPort())
+                    .path("ws")
                     .build()
                     .toUriString();
             try {

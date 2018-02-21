@@ -19,18 +19,15 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/");
-        config.setApplicationDestinationPrefixes("/");
+        //prefix for messages to be forwarded to broker
+        config.enableSimpleBroker("/topic");
+        //prefix for messages to be forwarded to controllers
+        config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/topic/leaderElection")
-                .setHandshakeHandler(handshakeHandler())
-                .setAllowedOrigins("*")
-                .withSockJS();
-
-        registry.addEndpoint("*")
+        registry.addEndpoint("/ws")
                 .setHandshakeHandler(handshakeHandler())
                 .setAllowedOrigins("*")
                 .withSockJS();
