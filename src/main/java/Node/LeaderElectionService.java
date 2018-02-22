@@ -8,14 +8,16 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class LeaderElectionService {
+    private ThisNodeInfo thisNodeInfo;
+
     private int maxUidSeen;
     private int maxDistanceSeen;
 
-    @Autowired
-    @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    private ThisNodeInfo thisNodeInfo;
-
-    public LeaderElectionService() {
+    @Autowired(required = true)
+    public LeaderElectionService(
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+    ) {
+        this.thisNodeInfo = thisNodeInfo;
         setMaxUidSeen(thisNodeInfo.getUid());
         setMaxDistanceSeen(0);
     }

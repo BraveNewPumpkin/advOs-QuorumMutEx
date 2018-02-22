@@ -10,17 +10,19 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     private LeaderElectionController leaderElectionController;
+    private BfsTreeController bfsTreeController;
     private CountDownLatch connectionTimeoutLatch;
 
     public NodeStompSessionHandler(ApplicationContext context, CountDownLatch connectionTimeoutLatch) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
         this.leaderElectionController = context.getBean(LeaderElectionController.class);
+        this.bfsTreeController = context.getBean(BfsTreeController.class);
     }
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         session.subscribe("/topic/leaderElection", this);
-//        session.subscribe("/topic/leaderElection", webSocketHandler);
+        session.subscribe("/topic/bfsTree", this);
         //we've connected so cancel the timeout
         connectionTimeoutLatch.countDown();
 
@@ -34,6 +36,8 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         Type payloadType = Object.class;
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             payloadType = LeaderElectionMessage.class;
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
+            payloadType = BfsTreeMessage.class;
         }
         return payloadType;
     }
@@ -44,9 +48,14 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         log.error("--------handling frame. destination: " + stompHeaders.getDestination());// + " message: " + ((LinkedHashMap<String, String>)message).toString());
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             //TODO: convert to trace
-            log.error("--------calling RootService.leaderElection");
+            log.error("--------calling LeaderElectionService.leaderElection");
             LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage)message;
             leaderElectionController.leaderElection(leaderElectionMessage);
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
+            //TODO: convert to trace
+            log.error("--------calling BfsTreeService.bfsTree");
+            BfsTreeMessage bfsTreeMessage = (BfsTreeMessage)message;
+            bfsTreeController.bfsTree(bfsTreeMessage);
         }
     }
 

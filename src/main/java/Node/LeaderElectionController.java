@@ -14,30 +14,32 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Controller
 @Slf4j
 public class LeaderElectionController {
+    private LeaderElectionService leaderElectionService;
+    private SimpMessagingTemplate template;
+    private ThisNodeInfo thisNodeInfo;
+
     private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
 
-    @Autowired
-    private LeaderElectionService leaderElectionService;
-
-    @Autowired
-    private SimpMessagingTemplate template;
-
-    @Autowired
-    @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    private ThisNodeInfo thisNodeInfo;
-
-    public LeaderElectionController(){
+    @Autowired(required = true)
+    public LeaderElectionController(
+            LeaderElectionService leaderElectionService,
+            SimpMessagingTemplate template,
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+    ){
+        this.leaderElectionService = leaderElectionService;
+        this.template = template;
+        this.thisNodeInfo = thisNodeInfo;
         setRoundNumber(0);
         roundMessages = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>>(1);
         roundMessages.put(getRoundNumber(), new ConcurrentLinkedQueue<>());
     }
 
-    public int getRoundNumber() {
+    private int getRoundNumber() {
         return roundNumber;
     }
 
-    public void setRoundNumber(int roundNumber) {
+    private void setRoundNumber(int roundNumber) {
         this.roundNumber = roundNumber;
     }
 //    @Autowired
