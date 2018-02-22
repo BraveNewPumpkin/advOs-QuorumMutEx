@@ -34,9 +34,9 @@ public class ElectNewLeader implements Runnable{
         } catch (InterruptedException e) {
             log.debug("thread interrupted!");
         }
-        RootController rootController = context.getBean(RootController.class);
+        LeaderElectionController leaderElectionController = context.getBean(LeaderElectionController.class);
         //TODO: change to trace
         log.error("--------before sending leader election message");
-        rootController.sendLeaderElection();
+        leaderElectionController.sendLeaderElection();
     }
 }

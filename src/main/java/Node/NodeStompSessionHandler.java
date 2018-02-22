@@ -1,7 +1,6 @@
 package Node;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.simp.stomp.*;
 
@@ -10,12 +9,12 @@ import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
-    private RootController rootController;
+    private LeaderElectionController leaderElectionController;
     private CountDownLatch connectionTimeoutLatch;
 
     public NodeStompSessionHandler(ApplicationContext context, CountDownLatch connectionTimeoutLatch) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
-        this.rootController = context.getBean(RootController.class);
+        this.leaderElectionController = context.getBean(LeaderElectionController.class);
     }
 
     @Override
@@ -43,14 +42,11 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     public void handleFrame(StompHeaders stompHeaders, Object message) {
         //TODO: convert to trace
         log.error("--------handling frame. destination: " + stompHeaders.getDestination());// + " message: " + ((LinkedHashMap<String, String>)message).toString());
-        //TODO delegate to controller
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             //TODO: convert to trace
             log.error("--------calling RootService.leaderElection");
             LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage)message;
-            rootController.leaderElection(leaderElectionMessage);
-            //TODO: remove
-            log.error("--------after calling RootService.leaderElection");
+            leaderElectionController.leaderElection(leaderElectionMessage);
         }
     }
 
