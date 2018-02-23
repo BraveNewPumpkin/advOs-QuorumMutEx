@@ -11,16 +11,18 @@ import org.springframework.stereotype.Controller;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 @Controller
 @Slf4j
 public class LeaderElectionController {
-    private LeaderElectionService leaderElectionService;
-    private SimpMessagingTemplate template;
-    private ThisNodeInfo thisNodeInfo;
-    private LeaderElectionService.Vote vote;
+    private final LeaderElectionService leaderElectionService;
+    private final SimpMessagingTemplate template;
+    private final ThisNodeInfo thisNodeInfo;
+    private final LeaderElectionService.Vote vote;
+    private final Semaphore electingNewLeader;
 
-    private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
+    private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
 
     @Autowired(required = true)
@@ -28,12 +30,14 @@ public class LeaderElectionController {
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionService/Vote") LeaderElectionService.Vote vote
-    ){
+            @Qualifier("Node/LeaderElectionService/Vote") LeaderElectionService.Vote vote,
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader
+            ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.vote = vote;
+        this.electingNewLeader = electingNewLeader;
 
         roundNumber = 0;
         roundMessages = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>>(1);
@@ -93,6 +97,7 @@ public class LeaderElectionController {
             //TODO: change to trace
             log.error("--------after sending leader announce message");
         });
+        electingNewLeader.release();
     }
 
     public void sendLeaderElection() throws MessagingException {
