@@ -55,6 +55,7 @@ public class LeaderElectionService {
             roundsWithoutChange++;
         }
         if(roundsWithoutChange >= 3 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
+            vote.setThisNodeLeader(true);
             leaderElectionController.announceSelfLeader();
         } else {
             leaderElectionController.sendLeaderElection();
