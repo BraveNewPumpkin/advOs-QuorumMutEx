@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -17,6 +18,7 @@ public class LeaderElectionController {
     private LeaderElectionService leaderElectionService;
     private SimpMessagingTemplate template;
     private ThisNodeInfo thisNodeInfo;
+    private LeaderElectionService.Vote vote;
 
     private ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
@@ -25,40 +27,37 @@ public class LeaderElectionController {
     public LeaderElectionController(
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/LeaderElectionService/Vote") LeaderElectionService.Vote vote
     ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
-        setRoundNumber(0);
+        this.vote = vote;
+
+        roundNumber = 0;
         roundMessages = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>>(1);
-        roundMessages.put(getRoundNumber(), new ConcurrentLinkedQueue<>());
+        roundMessages.put(roundNumber, new ConcurrentLinkedQueue<>());
     }
-
-    private int getRoundNumber() {
-        return roundNumber;
-    }
-
-    private void setRoundNumber(int roundNumber) {
-        this.roundNumber = roundNumber;
-    }
-//    @Autowired
-//    @Qualifier("Node/WebSocketConnector/sessions")
-//    private List<StompSession> sessions;
 
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
         //TODO: change to trace
         log.error("--------received and routed leader election message");
-        int numberOfMessagesSoFarThisRound = roundMessages.get(getRoundNumber()).size();
+        int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-        if(message.getRoundNumber() == getRoundNumber() && numberOfMessagesSoFarThisRound == numberOfNeighbors){
-            //TODO process them
-            setRoundNumber(getRoundNumber() + 1);
+        if(message.getRoundNumber() == roundNumber && numberOfMessagesSoFarThisRound == numberOfNeighbors){
+            leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
+            roundNumber++;
         } else {
             enqueueMessage(message);
         }
-        leaderElectionService.leaderElection(message);
+    }
+
+    @MessageMapping("/leaderAnnounce")
+    public void leaderAnnounce(LeaderAnnounceMessage message) {
+        //TODO implement: send leader's UID to all neighbors
+        // EXCEPT THE ONE RECEIVED FROM -or- TURN THIS NODE OFF AFTER ANNOUNCING
     }
 
     private void enqueueMessage(LeaderElectionMessage message) {
@@ -73,6 +72,29 @@ public class LeaderElectionController {
         roundMessageQueue.add(message);
     }
 
+    private Queue<LeaderElectionMessage> getMessagesThisRound() {
+        return roundMessages.get(roundNumber);
+    }
+
+    public void announceSelfLeader() throws MessagingException {
+        announceLeader(thisNodeInfo.getUid());
+    }
+
+    private void announceLeader(int leaderUid) throws MessagingException {
+        thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
+            //TODO: change to trace
+            log.error("--------creating leader announce message");
+            LeaderAnnounceMessage message = new LeaderAnnounceMessage(
+                    thisNodeInfo.getUid(),
+                    neighbor.getUid(),
+                    leaderUid
+            );
+            template.convertAndSend("/topic/leaderAnnounce", message);
+            //TODO: change to trace
+            log.error("--------after sending leader announce message");
+        });
+    }
+
     public void sendLeaderElection() throws MessagingException {
         //method 1 of broadcasting
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
@@ -81,18 +103,13 @@ public class LeaderElectionController {
             LeaderElectionMessage message = new LeaderElectionMessage(
                     thisNodeInfo.getUid(),
                     neighbor.getUid(),
-                    getRoundNumber(),
-                    leaderElectionService.getMaxUidSeen(),
-                    leaderElectionService.getMaxUidSeen()
+                    roundNumber,
+                    vote.getMaxUidSeen(),
+                    vote.getMaxUidSeen()
                     );
             template.convertAndSend("/topic/leaderElection", message);
             //TODO: change to trace
             log.error("--------after sending leader election message");
         });
-        //method 2 of broadcasting
-//        final LeaderElectionMessage leaderElectionMessage = new LeaderElectionMessage(thisNodeInfo.getUid(), 0);
-//        sessions.parallelStream().forEach(session -> {
-//            session.send("/topic/leaderElection", leaderElectionMessage);
-//        });
     }
 }

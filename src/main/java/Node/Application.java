@@ -12,11 +12,8 @@ public class Application {
 
         log.trace("--------before running application");
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        Thread thread = new Thread(new ElectNewLeader(context));
+        Thread thread = new Thread(new StartLeaderElectionAndBfsTree(context));
         log.trace("--------before running sendLeaderElection thread");
-        thread.start();
-        thread = new Thread(new BuildBfsTree(context));
-        log.trace("--------before running sendBfsTree thread");
         thread.start();
     }
 }
