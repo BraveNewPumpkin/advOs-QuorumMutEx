@@ -16,6 +16,8 @@ public class LeaderElectionService {
     private Vote vote;
 
     private int roundsWithoutChange;
+    private int leaderUid;
+    private boolean hasLeader;
 
     @Autowired(required = true)
     public LeaderElectionService(
@@ -30,6 +32,7 @@ public class LeaderElectionService {
         vote.setMaxDistanceSeen(0);
 
         roundsWithoutChange = 0;
+        hasLeader = false;
     }
 
     public void processNeighborlyAdvice(Queue<LeaderElectionMessage> advices) {
@@ -55,6 +58,15 @@ public class LeaderElectionService {
             leaderElectionController.announceSelfLeader();
         } else {
             leaderElectionController.sendLeaderElection();
+        }
+    }
+
+    public void leaderAnnounce(int leaderUid) {
+        //need to check if we have already learned of election result and suppress message if so
+        if(!hasLeader) {
+            this.leaderUid = leaderUid;
+            hasLeader = true;
+            leaderElectionController.announceLeader(leaderUid);
         }
     }
 

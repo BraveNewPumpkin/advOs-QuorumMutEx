@@ -60,8 +60,9 @@ public class LeaderElectionController {
 
     @MessageMapping("/leaderAnnounce")
     public void leaderAnnounce(LeaderAnnounceMessage message) {
-        //TODO implement: send leader's UID to all neighbors
-        // EXCEPT THE ONE RECEIVED FROM -or- TURN THIS NODE OFF AFTER ANNOUNCING
+        //TODO: change to trace
+        log.error("--------received and routed leader announce message");
+        leaderElectionService.leaderAnnounce(message.getLeaderUid());
     }
 
     private void enqueueMessage(LeaderElectionMessage message) {
@@ -84,7 +85,7 @@ public class LeaderElectionController {
         announceLeader(thisNodeInfo.getUid());
     }
 
-    private void announceLeader(int leaderUid) throws MessagingException {
+    public void announceLeader(int leaderUid) throws MessagingException {
         thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
             //TODO: change to trace
             log.error("--------creating leader announce message");
