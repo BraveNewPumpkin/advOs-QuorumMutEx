@@ -2,7 +2,7 @@ package Node;
 
 public class LeaderAnnounceMessage extends NodeMessage {
     private int leaderUid;
-}
+
     public LeaderAnnounceMessage() {
         super();
     }
