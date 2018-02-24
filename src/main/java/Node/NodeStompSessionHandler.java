@@ -68,7 +68,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
-        log.error("error handling message: " + exception.getMessage());
+        log.error("error handling message: " + exception.getMessage(), exception);
         //we've failed to connect so cancel the timeout
         connectionTimeoutLatch.countDown();
     }

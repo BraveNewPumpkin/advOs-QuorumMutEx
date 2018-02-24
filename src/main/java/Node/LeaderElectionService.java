@@ -3,6 +3,7 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -19,11 +20,11 @@ public class LeaderElectionService {
     private int leaderUid;
     private boolean hasLeader;
 
-    @Autowired(required = true)
+    @Autowired
     public LeaderElectionService(
-            LeaderElectionController leaderElectionController,
+            @Lazy LeaderElectionController leaderElectionController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionService/Vote") Vote vote
+            @Lazy @Qualifier("Node/LeaderElectionService/Vote") Vote vote
     ) {
         this.leaderElectionController = leaderElectionController;
         this.thisNodeInfo = thisNodeInfo;
@@ -55,9 +56,12 @@ public class LeaderElectionService {
             roundsWithoutChange++;
         }
         if(roundsWithoutChange >= 3 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
+            //TODO: convert to trace
+            log.error("--------I am leader");
             vote.setThisNodeLeader(true);
             leaderElectionController.announceSelfLeader();
-        } else {
+        } else if(didVoteChange){
+            //only send if we received a message that changed vote
             leaderElectionController.sendLeaderElection();
         }
     }
@@ -69,6 +73,10 @@ public class LeaderElectionService {
             hasLeader = true;
             leaderElectionController.announceLeader(leaderUid);
         }
+    }
+
+    public Vote getVote(){
+        return vote;
     }
 
     @Component

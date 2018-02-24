@@ -9,10 +9,10 @@ import org.springframework.context.ApplicationContext;
 @Slf4j
 public class Application {
     public static void main(String[] args) {
-
         log.trace("--------before running application");
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        Thread thread = new Thread(new StartLeaderElectionAndBfsTree(context));
+        StartLeaderElectionAndBfsTree startLeaderElectionAndBfsTree = (StartLeaderElectionAndBfsTree)context.getBean(StartLeaderElectionAndBfsTree.class);
+        Thread thread = new Thread(startLeaderElectionAndBfsTree);
         log.trace("--------before running sendLeaderElection thread");
         thread.start();
     }

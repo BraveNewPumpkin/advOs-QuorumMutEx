@@ -3,6 +3,7 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -25,18 +26,17 @@ public class LeaderElectionController {
     private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
 
-    @Autowired(required = true)
+    @Autowired
     public LeaderElectionController(
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionService/Vote") LeaderElectionService.Vote vote,
             @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader
             ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
-        this.vote = vote;
+        this.vote = leaderElectionService.getVote();
         this.electingNewLeader = electingNewLeader;
 
         roundNumber = 0;
@@ -48,13 +48,12 @@ public class LeaderElectionController {
     public void leaderElection(LeaderElectionMessage message) {
         //TODO: change to trace
         log.error("--------received and routed leader election message");
+        enqueueMessage(message);
         int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
         if(message.getRoundNumber() == roundNumber && numberOfMessagesSoFarThisRound == numberOfNeighbors){
             leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
             roundNumber++;
-        } else {
-            enqueueMessage(message);
         }
     }
 
@@ -98,6 +97,8 @@ public class LeaderElectionController {
             //TODO: change to trace
             log.error("--------after sending leader announce message");
         });
+        //TODO: convert to trace
+        log.error("--------done electing leader");
         electingNewLeader.release();
     }
 
@@ -111,7 +112,7 @@ public class LeaderElectionController {
                     neighbor.getUid(),
                     roundNumber,
                     vote.getMaxUidSeen(),
-                    vote.getMaxUidSeen()
+                    vote.getMaxDistanceSeen()
                     );
             template.convertAndSend("/topic/leaderElection", message);
             //TODO: change to trace

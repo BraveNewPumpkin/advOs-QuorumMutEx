@@ -12,11 +12,14 @@ import java.net.UnknownHostException;
 @Configuration
 @Slf4j
 public class NodeConfigurator {
-    @Value( "${this.port:3332}" )
+    @Value("${this.port:3332}")
     private int thisPort;
 
-    @Value( "${neighbor.port:5678}" )
+    @Value("${neighbor.port:5678}")
     private int neighborPort;
+
+    @Value("${this.uid:123}")
+    private int thisUid;
 
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
@@ -26,10 +29,9 @@ public class NodeConfigurator {
         log.error("hostname: " + hostName);
 
         //TODO read from config
-        int uid = 123;
         hostName = "localhost";
 
-        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(uid, hostName, thisPort);
+        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, hostName, thisPort);
 
         thisNodeInfo.addNeighbor(new NodeInfo(5, "localhost", neighborPort));
 

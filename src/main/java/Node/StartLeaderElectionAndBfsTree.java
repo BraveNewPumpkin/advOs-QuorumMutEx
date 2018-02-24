@@ -4,9 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.Semaphore;
 
+@Component
 @Slf4j
 public class StartLeaderElectionAndBfsTree implements Runnable{
     @Autowired(required = true)
@@ -32,6 +34,8 @@ public class StartLeaderElectionAndBfsTree implements Runnable{
         } catch (InterruptedException e) {
             log.warn("interrupted while waiting on leader to be elected");
         }
+        //TODO: convert to trace
+        log.error("--------moving onto building bfs tree");
         if(vote.isThisNodeLeader()) {
             Runnable buildBfsTree = new BuildBfsTree(context);
             buildBfsTree.run();
