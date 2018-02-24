@@ -3,6 +3,7 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,12 @@ public class LeaderElectionService {
     @Autowired
     public LeaderElectionService(
             @Lazy LeaderElectionController leaderElectionController,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Lazy @Qualifier("Node/LeaderElectionService/Vote") Vote vote
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
     ) {
         this.leaderElectionController = leaderElectionController;
         this.thisNodeInfo = thisNodeInfo;
-        this.vote = vote;
-        vote.setMaxUidSeen(thisNodeInfo.getUid());
-        vote.setMaxDistanceSeen(0);
 
+        this.vote = new Vote();
         roundsWithoutChange = 0;
         hasLeader = false;
     }
@@ -55,12 +53,14 @@ public class LeaderElectionService {
         } else {
             roundsWithoutChange++;
         }
+        //increment round in controller before control is handed back
+        leaderElectionController.incrementRoundNumber();
         if(roundsWithoutChange >= 3 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
             //TODO: convert to trace
             log.error("--------I am leader");
             vote.setThisNodeLeader(true);
             leaderElectionController.announceSelfLeader();
-        } else if(didVoteChange){
+        } else if(didVoteChange) {
             //only send if we received a message that changed vote
             leaderElectionController.sendLeaderElection();
         }
@@ -75,21 +75,21 @@ public class LeaderElectionService {
         }
     }
 
+    @Bean
+    @Qualifier("Node/LeaderElectionService/vote")
     public Vote getVote(){
         return vote;
     }
 
-    @Component
-    @Qualifier("Node/LeaderElectionService/Vote")
     public class Vote {
         private int maxUidSeen;
         private int maxDistanceSeen;
         private boolean isThisNodeLeader;
 
-        //autowire in the outer class component (compiler changes to Vote(LeaderElectionService outer) and then spring
-        // injects that component)
-        @Autowired
-        public Vote(){}
+        public Vote(){
+            maxUidSeen = thisNodeInfo.getUid();
+            maxDistanceSeen = 0;
+        }
 
         public int getMaxUidSeen() {
             return maxUidSeen;

@@ -12,7 +12,7 @@ import java.util.concurrent.Semaphore;
 @Slf4j
 public class StartLeaderElectionAndBfsTree implements Runnable{
     @Autowired(required = true)
-    @Qualifier("Node/LeaderElectionService/Vote")
+    @Qualifier("Node/LeaderElectionService/vote")
     private LeaderElectionService.Vote vote;
 
     @Autowired(required = true)

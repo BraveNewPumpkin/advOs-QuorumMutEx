@@ -44,6 +44,10 @@ public class LeaderElectionController {
         roundMessages.put(roundNumber, new ConcurrentLinkedQueue<>());
     }
 
+    public void incrementRoundNumber(){
+        roundNumber++;
+    }
+
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
         //TODO: change to trace
