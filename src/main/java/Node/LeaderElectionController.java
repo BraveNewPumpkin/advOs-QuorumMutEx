@@ -41,7 +41,6 @@ public class LeaderElectionController {
 
         roundNumber = 0;
         roundMessages = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>>(1);
-        roundMessages.put(roundNumber, new ConcurrentLinkedQueue<>());
     }
 
     public void incrementRoundNumber(){
@@ -53,11 +52,11 @@ public class LeaderElectionController {
         //TODO: change to trace
         log.error("--------received and routed leader election message");
         enqueueMessage(message);
+        //TODO what if message if from future round and queue for this round hasn't been created yet?
         int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-        if(message.getRoundNumber() == roundNumber && numberOfMessagesSoFarThisRound == numberOfNeighbors){
+        if(numberOfMessagesSoFarThisRound == numberOfNeighbors){
             leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
-            roundNumber++;
         }
     }
 
