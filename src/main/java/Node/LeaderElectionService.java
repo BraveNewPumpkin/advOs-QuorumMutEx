@@ -45,7 +45,7 @@ public class LeaderElectionService {
                 didVoteChange = true;
             } else if(neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
                 vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
-                didVoteChange = true;
+                //Note: we don't count this as vote changing
             }
         }
         if(didVoteChange) {

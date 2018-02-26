@@ -3,15 +3,12 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 
 @Controller
@@ -23,7 +20,7 @@ public class LeaderElectionController {
     private final LeaderElectionService.Vote vote;
     private final Semaphore electingNewLeader;
 
-    private final ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>> roundMessages;
+    private final List<Queue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
 
     @Autowired
@@ -40,7 +37,8 @@ public class LeaderElectionController {
         this.electingNewLeader = electingNewLeader;
 
         roundNumber = 0;
-        roundMessages = new ConcurrentHashMap<Integer, ConcurrentLinkedQueue<LeaderElectionMessage>>(1);
+        roundMessages = new ArrayList<>(1);
+        roundMessages.add(new LinkedList<LeaderElectionMessage>());
     }
 
     public void incrementRoundNumber(){
@@ -69,14 +67,13 @@ public class LeaderElectionController {
 
     private void enqueueMessage(LeaderElectionMessage message) {
         int messageRoundNumber = message.getRoundNumber();
-        ConcurrentLinkedQueue<LeaderElectionMessage> roundMessageQueue;
-        if(roundMessages.containsKey(messageRoundNumber)){
-            roundMessageQueue = roundMessages.get(messageRoundNumber);
-        } else {
-            roundMessageQueue = new ConcurrentLinkedQueue<>();
-            roundMessages.put(messageRoundNumber, roundMessageQueue);
+        int currentRoundIndex = roundMessages.size() - 1;
+        if(currentRoundIndex != messageRoundNumber){
+            for(int i = currentRoundIndex; i < messageRoundNumber; i++) {
+                roundMessages.add(new LinkedList<>());
+            }
         }
-        roundMessageQueue.add(message);
+        roundMessages.get(currentRoundIndex).add(message);
     }
 
     private Queue<LeaderElectionMessage> getMessagesThisRound() {
