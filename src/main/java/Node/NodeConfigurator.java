@@ -21,6 +21,9 @@ public class NodeConfigurator {
     @Value("${this.uid:123}")
     private int thisUid;
 
+    @Value("${neighbor.uid:123}")
+    private int neighborUid;
+
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo() throws UnknownHostException{
@@ -33,7 +36,7 @@ public class NodeConfigurator {
 
         ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, hostName, thisPort);
 
-        thisNodeInfo.addNeighbor(new NodeInfo(5, "localhost", neighborPort));
+        thisNodeInfo.addNeighbor(new NodeInfo(neighborUid, "localhost", neighborPort));
 
         return thisNodeInfo;
     }

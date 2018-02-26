@@ -85,18 +85,14 @@ public class LeaderElectionController {
     }
 
     public void announceLeader(int leaderUid) throws MessagingException {
-        thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
-            //TODO: change to trace
-            log.error("--------creating leader announce message");
-            LeaderAnnounceMessage message = new LeaderAnnounceMessage(
-                    thisNodeInfo.getUid(),
-                    neighbor.getUid(),
-                    leaderUid
-            );
-            template.convertAndSend("/topic/leaderAnnounce", message);
-            //TODO: change to trace
-            log.error("--------after sending leader announce message");
-        });
+        //TODO: change to trace
+        log.error("--------creating leader announce message");
+        LeaderAnnounceMessage message = new LeaderAnnounceMessage(
+                thisNodeInfo.getUid(),
+                -1, //this is basically "we don't know" because we don't send message out to specific node
+                leaderUid
+        );
+        template.convertAndSend("/topic/leaderAnnounce", message);
         //TODO: convert to trace
         log.error("--------done electing leader");
         electingNewLeader.release();
@@ -104,19 +100,17 @@ public class LeaderElectionController {
 
     public void sendLeaderElection() throws MessagingException {
         //method 1 of broadcasting
-        thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
-            //TODO: change to trace
-            log.error("--------creating leader election message");
-            LeaderElectionMessage message = new LeaderElectionMessage(
-                    thisNodeInfo.getUid(),
-                    neighbor.getUid(),
-                    roundNumber,
-                    vote.getMaxUidSeen(),
-                    vote.getMaxDistanceSeen()
-                    );
-            template.convertAndSend("/topic/leaderElection", message);
-            //TODO: change to trace
-            log.error("--------after sending leader election message");
-        });
+        //TODO: change to trace
+        log.error("--------creating leader election message");
+        LeaderElectionMessage message = new LeaderElectionMessage(
+                thisNodeInfo.getUid(),
+                -1,
+                roundNumber,
+                vote.getMaxUidSeen(),
+                vote.getMaxDistanceSeen()
+                );
+        template.convertAndSend("/topic/leaderElection", message);
+        //TODO: change to trace
+        log.error("--------after sending leader election message");
     }
 }
