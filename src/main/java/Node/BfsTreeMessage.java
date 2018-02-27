@@ -6,7 +6,7 @@ public final class BfsTreeMessage extends NodeMessage {
         super();
     }
 
-    public BfsTreeMessage(int sourceUID, int targetUID) {
-        super(sourceUID, targetUID);
+    public BfsTreeMessage(int sourceUID) {
+        super(sourceUID);
     }
 }

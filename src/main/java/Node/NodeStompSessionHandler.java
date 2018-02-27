@@ -31,8 +31,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public Type getPayloadType(StompHeaders stompHeaders) {
-        //TODO: convert to trace
-        log.error("--------getting payload type");
+        log.trace("getting payload type");
         Type payloadType = Object.class;
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             payloadType = LeaderElectionMessage.class;
@@ -40,27 +39,29 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             payloadType = LeaderAnnounceMessage.class;
         } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
             payloadType = BfsTreeMessage.class;
+        } else {
+            if(log.isErrorEnabled()) {
+                log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
+            }
         }
         return payloadType;
     }
 
     @Override
     public void handleFrame(StompHeaders stompHeaders, Object message) {
-        //TODO: convert to trace
-        log.error("--------handling frame. destination: " + stompHeaders.getDestination());// + " message: " + ((LinkedHashMap<String, String>)message).toString());
+        if(log.isDebugEnabled()) {
+            log.error("handling frame. Destination: {}", stompHeaders.getDestination());
+        }
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
-            //TODO: convert to trace
-            log.error("--------calling LeaderElectionController.leaderElection");
+            log.trace("calling LeaderElectionController.leaderElection");
             LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage)message;
             leaderElectionController.leaderElection(leaderElectionMessage);
         } else if(stompHeaders.getDestination().equals("/topic/leaderAnnounce")) {
-            //TODO: convert to trace
-            log.error("--------calling LeaderElectionController.leaderAnnounce");
+            log.trace("calling LeaderElectionController.leaderAnnounce");
             LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage)message;
             leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
         } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
-            //TODO: convert to trace
-            log.error("--------calling BfsTreeService.bfsTree");
+            log.trace("calling BfsTreeService.bfsTree");
             BfsTreeMessage bfsTreeMessage = (BfsTreeMessage)message;
             bfsTreeController.bfsTree(bfsTreeMessage);
         }
@@ -68,14 +69,18 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Override
     public void handleException(StompSession session, StompCommand command, StompHeaders headers, byte[] payload, Throwable exception) {
-        log.error("error handling message: " + exception.getMessage(), exception);
+        if(log.isErrorEnabled()) {
+            log.error("error handling message: " + exception.getMessage(), exception);
+        }
         //we've failed to connect so cancel the timeout
         connectionTimeoutLatch.countDown();
     }
 
     @Override
     public void handleTransportError(StompSession session, Throwable exception) {
-        log.error(exception.getMessage());
+        if(log.isErrorEnabled()) {
+            log.error("error in transport: " + exception.getMessage(), exception);
+        }
         //we've failed to connect so cancel the timeout
         connectionTimeoutLatch.countDown();
     }

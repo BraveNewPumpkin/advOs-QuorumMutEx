@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.Queue;
@@ -34,18 +33,24 @@ public class LeaderElectionService {
         hasLeader = false;
     }
 
-    public void processNeighborlyAdvice(Queue<LeaderElectionMessage> advices) {
+    public void processNeighborlyAdvice(Queue<LeaderElectionMessage> electionMessages) {
         boolean didVoteChange = false;
-        for(LeaderElectionMessage nextMessage : advices) {
+        for(LeaderElectionMessage nextMessage : electionMessages) {
             int neighborMaxUid = nextMessage.getMaxUidSeen();
             int neighborMaxDistanceSeen = nextMessage.getMaxDistanceSeen();
             if(neighborMaxUid > vote.getMaxUidSeen()) {
                 vote.setMaxUidSeen(neighborMaxUid);
                 vote.setMaxDistanceSeen(neighborMaxDistanceSeen + 1);
                 didVoteChange = true;
+                if(log.isDebugEnabled()) {
+                    log.debug("updated vote uid to: {} from message: {} in round: {}", neighborMaxUid, nextMessage, leaderElectionController.getRoundNumber());
+                }
             } else if(neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
-                vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
+                if(log.isDebugEnabled()) {
+                    log.debug("updated distance to: {} from message: {} in round: {}", neighborMaxDistanceSeen, nextMessage, leaderElectionController.getRoundNumber());
+                }
                 //Note: we don't count this as vote changing
+                vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
             }
         }
         if(didVoteChange) {
@@ -53,11 +58,13 @@ public class LeaderElectionService {
         } else {
             roundsWithoutChange++;
         }
+        if(log.isTraceEnabled()) {
+            log.trace("round without vote change: {}", roundsWithoutChange);
+        }
         //increment round in controller before control is handed back
         leaderElectionController.incrementRoundNumber();
         if(roundsWithoutChange >= 3 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
-            //TODO: convert to trace
-            log.error("--------I am leader");
+            log.debug("--------I am leader");
             vote.setThisNodeLeader(true);
             leaderElectionController.announceSelfLeader();
         } else if(didVoteChange) {

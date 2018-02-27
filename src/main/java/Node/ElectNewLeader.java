@@ -16,28 +16,24 @@ public class ElectNewLeader implements Runnable{
 
     @Override
     public void run(){
-        //TODO: change to trace
-        log.error("-------before sleep to allow other instances to spin up");
+        log.info("sleeping to allow other instances to spin up");
         try {
             Thread.sleep(20 * 1000);
         } catch (InterruptedException e) {
-            log.debug("thread interrupted!");
+            log.warn("leader election thread interrupted!");
         }
-        //TODO: change to trace
-        log.error("--------before getting sessions");
+        log.trace("before getting sessions");
         WebSocketConnector webSocketConnector = context.getBean(WebSocketConnector.class);
         //get sessions to ensure that they are initialized
         List<StompSession> sessions = webSocketConnector.getSessions(context);
-        //TODO: change to trace
-        log.error("-------before sleep to allow other instances to SUBSCRIBE");
+        log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
             Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
-            log.debug("thread interrupted!");
+            log.warn("thread interrupted!");
         }
         LeaderElectionController leaderElectionController = context.getBean(LeaderElectionController.class);
-        //TODO: change to trace
-        log.error("--------before sending leader election message");
+        log.trace("before sending leader election message");
         leaderElectionController.sendLeaderElection();
     }
 }

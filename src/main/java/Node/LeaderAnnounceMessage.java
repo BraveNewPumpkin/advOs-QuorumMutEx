@@ -7,8 +7,8 @@ public class LeaderAnnounceMessage extends NodeMessage {
         super();
     }
 
-    public LeaderAnnounceMessage(int sourceUID, int targetUID, int leaderUid) {
-        super(sourceUID, targetUID);
+    public LeaderAnnounceMessage(int sourceUID, int leaderUid) {
+        super(sourceUID);
         this.leaderUid = leaderUid;
     }
 
@@ -18,5 +18,12 @@ public class LeaderAnnounceMessage extends NodeMessage {
 
     public void setLeaderUid(int leaderUid) {
         this.leaderUid = leaderUid;
+    }
+
+    @Override
+    public String toString() {
+        return "LeaderAnnounceMessage{" +
+                "leaderUid=" + leaderUid +
+                "} " + super.toString();
     }
 }

@@ -32,17 +32,13 @@ public class BfsTreeController {
     }
 
     public void sendBfsTree() throws MessagingException {
-        //method 1 of broadcasting
-        thisNodeInfo.getNeighbors().parallelStream().forEach(neighbor -> {
-            //TODO: change to trace
-            log.error("--------creating bfs Tree message");
-            BfsTreeMessage message = new BfsTreeMessage(
-                    thisNodeInfo.getUid(),
-                    neighbor.getUid()
-            );
-            template.convertAndSend("/topic/bfsTree", message);
-            //TODO: change to trace
-            log.error("--------after sending bfs tree message");
-        });
+        //TODO: change to trace
+        log.error("--------creating bfs Tree message");
+        BfsTreeMessage message = new BfsTreeMessage(
+                thisNodeInfo.getUid()
+        );
+        template.convertAndSend("/topic/bfsTree", message);
+        //TODO: change to trace
+        log.error("--------after sending bfs tree message");
     }
 }

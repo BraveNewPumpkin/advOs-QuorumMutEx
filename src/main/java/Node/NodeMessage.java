@@ -1,15 +1,12 @@
 package Node;
 
 public abstract class NodeMessage {
-
     private int sourceUID;
-    private int targetUID;
 
     public NodeMessage(){}
 
-    public NodeMessage(int sourceUID, int targetUID){
+    public NodeMessage(int sourceUID){
         this.setSourceUID(sourceUID);
-        this.setTargetUID(targetUID);
     }
     public int getSourceUID() {
         return sourceUID;
@@ -19,11 +16,10 @@ public abstract class NodeMessage {
         this.sourceUID = sourceUID;
     }
 
-    public int getTargetUID() {
-        return targetUID;
-    }
-
-    public void setTargetUID(int targetUID) {
-        this.targetUID = targetUID;
+    @Override
+    public String toString() {
+        return "NodeMessage{" +
+                "sourceUID=" + sourceUID +
+                '}';
     }
 }

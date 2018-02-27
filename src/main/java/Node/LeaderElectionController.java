@@ -41,16 +41,20 @@ public class LeaderElectionController {
         roundMessages.add(new LinkedList<LeaderElectionMessage>());
     }
 
+    public int getRoundNumber() {
+        return roundNumber;
+    }
+
     public void incrementRoundNumber(){
         roundNumber++;
     }
 
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
-        //TODO: change to trace
-        log.error("--------received and routed leader election message");
+        if(log.isDebugEnabled()) {
+            log.debug("--------received leader election message {}", message);
+        }
         enqueueMessage(message);
-        //TODO what if message if from future round and queue for this round hasn't been created yet?
         int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
         if(numberOfMessagesSoFarThisRound == numberOfNeighbors){
@@ -60,8 +64,9 @@ public class LeaderElectionController {
 
     @MessageMapping("/leaderAnnounce")
     public void leaderAnnounce(LeaderAnnounceMessage message) {
-        //TODO: change to trace
-        log.error("--------received and routed leader announce message");
+        if(log.isDebugEnabled()) {
+            log.debug("--------received leader announce message {}", message);
+        }
         leaderElectionService.leaderAnnounce(message.getLeaderUid());
     }
 
@@ -85,32 +90,25 @@ public class LeaderElectionController {
     }
 
     public void announceLeader(int leaderUid) throws MessagingException {
-        //TODO: change to trace
-        log.error("--------creating leader announce message");
+        log.trace("creating leader announce message");
         LeaderAnnounceMessage message = new LeaderAnnounceMessage(
                 thisNodeInfo.getUid(),
-                -1, //this is basically "we don't know" because we don't send message out to specific node
                 leaderUid
         );
         template.convertAndSend("/topic/leaderAnnounce", message);
-        //TODO: convert to trace
-        log.error("--------done electing leader");
+        log.trace("done electing leader, releasing semaphore");
         electingNewLeader.release();
     }
 
     public void sendLeaderElection() throws MessagingException {
-        //method 1 of broadcasting
-        //TODO: change to trace
-        log.error("--------creating leader election message");
+        log.trace("creating leader election message");
         LeaderElectionMessage message = new LeaderElectionMessage(
                 thisNodeInfo.getUid(),
-                -1,
                 roundNumber,
                 vote.getMaxUidSeen(),
                 vote.getMaxDistanceSeen()
                 );
         template.convertAndSend("/topic/leaderElection", message);
-        //TODO: change to trace
-        log.error("--------after sending leader election message");
+        log.trace("after sending leader election message");
     }
 }

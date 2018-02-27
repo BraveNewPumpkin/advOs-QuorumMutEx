@@ -34,8 +34,7 @@ public class StartLeaderElectionAndBfsTree implements Runnable{
         } catch (InterruptedException e) {
             log.warn("interrupted while waiting on leader to be elected");
         }
-        //TODO: convert to trace
-        log.error("--------moving onto building bfs tree");
+        log.trace("moving onto building bfs tree");
         if(vote.isThisNodeLeader()) {
             Runnable buildBfsTree = new BuildBfsTree(context);
             buildBfsTree.run();

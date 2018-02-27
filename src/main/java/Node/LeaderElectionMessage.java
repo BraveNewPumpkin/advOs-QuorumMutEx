@@ -9,11 +9,20 @@ public final class LeaderElectionMessage extends NodeMessage {
         super();
     }
 
-    public LeaderElectionMessage(int sourceUID, int targetUID, int roundNumber, int maxUidSeen, int maxDistanceSeen) {
-        super(sourceUID, targetUID);
+    public LeaderElectionMessage(int sourceUID, int roundNumber, int maxUidSeen, int maxDistanceSeen) {
+        super(sourceUID);
         this.roundNumber = roundNumber;
         this.maxUidSeen = maxUidSeen;
         this.maxDistanceSeen = maxDistanceSeen;
+    }
+
+    @Override
+    public String toString() {
+        return "LeaderElectionMessage{" +
+                "roundNumber=" + roundNumber +
+                ", maxUidSeen=" + maxUidSeen +
+                ", maxDistanceSeen=" + maxDistanceSeen +
+                "} " + super.toString();
     }
 
     public int getRoundNumber() {
@@ -39,4 +48,6 @@ public final class LeaderElectionMessage extends NodeMessage {
     public void setMaxDistanceSeen(int maxDistanceSeen) {
         this.maxDistanceSeen = maxDistanceSeen;
     }
+
+
 }
