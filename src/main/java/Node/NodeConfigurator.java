@@ -72,11 +72,13 @@ public class NodeConfigurator {
                         String hostName = words.remove();
                         int port = Integer.parseInt(words.remove());
 
-                        NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
-                        nodes.put(uid, nodeInfo);
                         if(thisNodeHostName.equals(hostName)){
                             thisNodeUid = uid;
                         }
+                        //TODO remove
+                        hostName = "localhost";
+                        NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
+                        nodes.put(uid, nodeInfo);
                         count++;
                     } else if(count < numberOfNodes * 2) {
                         if(thisNodeUid == null) {
