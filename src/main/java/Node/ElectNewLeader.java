@@ -19,7 +19,7 @@ public class ElectNewLeader implements Runnable{
         //TODO: change to trace
         log.error("-------before sleep to allow other instances to spin up");
         try {
-            Thread.sleep(5 * 1000);
+            Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
             log.debug("thread interrupted!");
         }
@@ -31,7 +31,7 @@ public class ElectNewLeader implements Runnable{
         //TODO: change to trace
         log.error("-------before sleep to allow other instances to SUBSCRIBE");
         try {
-            Thread.sleep(5 * 1000);
+            Thread.sleep(10 * 1000);
         } catch (InterruptedException e) {
             log.debug("thread interrupted!");
         }

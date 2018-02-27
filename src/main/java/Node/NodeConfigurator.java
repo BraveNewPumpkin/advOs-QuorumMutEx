@@ -78,20 +78,17 @@ public class NodeConfigurator {
                             thisNodeUid = uid;
                         }
                         count++;
-                    }
-
-                    if(count > numberOfNodes && thisNodeUid == null) {
-                        throw new ConfigurationException("could not find node matching HOSTNAME");
-                    }
-
-                    if(
-                        count > numberOfNodes
-                        && count <= numberOfNodes * 2
-                        && thisNodeUid.equals(Integer.parseInt(words.remove()))
-                    ) {
-                        for (String word : words) {
-                            neighbors.add(Integer.parseInt(word));
+                    } else if(count < numberOfNodes * 2) {
+                        if(thisNodeUid == null) {
+                            throw new ConfigurationException("could not find node matching HOSTNAME");
                         }
+                        int uid = Integer.parseInt(words.remove());
+                        if(thisNodeUid.equals(uid)) {
+                            for (String word : words) {
+                                neighbors.add(Integer.parseInt(word));
+                            }
+                        }
+                        count++;
                     }
                 }
             }

@@ -59,10 +59,10 @@ public class WebSocketConnector {
                 log.trace("starting stomp connection");
                 final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
                 //wait for other instances to spin up
-                if(!connectionTimeoutLatch.await(5, TimeUnit.SECONDS)) {
-                    log.error("failed ot connect in 5 seconds");
+                if(!connectionTimeoutLatch.await(30, TimeUnit.SECONDS)) {
+                    log.error("failed to connect in 30 seconds");
                 }
-                final StompSession session = future.get(5, TimeUnit.SECONDS);
+                final StompSession session = future.get(30, TimeUnit.SECONDS);
                 sessions.add(session);
             }catch(Throwable t) {
                 log.error(t.getMessage());
