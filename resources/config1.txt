@@ -3,8 +3,8 @@
 
 # Node#    Hostname          Port#
    5     dc02.utdallas.edu   1234
-   200   dc03.utdallas.edu   1233
-   8     dc04.utdallas.edu   1233
+   200   dc03.utdallas.edu   1235
+   8     dc04.utdallas.edu   1236
    184   dc05.utdallas.edu   1232
    9     dc06.utdallas.edu   1233
 

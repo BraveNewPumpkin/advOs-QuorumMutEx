@@ -9,10 +9,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import javax.naming.ConfigurationException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -30,7 +28,7 @@ public class NodeConfigurator {
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo(
         @Autowired ApplicationContext context
-    ) throws UnknownHostException{
+    ) throws UnknownHostException, ConfigurationException {
 //        String hostName = InetAddress.getLocalHost().getHostName();
 
         NodeConfig nodeConfig = readNodeConfig(context, thisHostName);
@@ -49,13 +47,13 @@ public class NodeConfigurator {
         return thisNodeInfo;
     }
 
-    public NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName){
+    private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
         Resource resource = context.getResource(nodeConfigUri);
         Map<Integer, NodeInfo> nodes = new HashMap<>();
         List<Integer> neighbors = new ArrayList<>();
         String line;
         int count = 0;
-        Integer thisNodeUid = new Integer(null);
+        Integer thisNodeUid = null;
         try(
                 InputStream is = resource.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -65,7 +63,10 @@ public class NodeConfigurator {
             int numberOfNodes = Integer.parseInt(br.readLine());
             while ((line = br.readLine()) != null) {
                 if (!line.startsWith("#") && !line.matches("^\\s*\\R")) {
-                    Queue<String> words = new LinkedList<>(Arrays.asList(line.split("\\s+")));
+                    Queue<String> words = new LinkedList<>(Arrays.asList(line.trim().split("\\s+")));
+                    if(words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
+                        continue;
+                    }
                     if(count < numberOfNodes){
                         int uid = Integer.parseInt(words.remove());
                         String hostName = words.remove();
@@ -77,6 +78,10 @@ public class NodeConfigurator {
                             thisNodeUid = uid;
                         }
                         count++;
+                    }
+
+                    if(thisNodeUid == null) {
+                        throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
 
                     if(
@@ -91,7 +96,7 @@ public class NodeConfigurator {
                 }
             }
         }catch(IOException e){
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
         return new NodeConfig(thisNodeUid, nodes, neighbors);
     }
