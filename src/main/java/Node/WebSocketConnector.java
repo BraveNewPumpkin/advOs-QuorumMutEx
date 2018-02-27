@@ -3,18 +3,18 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.client.WebSocketClient;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
-import org.springframework.web.socket.sockjs.client.SockJsClient;
-import org.springframework.web.socket.sockjs.client.Transport;
-import org.springframework.web.socket.sockjs.client.WebSocketTransport;
+import org.springframework.web.socket.sockjs.client.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
@@ -40,8 +40,15 @@ public class WebSocketConnector {
         Consumer<NodeInfo> sessionBuildingLambda = (neighbor -> {
             final CountDownLatch connectionTimeoutLatch = new CountDownLatch(1);
             final StompSessionHandler sessionHandler = new NodeStompSessionHandler(context, connectionTimeoutLatch);
-            final List<Transport> transports = new ArrayList<>(1);
             final WebSocketClient client = new StandardWebSocketClient();
+            final List<Transport> transports = new ArrayList<>(2);
+            final RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
+            final RestTemplate restTemplate = restTemplateBuilder
+//                    .setConnectTimeout(30 *1000)
+//                    .setReadTimeout(30 *1000)
+                    .build();
+            final XhrTransport xhrTransport = new RestTemplateXhrTransport(restTemplate);
+            transports.add(xhrTransport);
             transports.add(new WebSocketTransport(client));
             final SockJsClient sockJsClient = new SockJsClient(transports);
             final WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
@@ -73,5 +80,4 @@ public class WebSocketConnector {
 
         return Collections.unmodifiableList(Arrays.asList(sessions.toArray(new StompSession[0])));
     }
-
 }
