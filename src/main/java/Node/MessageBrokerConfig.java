@@ -30,11 +30,5 @@ public class MessageBrokerConfig extends AbstractWebSocketMessageBrokerConfigure
                 .setAllowedOrigins("*")
                 .withSockJS();
     }
-
-//    @Override
-//    public boolean configureMessageConverters(List<MessageConverter> messageConverters){
-//        messageConverters.add(new MappingJackson2MessageConverter());
-//        return false;
-//    }
 }
 
