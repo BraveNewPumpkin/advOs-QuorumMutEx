@@ -44,7 +44,6 @@ public class WebSocketConnector {
             final WebSocketClient client = new StandardWebSocketClient();
             transports.add(new WebSocketTransport(client));
             final SockJsClient sockJsClient = new SockJsClient(transports);
-//            final WebSocketClient sockJsClient = new SockJsClient(transports);
             final WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
             stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
