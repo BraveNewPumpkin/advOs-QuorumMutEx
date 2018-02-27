@@ -80,7 +80,7 @@ public class NodeConfigurator {
                         count++;
                     }
 
-                    if(thisNodeUid == null) {
+                    if(count > numberOfNodes && thisNodeUid == null) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
 
