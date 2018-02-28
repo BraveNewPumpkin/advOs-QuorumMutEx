@@ -10,6 +10,7 @@ import org.springframework.stereotype.Controller;
 
 import java.util.*;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReadWriteLock;
 
 @Controller
 @Slf4j
@@ -19,6 +20,7 @@ public class LeaderElectionController {
     private final ThisNodeInfo thisNodeInfo;
     private final LeaderElectionService.Vote vote;
     private final Semaphore electingNewLeader;
+    private final ReadWriteLock sendingInitialLeaderElectionMessage;
 
     private final List<Queue<LeaderElectionMessage>> roundMessages;
     private int roundNumber;
@@ -28,13 +30,15 @@ public class LeaderElectionController {
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader,
+            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage") ReadWriteLock sendingInitialLeaderElectionMessage
             ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.vote = leaderElectionService.getVote();
         this.electingNewLeader = electingNewLeader;
+        this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
 
         roundNumber = 0;
         roundMessages = new ArrayList<>(1);
@@ -51,14 +55,20 @@ public class LeaderElectionController {
 
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
-        if(log.isDebugEnabled()) {
-            log.debug("--------received leader election message {}", message);
-        }
-        enqueueMessage(message);
-        int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
-        int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-        if(numberOfMessagesSoFarThisRound == numberOfNeighbors){
-            leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
+        sendingInitialLeaderElectionMessage.readLock().lock();
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("--------received leader election message {}", message);
+            }
+
+            enqueueMessage(message);
+            int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
+            int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
+            if (numberOfMessagesSoFarThisRound == numberOfNeighbors) {
+                leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
+            }
+        }finally {
+            sendingInitialLeaderElectionMessage.readLock().unlock();
         }
     }
 

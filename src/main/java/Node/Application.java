@@ -13,8 +13,8 @@ public class Application {
             log.trace("before running application");
         }
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        StartLeaderElectionAndBfsTree startLeaderElectionAndBfsTree = context.getBean(StartLeaderElectionAndBfsTree.class);
-        Thread thread = new Thread(startLeaderElectionAndBfsTree);
+        DoLeaderElectionAndBfsTree doLeaderElectionAndBfsTree = context.getBean(DoLeaderElectionAndBfsTree.class);
+        Thread thread = new Thread(doLeaderElectionAndBfsTree);
         if(log.isTraceEnabled()) {
             log.trace("before running sendLeaderElection thread");
         }
