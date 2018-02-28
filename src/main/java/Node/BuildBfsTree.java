@@ -1,42 +1,28 @@
 package Node;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
 @Slf4j
 public class BuildBfsTree implements Runnable{
-    private ApplicationContext context;
+    private final BfsTreeController bfsTreeController;
 
-    public BuildBfsTree(ApplicationContext context){
-        this.context = context;
+    @Autowired
+    public BuildBfsTree(
+        BfsTreeController bfsTreeController
+    ){
+        this.bfsTreeController = bfsTreeController;
     }
 
     @Override
     public void run(){
-        //TODO: change to trace
-        log.error("-------before sleep to allow other instances to spin up");
-        try {
-            Thread.sleep(5 * 1000);
-        } catch (InterruptedException e) {
-            log.debug("thread interrupted!");
-        }
-        //TODO: change to trace
-        log.error("--------before getting sessions");
-        WebSocketConnector webSocketConnector = context.getBean(WebSocketConnector.class);
-        List<StompSession> sessions = webSocketConnector.getSessions(context);
-        //TODO: change to trace
-        log.error("-------before sleep to allow other instances to SUBSCRIBE");
-        try {
-            Thread.sleep(5 * 1000);
-        } catch (InterruptedException e) {
-            log.debug("thread interrupted!");
-        }
-        BfsTreeController bfsTreeController = context.getBean(BfsTreeController.class);
-        //TODO: change to trace
-        log.error("--------before sending bfs tree message");
+        log.trace("before sending bfs tree message");
         bfsTreeController.sendBfsTree();
     }
 }

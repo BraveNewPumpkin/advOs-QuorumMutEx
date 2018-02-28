@@ -14,16 +14,22 @@ import java.util.concurrent.locks.ReadWriteLock;
 @Slf4j
 public class ElectNewLeader implements Runnable{
     private final ApplicationContext context;
+    private final WebSocketConnector webSocketConnector;
+    private final LeaderElectionController leaderElectionController;
     private ReadWriteLock sendingInitialLeaderElectionMessage;
 
     @Autowired
     public ElectNewLeader(
         ApplicationContext context,
+        WebSocketConnector webSocketConnector,
+        LeaderElectionController leaderElectionController,
         @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
         ReadWriteLock sendingInitialLeaderElectionMessage
     ){
         this.context = context;
+        this.webSocketConnector = webSocketConnector;
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
+        this.leaderElectionController = leaderElectionController;
     }
 
     @Override
@@ -37,7 +43,6 @@ public class ElectNewLeader implements Runnable{
                 log.warn("leader election thread interrupted!");
             }
             log.trace("before getting sessions");
-            WebSocketConnector webSocketConnector = context.getBean(WebSocketConnector.class);
             //get sessions to ensure that they are initialized
             List<StompSession> sessions = webSocketConnector.getSessions(context);
             log.info("sleeping to allow other instances to SUBSCRIBE");
@@ -46,7 +51,6 @@ public class ElectNewLeader implements Runnable{
             } catch (InterruptedException e) {
                 log.warn("thread interrupted!");
             }
-            LeaderElectionController leaderElectionController = context.getBean(LeaderElectionController.class);
             log.trace("before sending leader election message");
             leaderElectionController.sendLeaderElection();
         } finally {
