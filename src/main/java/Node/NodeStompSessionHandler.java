@@ -50,7 +50,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     @Override
     public void handleFrame(StompHeaders stompHeaders, Object message) {
         if(log.isDebugEnabled()) {
-            log.error("handling frame. Destination: {}", stompHeaders.getDestination());
+            log.debug("handling frame. Destination: {}", stompHeaders.getDestination());
         }
         if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
             log.trace("calling LeaderElectionController.leaderElection");
