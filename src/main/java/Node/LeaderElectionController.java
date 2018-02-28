@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReadWriteLock;
 
@@ -41,8 +42,8 @@ public class LeaderElectionController {
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
 
         roundNumber = 0;
-        roundMessages = Collections.synchronizedList(new ArrayList<>(1));
-        roundMessages.add(new LinkedList<LeaderElectionMessage>());
+        roundMessages = new ArrayList<>(1);
+        roundMessages.add(new ConcurrentLinkedQueue<LeaderElectionMessage>());
     }
 
     public int getRoundNumber() {
@@ -55,27 +56,34 @@ public class LeaderElectionController {
 
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
-        sendingInitialLeaderElectionMessage.readLock().lock();
-        try {
+        if(leaderElectionService.hasLeader()) {
             if (log.isDebugEnabled()) {
-                log.debug("--------received leader election message {}", message);
+                log.debug("<---ignoring leader election message {}", message);
             }
-
-            enqueueMessage(message);
-            int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
-            int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-            if (numberOfMessagesSoFarThisRound == numberOfNeighbors) {
-                leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received leader election message {}", message);
             }
-        }finally {
-            sendingInitialLeaderElectionMessage.readLock().unlock();
+            sendingInitialLeaderElectionMessage.readLock().lock();
+            try {
+                enqueueMessage(message);
+                synchronized (this) {
+                    int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
+                    int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
+                    if (numberOfMessagesSoFarThisRound == numberOfNeighbors) {
+                        leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
+                    }
+                }
+            } finally {
+                sendingInitialLeaderElectionMessage.readLock().unlock();
+            }
         }
     }
 
     @MessageMapping("/leaderAnnounce")
     public void leaderAnnounce(LeaderAnnounceMessage message) {
         if(log.isDebugEnabled()) {
-            log.debug("--------received leader announce message {}", message);
+            log.debug("<---received leader announce message {}", message);
         }
         leaderElectionService.leaderAnnounce(message.getLeaderUid());
     }
@@ -84,41 +92,41 @@ public class LeaderElectionController {
         int messageRoundNumber = message.getRoundNumber();
         int currentRoundIndex = roundMessages.size() - 1;
         if(currentRoundIndex != messageRoundNumber){
-            for(int i = currentRoundIndex; i < messageRoundNumber; i++) {
-                roundMessages.add(new LinkedList<>());
+            for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
+                roundMessages.add(new ConcurrentLinkedQueue<>());
             }
         }
-        roundMessages.get(currentRoundIndex).add(message);
+        roundMessages.get(messageRoundNumber).add(message);
     }
 
     private Queue<LeaderElectionMessage> getMessagesThisRound() {
         return roundMessages.get(roundNumber);
     }
 
-    public void announceSelfLeader() throws MessagingException {
-        announceLeader(thisNodeInfo.getUid());
-    }
-
     public void announceLeader(int leaderUid) throws MessagingException {
-        log.trace("creating leader announce message");
         LeaderAnnounceMessage message = new LeaderAnnounceMessage(
                 thisNodeInfo.getUid(),
                 leaderUid
         );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending leader announce message: {}", message);
+        }
         template.convertAndSend("/topic/leaderAnnounce", message);
         log.trace("done electing leader, releasing semaphore");
         electingNewLeader.release();
     }
 
     public void sendLeaderElection() throws MessagingException {
-        log.trace("creating leader election message");
         LeaderElectionMessage message = new LeaderElectionMessage(
                 thisNodeInfo.getUid(),
                 roundNumber,
                 vote.getMaxUidSeen(),
                 vote.getMaxDistanceSeen()
                 );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending leader election message: {}", message);
+        }
         template.convertAndSend("/topic/leaderElection", message);
-        log.trace("after sending leader election message");
+        log.trace("leader election message sent");
     }
 }

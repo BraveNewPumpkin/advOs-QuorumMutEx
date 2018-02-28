@@ -22,6 +22,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         session.subscribe("/topic/leaderElection", this);
+        session.subscribe("/topic/leaderAnnounce", this);
         session.subscribe("/topic/bfsTree", this);
         //we've connected so cancel the timeout
         connectionTimeoutLatch.countDown();

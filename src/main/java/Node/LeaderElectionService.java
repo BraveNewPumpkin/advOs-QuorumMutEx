@@ -12,10 +12,10 @@ import java.util.Queue;
 @Service
 @Slf4j
 public class LeaderElectionService {
-    private LeaderElectionController leaderElectionController;
-    private ThisNodeInfo thisNodeInfo;
-    private Vote vote;
+    private final LeaderElectionController leaderElectionController;
+    private final ThisNodeInfo thisNodeInfo;
 
+    private final Vote vote;
     private int roundsWithoutChange;
     private int leaderUid;
     private boolean hasLeader;
@@ -33,29 +33,35 @@ public class LeaderElectionService {
         hasLeader = false;
     }
 
+    public boolean hasLeader() {
+        return hasLeader;
+    }
+
     public void processNeighborlyAdvice(Queue<LeaderElectionMessage> electionMessages) {
-        boolean didVoteChange = false;
-        synchronized (electionMessages) {
-            for (LeaderElectionMessage nextMessage : electionMessages) {
-                int neighborMaxUid = nextMessage.getMaxUidSeen();
-                int neighborMaxDistanceSeen = nextMessage.getMaxDistanceSeen();
-                if (neighborMaxUid > vote.getMaxUidSeen()) {
-                    vote.setMaxUidSeen(neighborMaxUid);
-                    vote.setMaxDistanceSeen(neighborMaxDistanceSeen + 1);
-                    didVoteChange = true;
-                    if (log.isDebugEnabled()) {
-                        log.debug("updated vote uid to: {} from message: {} in round: {}", neighborMaxUid, nextMessage, leaderElectionController.getRoundNumber());
-                    }
-                } else if (neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("updated distance to: {} from message: {} in round: {}", neighborMaxDistanceSeen, nextMessage, leaderElectionController.getRoundNumber());
-                    }
-                    //Note: we don't count this as vote changing
-                    vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
+        boolean didMaxUidChange = false;
+        boolean didDistanceChange = false;
+        for (LeaderElectionMessage nextMessage : electionMessages) {
+            int neighborMaxUid = nextMessage.getMaxUidSeen();
+            int neighborMaxDistanceSeen = nextMessage.getMaxDistanceSeen();
+            if (neighborMaxUid > vote.getMaxUidSeen()) {
+                vote.setMaxUidSeen(neighborMaxUid);
+                vote.setMaxDistanceSeen(neighborMaxDistanceSeen + 1);
+                didMaxUidChange = true;
+                didDistanceChange = true;
+                if (log.isDebugEnabled()) {
+                    log.debug("updated vote uid to: {} in round: {}", neighborMaxUid, leaderElectionController.getRoundNumber());
+                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionController.getRoundNumber());
                 }
+            } else if (neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionController.getRoundNumber());
+                }
+                //Note: we don't count this as vote changing
+                vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
+                didDistanceChange = true;
             }
         }
-        if(didVoteChange) {
+        if(didMaxUidChange) {
             roundsWithoutChange = 0;
         } else {
             roundsWithoutChange++;
@@ -65,12 +71,11 @@ public class LeaderElectionService {
         }
         //increment round in controller before control is handed back
         leaderElectionController.incrementRoundNumber();
-        if(roundsWithoutChange >= 3 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
+        if(roundsWithoutChange >= 2 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
             log.debug("--------I am leader");
             vote.setThisNodeLeader(true);
-            leaderElectionController.announceSelfLeader();
-        } else if(didVoteChange) {
-            //only send if we received a message that changed vote
+            leaderAnnounce(thisNodeInfo.getUid());
+        } else {
             leaderElectionController.sendLeaderElection();
         }
     }
