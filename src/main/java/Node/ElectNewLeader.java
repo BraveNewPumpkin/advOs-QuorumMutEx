@@ -18,7 +18,7 @@ public class ElectNewLeader implements Runnable{
     public void run(){
         log.info("sleeping to allow other instances to spin up");
         try {
-            Thread.sleep(20 * 1000);
+            Thread.sleep(30 * 1000);
         } catch (InterruptedException e) {
             log.warn("leader election thread interrupted!");
         }
@@ -28,7 +28,7 @@ public class ElectNewLeader implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions(context);
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(30 * 1000);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
