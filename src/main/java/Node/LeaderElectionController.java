@@ -41,7 +41,7 @@ public class LeaderElectionController {
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
 
         roundNumber = 0;
-        roundMessages = new ArrayList<>(1);
+        roundMessages = Collections.synchronizedList(new ArrayList<>(1));
         roundMessages.add(new LinkedList<LeaderElectionMessage>());
     }
 

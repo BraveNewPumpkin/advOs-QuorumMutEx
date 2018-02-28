@@ -35,22 +35,24 @@ public class LeaderElectionService {
 
     public void processNeighborlyAdvice(Queue<LeaderElectionMessage> electionMessages) {
         boolean didVoteChange = false;
-        for(LeaderElectionMessage nextMessage : electionMessages) {
-            int neighborMaxUid = nextMessage.getMaxUidSeen();
-            int neighborMaxDistanceSeen = nextMessage.getMaxDistanceSeen();
-            if(neighborMaxUid > vote.getMaxUidSeen()) {
-                vote.setMaxUidSeen(neighborMaxUid);
-                vote.setMaxDistanceSeen(neighborMaxDistanceSeen + 1);
-                didVoteChange = true;
-                if(log.isDebugEnabled()) {
-                    log.debug("updated vote uid to: {} from message: {} in round: {}", neighborMaxUid, nextMessage, leaderElectionController.getRoundNumber());
+        synchronized (electionMessages) {
+            for (LeaderElectionMessage nextMessage : electionMessages) {
+                int neighborMaxUid = nextMessage.getMaxUidSeen();
+                int neighborMaxDistanceSeen = nextMessage.getMaxDistanceSeen();
+                if (neighborMaxUid > vote.getMaxUidSeen()) {
+                    vote.setMaxUidSeen(neighborMaxUid);
+                    vote.setMaxDistanceSeen(neighborMaxDistanceSeen + 1);
+                    didVoteChange = true;
+                    if (log.isDebugEnabled()) {
+                        log.debug("updated vote uid to: {} from message: {} in round: {}", neighborMaxUid, nextMessage, leaderElectionController.getRoundNumber());
+                    }
+                } else if (neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("updated distance to: {} from message: {} in round: {}", neighborMaxDistanceSeen, nextMessage, leaderElectionController.getRoundNumber());
+                    }
+                    //Note: we don't count this as vote changing
+                    vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
                 }
-            } else if(neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
-                if(log.isDebugEnabled()) {
-                    log.debug("updated distance to: {} from message: {} in round: {}", neighborMaxDistanceSeen, nextMessage, leaderElectionController.getRoundNumber());
-                }
-                //Note: we don't count this as vote changing
-                vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
             }
         }
         if(didVoteChange) {
