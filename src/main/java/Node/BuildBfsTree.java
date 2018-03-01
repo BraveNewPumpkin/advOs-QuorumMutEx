@@ -23,6 +23,6 @@ public class BuildBfsTree implements Runnable{
     @Override
     public void run(){
         log.trace("before sending bfs tree message");
-        bfsTreeController.sendBfsTree();
+        bfsTreeController.sendBfsTreeSearch();
     }
 }

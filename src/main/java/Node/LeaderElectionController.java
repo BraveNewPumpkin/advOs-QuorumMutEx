@@ -66,8 +66,8 @@ public class LeaderElectionController {
             }
             sendingInitialLeaderElectionMessage.readLock().lock();
             try {
-                enqueueMessage(message);
                 synchronized (this) {
+                    enqueueMessage(message);
                     int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
                     int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
                     if (numberOfMessagesSoFarThisRound == numberOfNeighbors) {

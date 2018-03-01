@@ -23,7 +23,8 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         session.subscribe("/topic/leaderElection", this);
         session.subscribe("/topic/leaderAnnounce", this);
-        session.subscribe("/topic/bfsTree", this);
+        session.subscribe("/topic/bfsTreeSearch", this);
+        session.subscribe("/topic/bfsTreeAcknowledge", this);
         //we've connected so cancel the timeout
         connectionTimeoutLatch.countDown();
 
@@ -38,8 +39,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             payloadType = LeaderElectionMessage.class;
         } else if(stompHeaders.getDestination().equals("/topic/leaderAnnounce")) {
             payloadType = LeaderAnnounceMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
-            payloadType = BfsTreeMessage.class;
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeSearch")) {
+            payloadType = BfsTreeSearchMessage.class;
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeAcknowledge")) {
+            payloadType = BfsTreeAcknowledgeMessage.class;
         } else {
             if(log.isErrorEnabled()) {
                 log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -61,10 +64,14 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             log.trace("calling LeaderElectionController.leaderAnnounce");
             LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage)message;
             leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTree")) {
-            log.trace("calling BfsTreeService.bfsTree");
-            BfsTreeMessage bfsTreeMessage = (BfsTreeMessage)message;
-            bfsTreeController.bfsTree(bfsTreeMessage);
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeSearch")) {
+            log.trace("calling BfsTreeService.bfsTreeSearch");
+            BfsTreeSearchMessage bfsTreeSearchMessage = (BfsTreeSearchMessage)message;
+            bfsTreeController.bfsTreeSearch(bfsTreeSearchMessage);
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeAcknowledge")) {
+            log.trace("calling BfsTreeService.bfsTreeAcknowledge");
+            BfsTreeAcknowledgeMessage bfsTreeAcknowledgeMessage = (BfsTreeAcknowledgeMessage)message;
+            bfsTreeController.bfsTreeAcknowledge(bfsTreeAcknowledgeMessage);
         }
     }
 
