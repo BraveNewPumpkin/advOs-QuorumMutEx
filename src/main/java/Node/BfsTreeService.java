@@ -63,6 +63,9 @@ public class BfsTreeService {
             this.thisDistanceFromRoot = thisDistanceFromRoot;
             bfsTreeController.sendBfsTreeSearch();
             bfsTreeController.sendBfsTreeAcknowledge();
+            if(log.isTraceEnabled()){
+                log.trace("uid: {} has distance from root: {}", thisNodeInfo.getUid(), thisDistanceFromRoot);
+            }
         }
     }
 
