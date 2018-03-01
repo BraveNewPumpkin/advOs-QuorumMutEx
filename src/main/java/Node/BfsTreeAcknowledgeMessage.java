@@ -2,15 +2,17 @@ package Node;
 
 public class BfsTreeAcknowledgeMessage extends NodeMessage {
     private int targetUid;
-    private int distance;
+    private int distanceToRoot;
+    private Tree<Integer> tree;
 
     public BfsTreeAcknowledgeMessage() {
     }
 
-    public BfsTreeAcknowledgeMessage(int sourceUID, int targetUid, int distance) {
+    public BfsTreeAcknowledgeMessage(int sourceUID, int targetUid, int distanceToRoot, Tree<Integer> tree) {
         super(sourceUID);
         this.targetUid = targetUid;
-        this.distance = distance;
+        this.distanceToRoot = distanceToRoot;
+        this.tree = tree;
     }
 
     public int getTargetUid() {

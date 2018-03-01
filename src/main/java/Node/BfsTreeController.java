@@ -46,7 +46,7 @@ public class BfsTreeController {
         if (log.isDebugEnabled()) {
             log.debug("<---received bfs tree acknowledge message {}", message);
         }
-        //TODO process message, use service, build tree
+        bfsTreeService.acknowledge(message.getTargetUid());
     }
 
     public void sendBfsTreeSearch() throws MessagingException {
@@ -65,7 +65,7 @@ public class BfsTreeController {
         BfsTreeAcknowledgeMessage message = new BfsTreeAcknowledgeMessage(
                 thisNodeInfo.getUid(),
                 bfsTreeService.getParentUID(),
-                bfsTreeService.getDistanceToNeighborFromRoot()
+                bfsTreeService.getThisDistanceFromRoot()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending BfsTreeAcknowledge message: {}", message);

@@ -44,13 +44,20 @@ public class BfsTreeService {
         isMarked = false;
     }
 
-    public void search(int parentUID, int thisDistanceFromRoot) {
+    public void search(int receivedUid, int thisDistanceFromRoot) {
         if(!isMarked){
             //TODO set parent
             isMarked = true;
-            this.parentUID = parentUID;
+            this.parentUID = receivedUid;
             this.thisDistanceFromRoot = thisDistanceFromRoot;
             bfsTreeController.sendBfsTreeSearch();
+            bfsTreeController.sendBfsTreeAcknowledge();
+        }
+    }
+
+    public void acknowledge(int targetUid) {
+        if(targetUid == thisNodeInfo.getUid()) {
+            bfsTreeController.sendBfsTreeAcknowledge();
         }
     }
 
