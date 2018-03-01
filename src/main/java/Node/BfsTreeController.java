@@ -52,7 +52,6 @@ public class BfsTreeController {
     public void sendBfsTreeSearch() throws MessagingException {
         BfsTreeSearchMessage message = new BfsTreeSearchMessage(
             thisNodeInfo.getUid(),
-            bfsTreeService.getRoundNumber(),
             bfsTreeService.getDistanceToNeighborFromRoot()
         );
         if(log.isDebugEnabled()){

@@ -46,6 +46,7 @@ public class BfsTreeService {
     public void search(BfsTreeSearchMessage messages) {
         if(!isMarked){
             //TODO implement
+            isMarked = true;
             bfsTreeController.sendBfsTreeSearch();
         }
     }
