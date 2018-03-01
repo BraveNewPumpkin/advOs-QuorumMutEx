@@ -69,6 +69,7 @@ public class BfsTreeService {
     public void acknowledge(int sourceUid, int targetUid) {
         if(targetUid == thisNodeInfo.getUid()) {
             children.add(sourceUid);
+            //root and have received ack from all children
             if(isRootNode && children.size() == thisNodeInfo.getNeighbors().size()){
                 bfsTreeController.sendBfsReadyToBuildMessage();
             } else {

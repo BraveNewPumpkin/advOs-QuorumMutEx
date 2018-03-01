@@ -35,8 +35,7 @@ public class BfsTreeController {
         }
         synchronized (this) {
             bfsTreeService.search(message.getSourceUID(), message.getDistance());
-        }
-        //TODO process message, use service, build tree
+       }
     }
 
     @MessageMapping("/bfsTreeAcknowledge")
@@ -44,7 +43,9 @@ public class BfsTreeController {
         if (log.isDebugEnabled()) {
             log.debug("<---received bfs tree acknowledge message {}", message);
         }
-        bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
+        synchronized (this) {
+            bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
+        }
     }
 
     @MessageMapping("/bfsTreeReadyToBuild")

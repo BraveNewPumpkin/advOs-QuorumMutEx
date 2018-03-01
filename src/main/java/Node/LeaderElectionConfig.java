@@ -22,5 +22,4 @@ public class LeaderElectionConfig {
         ReadWriteLock sendingInitialLeaderElectionMessage = new ReentrantReadWriteLock();
         return sendingInitialLeaderElectionMessage;
     }
-
-    }
+}

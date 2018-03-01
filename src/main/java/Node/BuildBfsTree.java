@@ -25,6 +25,7 @@ public class BuildBfsTree implements Runnable{
 
     @Override
     public void run(){
+        //TODO move this work to a service level function
         log.trace("before sending bfs tree message");
         bfsTreeService.setRootNode(true);
         bfsTreeService.setMarked(true);
