@@ -34,7 +34,7 @@ public class BfsTreeController {
             log.debug("<---received bfs tree search message {}", message);
         }
         synchronized (this) {
-            bfsTreeService.search(message);
+            bfsTreeService.search(message.getSourceUID(), message.getDistance());
         }
 
         //TODO process message, use service, build tree
@@ -57,7 +57,20 @@ public class BfsTreeController {
         if(log.isDebugEnabled()){
             log.debug("--->sending BfsTreeSearch message: {}", message);
         }
-        template.convertAndSend("/topic/bfsTree", message);
+        template.convertAndSend("/topic/bfsTreeSearch", message);
         log.trace("BfsTreeSearch message sent");
+    }
+
+    public void sendBfsTreeAcknowledge() throws MessagingException {
+        BfsTreeAcknowledgeMessage message = new BfsTreeAcknowledgeMessage(
+                thisNodeInfo.getUid(),
+                bfsTreeService.getParentUID(),
+                bfsTreeService.getDistanceToNeighborFromRoot()
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending BfsTreeAcknowledge message: {}", message);
+        }
+        template.convertAndSend("/topic/bfsTreeAcknowledge", message);
+        log.trace("BfsTreeAcknowledge message sent");
     }
 }

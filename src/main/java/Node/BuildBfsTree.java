@@ -12,17 +12,22 @@ import java.util.List;
 @Slf4j
 public class BuildBfsTree implements Runnable{
     private final BfsTreeController bfsTreeController;
+    private final BfsTreeService bfsTreeService;
 
     @Autowired
     public BuildBfsTree(
-        BfsTreeController bfsTreeController
+        BfsTreeController bfsTreeController,
+        BfsTreeService bfsTreeService
     ){
         this.bfsTreeController = bfsTreeController;
+        this.bfsTreeService = bfsTreeService;
     }
 
     @Override
     public void run(){
         log.trace("before sending bfs tree message");
+        bfsTreeService.setMarked(true);
+        bfsTreeService.setThisDistanceFromRoot(0);
         bfsTreeController.sendBfsTreeSearch();
     }
 }

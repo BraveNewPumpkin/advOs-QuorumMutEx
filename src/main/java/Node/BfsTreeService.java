@@ -32,6 +32,7 @@ public class BfsTreeService {
     private final ThisNodeInfo thisNodeInfo;
 
     private int thisDistanceFromRoot;
+
     private boolean isMarked;
     private int parentUID;
 
@@ -43,12 +44,18 @@ public class BfsTreeService {
         isMarked = false;
     }
 
-    public void search(BfsTreeSearchMessage messages) {
+    public void search(int parentUID, int thisDistanceFromRoot) {
         if(!isMarked){
-            //TODO implement
+            //TODO set parent
             isMarked = true;
+            this.parentUID = parentUID;
+            this.thisDistanceFromRoot = thisDistanceFromRoot;
             bfsTreeController.sendBfsTreeSearch();
         }
+    }
+
+    public void setThisDistanceFromRoot(int thisDistanceFromRoot) {
+        this.thisDistanceFromRoot = thisDistanceFromRoot;
     }
 
     public int getThisDistanceFromRoot() {
@@ -57,6 +64,10 @@ public class BfsTreeService {
 
     public int getDistanceToNeighborFromRoot() {
         return thisDistanceFromRoot + 1;
+    }
+
+    public void setMarked(boolean marked) {
+        isMarked = marked;
     }
 
     public boolean isMarked() {
