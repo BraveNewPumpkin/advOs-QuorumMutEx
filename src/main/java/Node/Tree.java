@@ -12,6 +12,12 @@ public class Tree<T> {
         root.children = new ArrayList<Node<T>>();
     }
 
+    public void addChildren(List<Tree<T>> childTrees) {
+        childTrees.forEach(childTree -> {
+            root.children.add(childTree.root);
+        });
+    }
+
     public static class Node<T> {
         private T data;
         private Node<T> parent;

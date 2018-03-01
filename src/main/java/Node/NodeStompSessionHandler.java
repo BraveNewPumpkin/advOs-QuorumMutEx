@@ -43,6 +43,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             payloadType = BfsTreeSearchMessage.class;
         } else if(stompHeaders.getDestination().equals("/topic/bfsTreeAcknowledge")) {
             payloadType = BfsTreeAcknowledgeMessage.class;
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeReadyToBuild")) {
+            payloadType = BfsTreeReadyToBuildMessage.class;
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeBuild")) {
+            payloadType = BfsTreeBuildMessage.class;
         } else {
             if(log.isErrorEnabled()) {
                 log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -72,6 +76,14 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             log.trace("calling BfsTreeService.bfsTreeAcknowledge");
             BfsTreeAcknowledgeMessage bfsTreeAcknowledgeMessage = (BfsTreeAcknowledgeMessage)message;
             bfsTreeController.bfsTreeAcknowledge(bfsTreeAcknowledgeMessage);
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeReadyToBuild")) {
+            log.trace("calling BfsTreeService.bfsTreeReadyToBuild");
+            BfsTreeReadyToBuildMessage bfsTreeReadyToBuildMessage = (BfsTreeReadyToBuildMessage)message;
+            bfsTreeController.bfsTreeReadyToBuild(bfsTreeReadyToBuildMessage);
+        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeBuild")) {
+            log.trace("calling BfsTreeService.bfsTreeBuild");
+            BfsTreeBuildMessage bfsTreeBuildMessage = (BfsTreeBuildMessage)message;
+            bfsTreeController.bfsTreeBuild(bfsTreeBuildMessage);
         }
     }
 

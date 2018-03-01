@@ -26,6 +26,7 @@ public class BuildBfsTree implements Runnable{
     @Override
     public void run(){
         log.trace("before sending bfs tree message");
+        bfsTreeService.setRootNode(true);
         bfsTreeService.setMarked(true);
         bfsTreeService.setThisDistanceFromRoot(0);
         bfsTreeController.sendBfsTreeSearch();

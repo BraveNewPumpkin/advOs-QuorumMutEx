@@ -36,9 +36,7 @@ public class BfsTreeController {
         synchronized (this) {
             bfsTreeService.search(message.getSourceUID(), message.getDistance());
         }
-
         //TODO process message, use service, build tree
-
     }
 
     @MessageMapping("/bfsTreeAcknowledge")
@@ -46,7 +44,27 @@ public class BfsTreeController {
         if (log.isDebugEnabled()) {
             log.debug("<---received bfs tree acknowledge message {}", message);
         }
-        bfsTreeService.acknowledge(message.getTargetUid());
+        bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
+    }
+
+    @MessageMapping("/bfsTreeReadyToBuild")
+    public void bfsTreeReadyToBuild(BfsTreeReadyToBuildMessage message) {
+        if (log.isDebugEnabled()) {
+            log.debug("<---received bfs tree ready to build message {}", message);
+        }
+        synchronized (this) {
+            bfsTreeService.buildReady();
+        }
+    }
+
+    @MessageMapping("/bfsTreeBuild")
+    public void bfsTreeBuild(BfsTreeBuildMessage message) {
+        if (log.isDebugEnabled()) {
+            log.debug("<---received bfs tree build message {}", message);
+        }
+        synchronized (this) {
+            bfsTreeService.build(message.getParentUid(), message.getTree());
+        }
     }
 
     public void sendBfsTreeSearch() throws MessagingException {
@@ -72,5 +90,29 @@ public class BfsTreeController {
         }
         template.convertAndSend("/topic/bfsTreeAcknowledge", message);
         log.trace("BfsTreeAcknowledge message sent");
+    }
+
+    public void sendBfsReadyToBuildMessage() throws MessagingException {
+        BfsTreeReadyToBuildMessage message = new BfsTreeReadyToBuildMessage(
+                thisNodeInfo.getUid()
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending bfs ready to build message: {}", message);
+        }
+        template.convertAndSend("/topic/bfsTreeReadyToBuild", message);
+        log.trace("BfsTreeReadyToBuildMessage message sent");
+    }
+
+    public void sendBfsBuildMessage() throws MessagingException {
+        BfsTreeBuildMessage message = new BfsTreeBuildMessage(
+                thisNodeInfo.getUid(),
+                bfsTreeService.getParentUID(),
+                bfsTreeService.getTree()
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending bfs build message: {}", message);
+        }
+        template.convertAndSend("/topic/bfsTreeBuild", message);
+        log.trace("BfsTreeBuildMessage message sent");
     }
 }
