@@ -1,14 +1,14 @@
 package Node;
 
-public final class BfsTreeSearchMessage extends NodeRoundSynchronizableMessage {
+public final class BfsTreeSearchMessage extends NodeMessage {
     private int distance;
 
     public BfsTreeSearchMessage() {
         super();
     }
 
-    public BfsTreeSearchMessage(int sourceUID, int round, int distance) {
-        super(sourceUID, round);
+    public BfsTreeSearchMessage(int sourceUID, int distance) {
+        super(sourceUID);
         this.distance = distance;
     }
 
