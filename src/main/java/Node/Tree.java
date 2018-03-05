@@ -6,13 +6,12 @@ import java.util.List;
 public class Tree<T> {
     private Node<T> root;
 
-    //dummy constructor for unmarshelling
     public Tree() {}
 
     public Tree(T rootData) {
-        root = new Node<T>();
+        root = new Node<>();
         root.data = rootData;
-        root.children = new ArrayList<Node<T>>();
+        root.children = new ArrayList<>();
     }
 
     public void addChildren(List<Tree<T>> childTrees) {
@@ -21,20 +20,30 @@ public class Tree<T> {
         });
     }
 
+    @Override
+    public String toString() {
+        return "Tree{" +
+                "root=" + root +
+                '}';
+    }
+
     public static class Node<T> {
         private T data;
-        private Node<T> parent;
         private List<Node<T>> children;
 
         public Node() {
         }
 
-        public void setData(T data) {
-            this.data = data;
+        @Override
+        public String toString() {
+            return "Node{" +
+                    "data=" + data +
+                    ", children=" + children +
+                    '}';
         }
 
-        public void setParent(Node<T> parent) {
-            this.parent = parent;
+        public void setData(T data) {
+            this.data = data;
         }
 
         public void setChildren(List<Node<T>> children) {
@@ -43,10 +52,6 @@ public class Tree<T> {
 
         public T getData() {
             return data;
-        }
-
-        public Node<T> getParent() {
-            return parent;
         }
 
         public List<Node<T>> getChildren() {
