@@ -72,7 +72,7 @@ public class LeaderElectionService {
         //increment round in controller before control is handed back
         leaderElectionController.incrementRoundNumber();
         if(roundsWithoutChange >= 2 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
-            log.debug("--------I am leader");
+            log.debug("--------I am leader--------");
             vote.setThisNodeLeader(true);
             leaderAnnounce(thisNodeInfo.getUid());
         } else {
