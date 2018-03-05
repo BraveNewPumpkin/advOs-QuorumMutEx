@@ -4,6 +4,9 @@ public class BfsTreeBuildMessage extends NodeMessage{
     private Tree<Integer> tree;
     private int parentUid;
 
+    public BfsTreeBuildMessage() {
+    }
+
     public BfsTreeBuildMessage(int parentUid, Tree<Integer> tree) {
         this.parentUid = parentUid;
         this.tree = tree;
