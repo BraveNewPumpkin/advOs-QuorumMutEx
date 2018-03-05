@@ -38,9 +38,10 @@ public class BfsTreeService {
     private final List<Tree<Integer>> childTrees;
 
     private boolean isRootNode;
-    private int thisDistanceFromRoot;
     private boolean isMarked;
     private boolean isReady;
+    private boolean isParentAcknowledged;
+    private int thisDistanceFromRoot;
     private int parentUID;
 
     @Autowired
@@ -50,6 +51,7 @@ public class BfsTreeService {
 
         isMarked = false;
         isReady = false;
+        isParentAcknowledged = false;
         children = new ArrayList<>();
         tree = new Tree<>(thisNodeInfo.getUid());
         childTrees = new ArrayList<>();
@@ -62,7 +64,10 @@ public class BfsTreeService {
             this.parentUID = receivedUid;
             this.thisDistanceFromRoot = thisDistanceFromRoot;
             bfsTreeController.sendBfsTreeSearch();
-            bfsTreeController.sendBfsTreeAcknowledge();
+            if(!isParentAcknowledged) {
+                isParentAcknowledged = true;
+                bfsTreeController.sendBfsTreeAcknowledge();
+            }
             if(log.isTraceEnabled()){
                 log.trace("uid: {} has parent: {} and distance from root: {}", thisNodeInfo.getUid(), parentUID, thisDistanceFromRoot);
             }
@@ -72,10 +77,13 @@ public class BfsTreeService {
     public void acknowledge(int sourceUid, int targetUid) {
         if(targetUid == thisNodeInfo.getUid()) {
             children.add(sourceUid);
-            //root and have received ack from all children
-            if(isRootNode && children.size() == thisNodeInfo.getNeighbors().size()){
-                bfsTreeController.sendBfsReadyToBuildMessage();
-            } else {
+            if(isRootNode){
+                if(children.size() == thisNodeInfo.getNeighbors().size()) {
+                    //root and have received ack from all children
+                    bfsTreeController.sendBfsReadyToBuildMessage();
+                }
+            } else if(!isParentAcknowledged) {
+                isParentAcknowledged = true;
                 bfsTreeController.sendBfsTreeAcknowledge();
             }
         }
@@ -98,9 +106,15 @@ public class BfsTreeService {
             //we've received a subtree from all children
             if(childTrees.size() == children.size()) {
                 //add subtrees as children
-                tree.addChildren(childTrees);
-                //send to parent
-                bfsTreeController.sendBfsBuildMessage();
+                this.tree.addChildren(childTrees);
+                if(isRootNode) {
+                    if(log.isInfoEnabled()){
+                        log.info("We're Done! tree: {}", this.tree);
+                    }
+                } else {
+                    //send to parent
+                    bfsTreeController.sendBfsBuildMessage();
+                }
             }
         }
     }
