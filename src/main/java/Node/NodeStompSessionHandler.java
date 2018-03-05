@@ -25,6 +25,8 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         session.subscribe("/topic/leaderAnnounce", this);
         session.subscribe("/topic/bfsTreeSearch", this);
         session.subscribe("/topic/bfsTreeAcknowledge", this);
+        session.subscribe("/topic/bfsTreeReadyToBuild", this);
+        session.subscribe("/topic/bfsTreeBuild", this);
         //we've connected so cancel the timeout
         connectionTimeoutLatch.countDown();
 
