@@ -37,22 +37,30 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     public Type getPayloadType(StompHeaders stompHeaders) {
         log.trace("getting payload type");
         Type payloadType = Object.class;
-        if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
-            payloadType = LeaderElectionMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/leaderAnnounce")) {
-            payloadType = LeaderAnnounceMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeSearch")) {
-            payloadType = BfsTreeSearchMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeAcknowledge")) {
-            payloadType = BfsTreeAcknowledgeMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeReadyToBuild")) {
-            payloadType = BfsTreeReadyToBuildMessage.class;
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeBuild")) {
-            payloadType = BfsTreeBuildMessage.class;
-        } else {
-            if(log.isErrorEnabled()) {
-                log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
-            }
+        switch (stompHeaders.getDestination()) {
+            case "/topic/leaderElection":
+                payloadType = LeaderElectionMessage.class;
+                break;
+            case "/topic/leaderAnnounce":
+                payloadType = LeaderAnnounceMessage.class;
+                break;
+            case "/topic/bfsTreeSearch":
+                payloadType = BfsTreeSearchMessage.class;
+                break;
+            case "/topic/bfsTreeAcknowledge":
+                payloadType = BfsTreeAcknowledgeMessage.class;
+                break;
+            case "/topic/bfsTreeReadyToBuild":
+                payloadType = BfsTreeReadyToBuildMessage.class;
+                break;
+            case "/topic/bfsTreeBuild":
+                payloadType = BfsTreeBuildMessage.class;
+                break;
+            default:
+                if (log.isErrorEnabled()) {
+                    log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
+                }
+                break;
         }
         return payloadType;
     }
@@ -62,30 +70,37 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         if(log.isDebugEnabled()) {
             log.debug("handling frame. Destination: {}", stompHeaders.getDestination());
         }
-        if(stompHeaders.getDestination().equals("/topic/leaderElection")) {
-            log.trace("calling LeaderElectionController.leaderElection");
-            LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage)message;
-            leaderElectionController.leaderElection(leaderElectionMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/leaderAnnounce")) {
-            log.trace("calling LeaderElectionController.leaderAnnounce");
-            LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage)message;
-            leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeSearch")) {
-            log.trace("calling BfsTreeService.bfsTreeSearch");
-            BfsTreeSearchMessage bfsTreeSearchMessage = (BfsTreeSearchMessage)message;
-            bfsTreeController.bfsTreeSearch(bfsTreeSearchMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeAcknowledge")) {
-            log.trace("calling BfsTreeService.bfsTreeAcknowledge");
-            BfsTreeAcknowledgeMessage bfsTreeAcknowledgeMessage = (BfsTreeAcknowledgeMessage)message;
-            bfsTreeController.bfsTreeAcknowledge(bfsTreeAcknowledgeMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeReadyToBuild")) {
-            log.trace("calling BfsTreeService.bfsTreeReadyToBuild");
-            BfsTreeReadyToBuildMessage bfsTreeReadyToBuildMessage = (BfsTreeReadyToBuildMessage)message;
-            bfsTreeController.bfsTreeReadyToBuild(bfsTreeReadyToBuildMessage);
-        } else if(stompHeaders.getDestination().equals("/topic/bfsTreeBuild")) {
-            log.trace("calling BfsTreeService.bfsTreeBuild");
-            BfsTreeBuildMessage bfsTreeBuildMessage = (BfsTreeBuildMessage)message;
-            bfsTreeController.bfsTreeBuild(bfsTreeBuildMessage);
+        switch (stompHeaders.getDestination()) {
+            case "/topic/leaderElection":
+                log.trace("calling LeaderElectionController.leaderElection");
+                LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage) message;
+                leaderElectionController.leaderElection(leaderElectionMessage);
+                break;
+            case "/topic/leaderAnnounce":
+                log.trace("calling LeaderElectionController.leaderAnnounce");
+                LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage) message;
+                leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
+                break;
+            case "/topic/bfsTreeSearch":
+                log.trace("calling BfsTreeService.bfsTreeSearch");
+                BfsTreeSearchMessage bfsTreeSearchMessage = (BfsTreeSearchMessage) message;
+                bfsTreeController.bfsTreeSearch(bfsTreeSearchMessage);
+                break;
+            case "/topic/bfsTreeAcknowledge":
+                log.trace("calling BfsTreeService.bfsTreeAcknowledge");
+                BfsTreeAcknowledgeMessage bfsTreeAcknowledgeMessage = (BfsTreeAcknowledgeMessage) message;
+                bfsTreeController.bfsTreeAcknowledge(bfsTreeAcknowledgeMessage);
+                break;
+            case "/topic/bfsTreeReadyToBuild":
+                log.trace("calling BfsTreeService.bfsTreeReadyToBuild");
+                BfsTreeReadyToBuildMessage bfsTreeReadyToBuildMessage = (BfsTreeReadyToBuildMessage) message;
+                bfsTreeController.bfsTreeReadyToBuild(bfsTreeReadyToBuildMessage);
+                break;
+            case "/topic/bfsTreeBuild":
+                log.trace("calling BfsTreeService.bfsTreeBuild");
+                BfsTreeBuildMessage bfsTreeBuildMessage = (BfsTreeBuildMessage) message;
+                bfsTreeController.bfsTreeBuild(bfsTreeBuildMessage);
+                break;
         }
     }
 
