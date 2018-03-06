@@ -25,6 +25,10 @@ import java.util.Queue;
 		a. if targetUID != thisUID suppress
 		b. rebroadcast
             i. with targetUID := parentUID
+
+     * receiving buildready before first child acknowledge
+     * recieveing acknowledge and build from one child before acknowledge from other children
+     *
  */
 
 @Service
@@ -41,7 +45,6 @@ public class BfsTreeService {
     private boolean isMarked;
     private boolean isReady;
     private boolean isParentAcknowledged;
-    private int thisDistanceFromRoot;
     private int parentUID;
 
     @Autowired
@@ -57,19 +60,20 @@ public class BfsTreeService {
         childTrees = new ArrayList<>();
     }
 
-    public void search(int receivedUid, int thisDistanceFromRoot) {
-        if(!isMarked){
+    public void search(int receivedUid, int sourceDistanceFromRoot) {
+        //check that source distance is root distance
+        if(!isMarked && getThisDistanceFromRoot() == sourceDistanceFromRoot){
             isRootNode = false;
             isMarked = true;
             this.parentUID = receivedUid;
-            this.thisDistanceFromRoot = thisDistanceFromRoot;
             bfsTreeController.sendBfsTreeSearch();
+            //TODO add mutex to protect this variable
             if(!isParentAcknowledged) {
                 isParentAcknowledged = true;
                 bfsTreeController.sendBfsTreeAcknowledge();
             }
             if(log.isTraceEnabled()){
-                log.trace("uid: {} has parent: {} and distance from root: {}", thisNodeInfo.getUid(), parentUID, thisDistanceFromRoot);
+                log.trace("uid: {} has parent: {} and distance from root: {}", thisNodeInfo.getUid(), parentUID, getThisDistanceFromRoot());
             }
         }
     }
@@ -127,16 +131,12 @@ public class BfsTreeService {
         isRootNode = rootNode;
     }
 
-    public void setThisDistanceFromRoot(int thisDistanceFromRoot) {
-        this.thisDistanceFromRoot = thisDistanceFromRoot;
-    }
-
     public int getThisDistanceFromRoot() {
-        return thisDistanceFromRoot;
+        return thisNodeInfo.getDistance();
     }
 
     public int getDistanceToNeighborFromRoot() {
-        return thisDistanceFromRoot + 1;
+        return thisNodeInfo.getDistance() + 1;
     }
 
     public void setMarked(boolean marked) {

@@ -7,15 +7,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
 public class LeaderElectionService {
     private final LeaderElectionController leaderElectionController;
     private final ThisNodeInfo thisNodeInfo;
+    private final Semaphore electingNewLeader;
 
     private final Vote vote;
+    private final List<Integer> receivedDistances;
     private int roundsWithoutChange;
     private int leaderUid;
     private boolean hasLeader;
@@ -23,14 +29,17 @@ public class LeaderElectionService {
     @Autowired
     public LeaderElectionService(
             @Lazy LeaderElectionController leaderElectionController,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader
     ) {
         this.leaderElectionController = leaderElectionController;
         this.thisNodeInfo = thisNodeInfo;
+        this.electingNewLeader = electingNewLeader;
 
         this.vote = new Vote();
         roundsWithoutChange = 0;
         hasLeader = false;
+        receivedDistances = new ArrayList<>(thisNodeInfo.getNeighbors().size());
     }
 
     public boolean hasLeader() {
@@ -74,19 +83,36 @@ public class LeaderElectionService {
         if(roundsWithoutChange >= 2 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
             log.debug("--------I am leader--------");
             vote.setThisNodeLeader(true);
-            leaderAnnounce(thisNodeInfo.getUid());
+            leaderAnnounce(thisNodeInfo.getUid(), 0);
         } else {
             leaderElectionController.sendLeaderElection();
         }
     }
 
-    public void leaderAnnounce(int leaderUid) {
+    public void leaderAnnounce(int leaderUid, int distanceFromRoot) {
+        //save min distance received from any neighbor to know our real dist from root
+        receivedDistances.add(distanceFromRoot);
+        if(receivedDistances.size() == thisNodeInfo.getNeighbors().size()) {
+            int minDistance = Collections.min(receivedDistances);
+            thisNodeInfo.setDistance(minDistance);
+            //only move forward with bfs when we know our real distance from root
+            log.trace("done electing leader, releasing semaphore");
+            electingNewLeader.release();
+        }
         //need to check if we have already learned of election result and suppress message if so
         if(!hasLeader) {
             this.leaderUid = leaderUid;
             hasLeader = true;
             leaderElectionController.announceLeader(leaderUid);
         }
+    }
+
+    public int getThisDistanceFromRoot() {
+        return thisNodeInfo.getDistance();
+    }
+
+    public int getDistanceToNeighborFromRoot() {
+        return thisNodeInfo.getDistance() + 1;
     }
 
     @Bean

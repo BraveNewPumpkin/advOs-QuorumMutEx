@@ -10,7 +10,6 @@ import org.springframework.stereotype.Controller;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReadWriteLock;
 
 @Controller
@@ -20,7 +19,6 @@ public class LeaderElectionController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final LeaderElectionService.Vote vote;
-    private final Semaphore electingNewLeader;
     private final ReadWriteLock sendingInitialLeaderElectionMessage;
 
     private final List<Queue<LeaderElectionMessage>> roundMessages;
@@ -31,14 +29,12 @@ public class LeaderElectionController {
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader,
             @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage") ReadWriteLock sendingInitialLeaderElectionMessage
             ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.vote = leaderElectionService.getVote();
-        this.electingNewLeader = electingNewLeader;
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
 
         roundNumber = 0;
@@ -85,7 +81,7 @@ public class LeaderElectionController {
         if(log.isDebugEnabled()) {
             log.debug("<---received leader announce message {}", message);
         }
-        leaderElectionService.leaderAnnounce(message.getLeaderUid());
+        leaderElectionService.leaderAnnounce(message.getLeaderUid(), message.getDistance());
     }
 
     private void enqueueMessage(LeaderElectionMessage message) {
@@ -106,14 +102,13 @@ public class LeaderElectionController {
     public void announceLeader(int leaderUid) throws MessagingException {
         LeaderAnnounceMessage message = new LeaderAnnounceMessage(
                 thisNodeInfo.getUid(),
-                leaderUid
+                leaderUid,
+                leaderElectionService.getDistanceToNeighborFromRoot()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending leader announce message: {}", message);
         }
         template.convertAndSend("/topic/leaderAnnounce", message);
-        log.trace("done electing leader, releasing semaphore");
-        electingNewLeader.release();
     }
 
     public void sendLeaderElection() throws MessagingException {
