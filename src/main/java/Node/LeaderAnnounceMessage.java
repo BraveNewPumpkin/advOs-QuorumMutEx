@@ -34,7 +34,7 @@ public class LeaderAnnounceMessage extends NodeMessage {
     public String toString() {
         return "LeaderAnnounceMessage{" +
                 "leaderUid=" + leaderUid +
-                "distance=" + distance +
+                ", distance=" + distance +
                 "} " + super.toString();
     }
 }
