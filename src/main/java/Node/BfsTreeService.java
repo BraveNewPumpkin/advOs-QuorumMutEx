@@ -2,12 +2,14 @@ package Node;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.Semaphore;
 
 /*
 	1. root: send search message
@@ -36,6 +38,7 @@ import java.util.Queue;
 public class BfsTreeService {
     private final BfsTreeController bfsTreeController;
     private final ThisNodeInfo thisNodeInfo;
+    private final Semaphore electingNewLeader;
 
     private final Tree<Integer> tree;
     private final List<Integer> children;
@@ -48,9 +51,15 @@ public class BfsTreeService {
     private int parentUID;
 
     @Autowired
-    public BfsTreeService(@Lazy BfsTreeController bfsTreeController, ThisNodeInfo thisNodeInfo) {
+    public BfsTreeService(
+        @Lazy BfsTreeController bfsTreeController,
+        ThisNodeInfo thisNodeInfo,
+        @Qualifier("Node/LeaderElectionConfig/electingNewLeader")
+        Semaphore electingNewLeader
+    ) {
         this.bfsTreeController = bfsTreeController;
         this.thisNodeInfo = thisNodeInfo;
+        this.electingNewLeader = electingNewLeader;
 
         isMarked = false;
         isReady = false;
@@ -61,6 +70,14 @@ public class BfsTreeService {
     }
 
     public void search(int receivedUid, int sourceDistanceFromRoot) {
+        //wait until we know our depth before accepting search messages
+        if(!isRootNode) {
+            try {
+                electingNewLeader.acquire();
+            } catch (InterruptedException e) {
+                log.warn("interrupted while waiting on leader to be elected");
+            }
+        }
         //check that source distance is root distance
         if(!isMarked && getThisDistanceFromRoot() == sourceDistanceFromRoot){
             isRootNode = false;

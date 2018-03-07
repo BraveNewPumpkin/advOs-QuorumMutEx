@@ -90,19 +90,26 @@ public class LeaderElectionService {
     }
 
     public void leaderAnnounce(int leaderUid, int distanceFromRoot) {
-        //save min distance received from any neighbor to know our real dist from root
-        receivedDistances.add(distanceFromRoot);
-        if(receivedDistances.size() == thisNodeInfo.getNeighbors().size()) {
-            int minDistance = Collections.min(receivedDistances);
-            thisNodeInfo.setDistance(minDistance);
-            //only move forward with bfs when we know our real distance from root
-            log.trace("done electing leader, releasing semaphore");
-            electingNewLeader.release();
+        if(!vote.isThisNodeLeader()){
+            //save min distance received from any neighbor to know our real dist from root
+            receivedDistances.add(distanceFromRoot);
+            if(receivedDistances.size() == thisNodeInfo.getNeighbors().size()) {
+                int minDistance = Collections.min(receivedDistances);
+                thisNodeInfo.setDistance(minDistance);
+                //only move forward with bfs when we know our real distance from root
+                log.trace("done electing leader, releasing semaphore");
+                electingNewLeader.release();
+            }
         }
+
         //need to check if we have already learned of election result and suppress message if so
         if(!hasLeader) {
-            this.leaderUid = leaderUid;
             hasLeader = true;
+            if(vote.isThisNodeLeader()) {
+                thisNodeInfo.setDistance(0);
+                log.trace("done electing leader, releasing semaphore");
+                electingNewLeader.release(2);
+            }
             leaderElectionController.announceLeader(leaderUid);
         }
     }

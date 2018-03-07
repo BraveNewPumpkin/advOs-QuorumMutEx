@@ -38,13 +38,16 @@ public class DoLeaderElectionAndBfsTree implements Runnable{
     public void run() {
         electNewLeader.run();
         try {
+            log.trace("waiting to check if leader to start bfs tree");
             electingNewLeader.acquire();
+            if(vote.isThisNodeLeader()) {
+                log.trace("aquiring a second time to remove extra permit in leader");
+                electingNewLeader.acquire();
+                log.trace("done waiting on LE. moving onto building bfs tree");
+                buildBfsTree.run();
+            }
         } catch (InterruptedException e) {
             log.warn("interrupted while waiting on leader to be elected");
-        }
-        log.trace("moving onto building bfs tree");
-        if(vote.isThisNodeLeader()) {
-            buildBfsTree.run();
         }
     }
 }

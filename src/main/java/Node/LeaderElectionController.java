@@ -109,6 +109,7 @@ public class LeaderElectionController {
             log.debug("--->sending leader announce message: {}", message);
         }
         template.convertAndSend("/topic/leaderAnnounce", message);
+        log.trace("done sending the leader announce message");
     }
 
     public void sendLeaderElection() throws MessagingException {
