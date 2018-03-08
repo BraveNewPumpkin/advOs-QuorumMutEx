@@ -7,10 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 
 @Service
@@ -92,10 +89,20 @@ public class LeaderElectionService {
     public void leaderAnnounce(int leaderUid, int distanceFromRoot) {
         if(!vote.isThisNodeLeader()){
             //save min distance received from any neighbor to know our real dist from root
+            int minDistance;
+            try {
+                minDistance = Collections.min(receivedDistances);
+            } catch (NoSuchElementException e) {
+                //receivedDistances was empty
+                minDistance = Integer.MAX_VALUE;
+            }
+            if(distanceFromRoot < minDistance) {
+                thisNodeInfo.setDistanceToRoot(distanceFromRoot);
+                leaderElectionController.announceLeader(leaderUid);
+            }
             receivedDistances.add(distanceFromRoot);
+            //TODO fix lack of correct termination condition. this one is insufficient as we may recieve multiple message from a neighbor
             if(receivedDistances.size() == thisNodeInfo.getNeighbors().size()) {
-                int minDistance = Collections.min(receivedDistances);
-                thisNodeInfo.setDistance(minDistance);
                 //only move forward with bfs when we know our real distance from root
                 log.trace("done electing leader, releasing semaphore");
                 electingNewLeader.release(2);
@@ -106,7 +113,7 @@ public class LeaderElectionService {
         if(!hasLeader) {
             hasLeader = true;
             if(vote.isThisNodeLeader()) {
-                thisNodeInfo.setDistance(0);
+                thisNodeInfo.setDistanceToRoot(0);
                 log.trace("done electing leader, releasing semaphore");
                 electingNewLeader.release(2);
             }
@@ -115,11 +122,11 @@ public class LeaderElectionService {
     }
 
     public int getThisDistanceFromRoot() {
-        return thisNodeInfo.getDistance();
+        return thisNodeInfo.getDistanceToRoot();
     }
 
     public int getDistanceToNeighborFromRoot() {
-        return thisNodeInfo.getDistance() + 1;
+        return thisNodeInfo.getDistanceToRoot() + 1;
     }
 
     @Bean

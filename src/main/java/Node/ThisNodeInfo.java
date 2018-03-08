@@ -5,7 +5,7 @@ import java.util.List;
 
 public final class ThisNodeInfo extends NodeInfo{
     List<NodeInfo> neighbors;
-    private int distance;
+    private int distanceToRoot;
 
     ThisNodeInfo(int uid, String hostName, int port) {
         super(uid, hostName, port);
@@ -16,12 +16,12 @@ public final class ThisNodeInfo extends NodeInfo{
         return neighbors.add(neighbor);
     }
 
-    public int getDistance() {
-        return distance;
+    public int getDistanceToRoot() {
+        return distanceToRoot;
     }
 
-    public void setDistance(int distance) {
-        this.distance = distance;
+    public void setDistanceToRoot(int distanceToRoot) {
+        this.distanceToRoot = distanceToRoot;
     }
 
     public List<NodeInfo> getNeighbors() {

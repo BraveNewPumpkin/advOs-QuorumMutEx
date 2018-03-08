@@ -150,11 +150,11 @@ public class BfsTreeService {
     }
 
     public int getThisDistanceFromRoot() {
-        return thisNodeInfo.getDistance();
+        return thisNodeInfo.getDistanceToRoot();
     }
 
     public int getDistanceToNeighborFromRoot() {
-        return thisNodeInfo.getDistance() + 1;
+        return thisNodeInfo.getDistanceToRoot() + 1;
     }
 
     public void setMarked(boolean marked) {
