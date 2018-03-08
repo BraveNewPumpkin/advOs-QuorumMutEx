@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 
 @Controller
+@EnableAsync
 @Slf4j
 public class BfsTreeController {
     private final BfsTreeService bfsTreeService;
@@ -28,6 +31,7 @@ public class BfsTreeController {
     }
 
 
+    @Async("clientInboundChannelExecutor")
     @MessageMapping("/bfsTreeSearch")
     public void bfsTreeSearch(BfsTreeSearchMessage message) {
         if (log.isDebugEnabled()) {
@@ -41,7 +45,9 @@ public class BfsTreeController {
     @MessageMapping("/bfsTreeAcknowledge")
     public void bfsTreeAcknowledge(BfsTreeAcknowledgeMessage message) {
         if (log.isDebugEnabled()) {
-            log.debug("<---received bfs tree acknowledge message {}", message);
+            if(message.getTargetUid() == thisNodeInfo.getUid()) {
+                log.debug("<---received bfs tree acknowledge message {}", message);
+            }
         }
         synchronized (this) {
             bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
@@ -61,7 +67,9 @@ public class BfsTreeController {
     @MessageMapping("/bfsTreeBuild")
     public void bfsTreeBuild(BfsTreeBuildMessage message) {
         if (log.isDebugEnabled()) {
-            log.debug("<---received bfs tree build message {}", message);
+            if(message.getParentUid() == thisNodeInfo.getUid()) {
+                log.debug("<---received bfs tree build message {}", message);
+            }
         }
         synchronized (this) {
             bfsTreeService.build(message.getParentUid(), message.getTree());
