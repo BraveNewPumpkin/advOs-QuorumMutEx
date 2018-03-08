@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
 /*
@@ -46,7 +45,7 @@ public class BfsTreeService {
 
     private boolean isRootNode;
     private boolean isMarked;
-    private boolean isReady;
+    private boolean isReadyToBuild;
     private boolean isParentAcknowledged;
     private int parentUID;
 
@@ -62,7 +61,8 @@ public class BfsTreeService {
         this.electingNewLeader = electingNewLeader;
 
         isMarked = false;
-        isReady = false;
+        isRootNode = false;
+        isReadyToBuild = false;
         isParentAcknowledged = false;
         children = new ArrayList<>();
         tree = new Tree<>(thisNodeInfo.getUid());
@@ -73,14 +73,15 @@ public class BfsTreeService {
         //wait until we know our depth before accepting search messages
         if(!isRootNode) {
             try {
+                log.trace("waiting for leader election to complete before accepting bfs search");
                 electingNewLeader.acquire();
+                log.trace("done waiting for leader election to complete");
             } catch (InterruptedException e) {
                 log.warn("interrupted while waiting on leader to be elected");
             }
         }
         //check that source distance is root distance
         if(!isMarked && getThisDistanceFromRoot() == sourceDistanceFromRoot){
-            isRootNode = false;
             isMarked = true;
             this.parentUID = receivedUid;
             bfsTreeController.sendBfsTreeSearch();
@@ -111,8 +112,8 @@ public class BfsTreeService {
     }
 
     public void buildReady(){
-        if(!isReady) {
-            isReady = true;
+        if(!isReadyToBuild) {
+            isReadyToBuild = true;
             if(children.isEmpty()) {
                 bfsTreeController.sendBfsBuildMessage();
             } else {
