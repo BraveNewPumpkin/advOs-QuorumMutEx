@@ -98,7 +98,7 @@ public class LeaderElectionService {
                 thisNodeInfo.setDistance(minDistance);
                 //only move forward with bfs when we know our real distance from root
                 log.trace("done electing leader, releasing semaphore");
-                electingNewLeader.release();
+                electingNewLeader.release(2);
             }
         }
 
