@@ -17,7 +17,7 @@ public final class LeaderElectionMessage extends NodeRoundSynchronizableMessage 
     @Override
     public String toString() {
         return "LeaderElectionMessage{" +
-                ", maxUidSeen=" + maxUidSeen +
+                "maxUidSeen=" + maxUidSeen +
                 ", maxDistanceSeen=" + maxDistanceSeen +
                 "} " + super.toString();
     }
