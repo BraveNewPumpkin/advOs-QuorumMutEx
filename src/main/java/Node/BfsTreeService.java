@@ -145,8 +145,8 @@ public class BfsTreeService {
         return tree;
     }
 
-    public void setRootNode(boolean rootNode) {
-        isRootNode = rootNode;
+    public void setRootNode(boolean isRootNode) {
+        this.isRootNode = isRootNode;
     }
 
     public int getThisDistanceFromRoot() {
