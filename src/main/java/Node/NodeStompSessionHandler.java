@@ -1,33 +1,43 @@
 package Node;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.stomp.*;
+import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+@Component
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     private LeaderElectionController leaderElectionController;
     private BfsTreeController bfsTreeController;
     private CountDownLatch connectionTimeoutLatch;
+    private List<String> subscriptionsDestinations;
 
-    public NodeStompSessionHandler(ApplicationContext context, CountDownLatch connectionTimeoutLatch) {
+    @Autowired
+    public NodeStompSessionHandler(
+            LeaderElectionController leaderElectionController,
+            BfsTreeController bfsTreeController,
+            @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+            CountDownLatch connectionTimeoutLatch,
+            @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
+            List<String> subscriptionsDestinations
+    ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
-        this.leaderElectionController = context.getBean(LeaderElectionController.class);
-        this.bfsTreeController = context.getBean(BfsTreeController.class);
+        this.leaderElectionController = leaderElectionController;
+        this.bfsTreeController = bfsTreeController;
+        this.subscriptionsDestinations = subscriptionsDestinations;
     }
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-        session.subscribe("/topic/leaderElection", this);
-        session.subscribe("/topic/leaderAnnounce", this);
-        session.subscribe("/topic/leaderDistance", this);
-        session.subscribe("/topic/bfsTreeSearch", this);
-        session.subscribe("/topic/bfsTreeAcknowledge", this);
-        session.subscribe("/topic/bfsTreeReadyToBuild", this);
-        session.subscribe("/topic/bfsTreeBuild", this);
+        subscriptionsDestinations.parallelStream().forEach((subscriptionDestination) -> {
+            session.subscribe(subscriptionDestination, this);
+        });
         //we've connected so cancel the timeout
         connectionTimeoutLatch.countDown();
 

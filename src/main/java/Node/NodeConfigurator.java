@@ -14,6 +14,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 @Configuration
 @Slf4j
@@ -45,6 +46,26 @@ public class NodeConfigurator {
         });
 
         return thisNodeInfo;
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
+    public List<String> getSubscriptionDestinations() {
+        return Arrays.asList(
+            "/topic/leaderElection",
+            "/topic/leaderAnnounce",
+            "/topic/leaderDistance",
+            "/topic/bfsTreeSearch",
+            "/topic/bfsTreeAcknowledge",
+            "/topic/bfsTreeReadyToBuild",
+            "/topic/bfsTreeBuild"
+        );
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+    public CountDownLatch getConnectionTimeoutLatch() {
+        return new CountDownLatch(1);
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
