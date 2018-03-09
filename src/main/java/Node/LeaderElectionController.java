@@ -8,8 +8,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.util.concurrent.locks.ReadWriteLock;
-
 @Controller
 @Slf4j
 public class LeaderElectionController {
@@ -17,7 +15,7 @@ public class LeaderElectionController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final LeaderElectionService.Vote vote;
-    private final ReadWriteLock sendingInitialLeaderElectionMessage;
+    private final GateLock sendingInitialLeaderElectionMessage;
     private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
     private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
@@ -31,7 +29,7 @@ public class LeaderElectionController {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
-            ReadWriteLock sendingInitialLeaderElectionMessage,
+            GateLock sendingInitialLeaderElectionMessage,
             @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
             NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
             @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
@@ -63,16 +61,12 @@ public class LeaderElectionController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received leader election message {}", message);
             }
-            sendingInitialLeaderElectionMessage.readLock().lock();
-            try {
-                synchronized (this) {
-                    leaderElectionRoundSynchronizer.enqueueAndRunIfReady(
-                            message,
-                            leaderElectionWork
-                    );
-                }
-            } finally {
-                sendingInitialLeaderElectionMessage.readLock().unlock();
+            sendingInitialLeaderElectionMessage.enter();
+            synchronized (this) {
+                leaderElectionRoundSynchronizer.enqueueAndRunIfReady(
+                        message,
+                        leaderElectionWork
+                );
             }
         }
     }
