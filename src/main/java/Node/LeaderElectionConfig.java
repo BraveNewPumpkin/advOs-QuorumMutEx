@@ -39,4 +39,10 @@ public class LeaderElectionConfig {
     public NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer(){
         return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
     }
+
+    @Bean
+    @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
+    public NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer(){
+        return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
+    }
 }

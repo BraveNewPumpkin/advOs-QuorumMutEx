@@ -23,6 +23,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
         session.subscribe("/topic/leaderElection", this);
         session.subscribe("/topic/leaderAnnounce", this);
+        session.subscribe("/topic/leaderDistance", this);
         session.subscribe("/topic/bfsTreeSearch", this);
         session.subscribe("/topic/bfsTreeAcknowledge", this);
         session.subscribe("/topic/bfsTreeReadyToBuild", this);
@@ -43,6 +44,9 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 break;
             case "/topic/leaderAnnounce":
                 payloadType = LeaderAnnounceMessage.class;
+                break;
+            case "/topic/leaderDistance":
+                payloadType = LeaderDistanceMessage.class;
                 break;
             case "/topic/bfsTreeSearch":
                 payloadType = BfsTreeSearchMessage.class;
@@ -80,6 +84,11 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 log.trace("calling LeaderElectionController.leaderAnnounce");
                 LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage) message;
                 leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
+                break;
+            case "/topic/leaderDistance":
+                log.trace("calling LeaderElectionController.leaderDistance");
+                LeaderDistanceMessage leaderDistanceMessage = (LeaderDistanceMessage) message;
+                leaderElectionController.leaderDistance(leaderDistanceMessage);
                 break;
             case "/topic/bfsTreeSearch":
                 log.trace("calling BfsTreeService.bfsTreeSearch");

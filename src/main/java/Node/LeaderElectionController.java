@@ -19,8 +19,10 @@ public class LeaderElectionController {
     private final LeaderElectionService.Vote vote;
     private final ReadWriteLock sendingInitialLeaderElectionMessage;
     private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
+    private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
     private final Runnable leaderElectionWork;
+    private final Runnable leaderDistanceWork;
 
     @Autowired
     public LeaderElectionController(
@@ -32,6 +34,8 @@ public class LeaderElectionController {
             ReadWriteLock sendingInitialLeaderElectionMessage,
             @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
             NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
+            @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
+            NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer
             ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
@@ -39,9 +43,13 @@ public class LeaderElectionController {
         this.vote = leaderElectionService.getVote();
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
         this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
+        this.leaderDistanceRoundSynchronizer = leaderDistanceRoundSynchronizer;
 
         leaderElectionWork = () -> {
             leaderElectionService.processNeighborlyAdvice(leaderElectionRoundSynchronizer.getMessagesThisRound());
+        };
+        leaderDistanceWork = () -> {
+            leaderElectionService.processLeaderDistances(leaderDistanceRoundSynchronizer.getMessagesThisRound());
         };
     }
 
@@ -74,10 +82,18 @@ public class LeaderElectionController {
         if(log.isDebugEnabled()) {
             log.debug("<---received leader announce message {}", message);
         }
-        leaderElectionService.leaderAnnounce(message.getLeaderUid(), message.getDistance());
+        leaderElectionService.processLeaderAnnouncement(message.getLeaderUid(), message.getMaxDistanceFromLeader());
     }
 
+    @MessageMapping("/leaderDistance")
+    public void leaderDistance(LeaderDistanceMessage message) {
+        if(log.isDebugEnabled()) {
+            log.debug("<---received leader distance message {}", message);
         }
+        leaderDistanceRoundSynchronizer.enqueueAndRunIfReady(
+                message,
+                leaderDistanceWork
+        );
     }
 
     public void sendLeaderElection() throws MessagingException {
@@ -94,11 +110,11 @@ public class LeaderElectionController {
         log.trace("leader election message sent");
     }
 
-    public void announceLeader(int leaderUid) throws MessagingException {
+    public void sendLeaderAnnounce(int leaderUid, int MaxDistanceFromLeader) throws MessagingException {
         LeaderAnnounceMessage message = new LeaderAnnounceMessage(
                 thisNodeInfo.getUid(),
                 leaderUid,
-                leaderElectionService.getDistanceToNeighborFromRoot()
+                MaxDistanceFromLeader
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending leader announce message: {}", message);
@@ -107,17 +123,16 @@ public class LeaderElectionController {
         log.trace("done sending the leader announce message");
     }
 
-    public void sendLeaderElection() throws MessagingException {
-        LeaderElectionMessage message = new LeaderElectionMessage(
+    public void sendLeaderDistance() throws MessagingException {
+        LeaderDistanceMessage message = new LeaderDistanceMessage(
                 thisNodeInfo.getUid(),
-                roundNumber,
-                vote.getMaxUidSeen(),
-                vote.getMaxDistanceSeen()
-                );
+                leaderDistanceRoundSynchronizer.getRoundNumber(),
+                leaderElectionService.getDistanceToNeighborFromRoot()
+        );
         if(log.isDebugEnabled()){
-            log.debug("--->sending leader election message: {}", message);
+            log.debug("--->sending leader distance message: {}", message);
         }
-        template.convertAndSend("/topic/leaderElection", message);
-        log.trace("leader election message sent");
+        template.convertAndSend("/topic/leaderDistance", message);
+        log.trace("done sending the leader distance message");
     }
 }
