@@ -19,22 +19,32 @@ import java.util.concurrent.CountDownLatch;
 @Configuration
 @Slf4j
 public class NodeConfigurator {
-    @Value("${this.hostName:'localhost'}")
+    @Value("${this.hostName}")
     private String thisHostName;
+
+    @Value("${this.isLocal:false}")
+    private boolean isLocal;
 
     @Value("${nodeConfigUri:'file:resources/config.txt'}")
     private String nodeConfigUri;
+
 
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo(
         @Autowired ApplicationContext context
     ) throws UnknownHostException, ConfigurationException {
-//        String hostName = InetAddress.getLocalHost().getHostName();
+        if (thisHostName == null) {
+            thisHostName = InetAddress.getLocalHost().getHostName();
+        }
 
+        //load config using thisHostName to know which node we are
         NodeConfig nodeConfig = readNodeConfig(context, thisHostName);
-        //TODO remove this hardcoding
-        thisHostName = "localhost";
+
+        //if trying to run locally, reset hostname to localhost
+        if(isLocal) {
+            thisHostName = "localhost";
+        }
 
         int thisUid = nodeConfig.thisUid;
         int thisPort = nodeConfig.nodes.get(thisUid).getPort();
