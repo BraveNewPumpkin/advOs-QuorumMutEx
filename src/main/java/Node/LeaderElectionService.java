@@ -93,6 +93,7 @@ public class LeaderElectionService {
             minDistanceToLeader = 0;
             thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
             leaderElectionController.sendLeaderAnnounce(thisNodeInfo.getUid(), MaxDistanceFromLeader);
+            leaderElectionController.sendLeaderDistance();
         } else {
             leaderElectionController.sendLeaderElection();
         }
