@@ -67,7 +67,7 @@ public class LeaderElectionService {
                 didDistanceChange = true;
             }
         }
-        if(didMaxUidChange) {
+        if(didMaxUidChange || didDistanceChange) {
             roundsWithoutChange = 0;
         } else {
             roundsWithoutChange++;
