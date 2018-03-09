@@ -22,7 +22,7 @@ public class LeaderDistanceMessage extends NodeRoundSynchronizableMessage {
 
     @Override
     public String toString() {
-        return "LeaderAnnounceMessage{" +
+        return "LeaderDistanceMessage{" +
                 "distance=" + distance +
                 "} " + super.toString();
     }
