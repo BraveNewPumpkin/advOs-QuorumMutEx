@@ -90,10 +90,12 @@ public class LeaderElectionController {
         if(log.isDebugEnabled()) {
             log.debug("<---received leader distance message {}", message);
         }
-        leaderDistanceRoundSynchronizer.enqueueAndRunIfReady(
-                message,
-                leaderDistanceWork
-        );
+        synchronized (this) {
+            leaderDistanceRoundSynchronizer.enqueueAndRunIfReady(
+                    message,
+                    leaderDistanceWork
+            );
+        }
     }
 
     public void sendLeaderElection() throws MessagingException {
