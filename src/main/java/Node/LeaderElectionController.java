@@ -129,7 +129,7 @@ public class LeaderElectionController {
         LeaderDistanceMessage message = new LeaderDistanceMessage(
                 thisNodeInfo.getUid(),
                 leaderDistanceRoundSynchronizer.getRoundNumber(),
-                leaderElectionService.getDistanceToNeighborFromRoot()
+                leaderElectionService.getCurrentMinDistanceToLeader()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending leader distance message: {}", message);

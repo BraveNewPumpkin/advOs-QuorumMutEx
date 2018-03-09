@@ -7,7 +7,9 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 
 /*
@@ -37,11 +39,14 @@ import java.util.concurrent.Semaphore;
 public class BfsTreeService {
     private final BfsTreeController bfsTreeController;
     private final ThisNodeInfo thisNodeInfo;
-    private final Semaphore electingNewLeader;
+    private final GateLock electingNewLeader;
 
     private final Tree<Integer> tree;
+    /** tracks non-parent neighbors from which I have received an bfs acknowledge**/
+    private final Set<Integer> neighborsAcknowledged;
     private final List<Integer> children;
     private final List<Tree<Integer>> childTrees;
+    private final GateLock allAcknowledgedBeforeReadyToBuildLock;
 
     private boolean isRootNode;
     private boolean isMarked;
@@ -54,7 +59,7 @@ public class BfsTreeService {
         @Lazy BfsTreeController bfsTreeController,
         ThisNodeInfo thisNodeInfo,
         @Qualifier("Node/LeaderElectionConfig/electingNewLeader")
-        Semaphore electingNewLeader
+        GateLock electingNewLeader
     ) {
         this.bfsTreeController = bfsTreeController;
         this.thisNodeInfo = thisNodeInfo;
@@ -64,21 +69,22 @@ public class BfsTreeService {
         isRootNode = false;
         isReadyToBuild = false;
         isParentAcknowledged = false;
+        neighborsAcknowledged = new HashSet<>(thisNodeInfo.getNeighbors().size() - 1 );
         children = new ArrayList<>();
         tree = new Tree<>(thisNodeInfo.getUid());
         childTrees = new ArrayList<>();
+        allAcknowledgedBeforeReadyToBuildLock = new GateLock();
+        allAcknowledgedBeforeReadyToBuildLock.close();
     }
 
     public void search(int receivedUid, int sourceDistanceFromRoot) {
         //wait until we know our depth before accepting search messages
-        if(!isRootNode) {
-            try {
-                log.trace("waiting for leader election to complete before accepting bfs search");
-                electingNewLeader.acquire();
-                log.trace("done waiting for leader election to complete");
-            } catch (InterruptedException e) {
-                log.warn("interrupted while waiting on leader to be elected");
-            }
+        //NOTE checking isMarked here does not prevent any race conditions, it is convenience only to reduce
+        // redundancies in log
+        if(!isRootNode && !isMarked) {
+            log.trace("waiting for leader election to complete before accepting bfs search");
+            electingNewLeader.enter();
+            log.trace("done waiting for leader election to complete");
         }
         //check that source distance is root distance
         if(!isMarked && getThisDistanceFromRoot() == sourceDistanceFromRoot){
@@ -88,6 +94,10 @@ public class BfsTreeService {
             //TODO add mutex to protect this variable
             if(!isParentAcknowledged) {
                 isParentAcknowledged = true;
+                if (thisNodeInfo.getNeighbors().size() == 1) {
+                    log.trace("I have no non-parent neighbors. opening ready to build gate.");
+                    allAcknowledgedBeforeReadyToBuildLock.open();
+                }
                 bfsTreeController.sendBfsTreeAcknowledge();
             }
             if(log.isTraceEnabled()){
@@ -97,6 +107,13 @@ public class BfsTreeService {
     }
 
     public void acknowledge(int sourceUid, int targetUid) {
+        synchronized (this) {
+            neighborsAcknowledged.add(sourceUid);
+            if (neighborsAcknowledged.size() == thisNodeInfo.getNeighbors().size() - 1) {
+                log.trace("received acknowledge from all non-parent neighbors. opening ready to build gate.");
+                allAcknowledgedBeforeReadyToBuildLock.open();
+            }
+        }
         if(targetUid == thisNodeInfo.getUid()) {
             children.add(sourceUid);
             if(isRootNode){
@@ -112,9 +129,12 @@ public class BfsTreeService {
     }
 
     public void buildReady(){
+        log.trace("waiting on all non-parent neighbors to acknowledge to enter ready to build gate");
+        allAcknowledgedBeforeReadyToBuildLock.enter();
+        log.trace("done waiting on all non-parent neighbors to acknowledged. Ready to build.");
         if(!isReadyToBuild) {
             isReadyToBuild = true;
-            if(children.isEmpty()) {
+            if (children.isEmpty()) {
                 bfsTreeController.sendBfsBuildMessage();
             } else {
                 bfsTreeController.sendBfsReadyToBuildMessage();
@@ -163,6 +183,10 @@ public class BfsTreeService {
 
     public boolean isMarked() {
         return isMarked;
+    }
+
+    public boolean isReadyToBuild() {
+        return isReadyToBuild;
     }
 
     public int getParentUID() {

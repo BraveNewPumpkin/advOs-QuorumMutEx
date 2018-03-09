@@ -15,7 +15,7 @@ import java.util.concurrent.Semaphore;
 public class LeaderElectionService {
     private final LeaderElectionController leaderElectionController;
     private final ThisNodeInfo thisNodeInfo;
-    private final Semaphore electingNewLeader;
+    private final GateLock electingNewLeader;
     private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
     private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
@@ -29,7 +29,7 @@ public class LeaderElectionService {
     public LeaderElectionService(
             @Lazy LeaderElectionController leaderElectionController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader,
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") GateLock electingNewLeader,
             @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
                     NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
             @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
@@ -128,7 +128,7 @@ public class LeaderElectionService {
             thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
             //only move forward with bfs when we know our real distance from root
             log.trace("done establishing distance to leader, releasing semaphore");
-            electingNewLeader.release(2);
+            electingNewLeader.open();
         }
     }
 
@@ -136,8 +136,8 @@ public class LeaderElectionService {
         return thisNodeInfo.getDistanceToRoot();
     }
 
-    public int getDistanceToNeighborFromRoot() {
-        return thisNodeInfo.getDistanceToRoot() + 1;
+    public int getCurrentMinDistanceToLeader() {
+        return minDistanceToLeader + 1;
     }
 
     @Bean

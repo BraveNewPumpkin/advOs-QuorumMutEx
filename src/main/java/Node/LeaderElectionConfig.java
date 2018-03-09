@@ -23,8 +23,10 @@ public class LeaderElectionConfig {
 
     @Bean
     @Qualifier("Node/LeaderElectionConfig/electingNewLeader")
-    public Semaphore electingNewLeader() {
-        return new Semaphore(0);
+    public GateLock electingNewLeader() {
+        GateLock gateLock = new GateLock();
+        gateLock.close();
+        return gateLock;
     }
 
     @Bean

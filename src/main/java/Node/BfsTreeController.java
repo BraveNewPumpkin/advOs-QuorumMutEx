@@ -45,19 +45,21 @@ public class BfsTreeController {
     @MessageMapping("/bfsTreeAcknowledge")
     public void bfsTreeAcknowledge(BfsTreeAcknowledgeMessage message) {
         if (log.isDebugEnabled()) {
-            if(message.getTargetUid() == thisNodeInfo.getUid()) {
-                log.debug("<---received bfs tree acknowledge message {}", message);
-            }
+            log.debug("<---received bfs tree acknowledge message {}", message);
         }
-        synchronized (this) {
-            bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
-        }
+        bfsTreeService.acknowledge(message.getSourceUID(), message.getTargetUid());
     }
 
     @MessageMapping("/bfsTreeReadyToBuild")
     public void bfsTreeReadyToBuild(BfsTreeReadyToBuildMessage message) {
-        if (log.isDebugEnabled()) {
-            log.debug("<---received bfs tree ready to build message {}", message);
+        if(!bfsTreeService.isReadyToBuild()) {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received bfs tree ready to build message {}", message);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---ignoring bfs tree ready to build message {}", message);
+            }
         }
         synchronized (this) {
             bfsTreeService.buildReady();
