@@ -28,18 +28,28 @@ import java.util.function.Consumer;
 public class WebSocketConnector {
     //private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(WebSocketConnector.class);
     //private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
+    private final StompSessionHandler sessionHandler;
+    private final ThisNodeInfo thisNodeInfo;
+    private final CountDownLatch connectionTimeoutLatch;
 
     @Autowired
-    @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    private ThisNodeInfo thisNodeInfo;
+    public WebSocketConnector(
+        StompSessionHandler sessionHandler,
+        @Qualifier("Node/NodeConfigurator/thisNodeInfo")
+        ThisNodeInfo thisNodeInfo,
+        @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+        CountDownLatch connectionTimeoutLatch
+    ){
+        this.sessionHandler = sessionHandler;
+        this.thisNodeInfo = thisNodeInfo;
+        this.connectionTimeoutLatch = connectionTimeoutLatch;
+    }
 
     //DO NOT DECLARE AS @BEAN. Must have tight control over when this runs (after delay to let other instances spin up)
-    public List<StompSession> getSessions(ApplicationContext context) {
+    public List<StompSession> getSessions() {
         ConcurrentLinkedQueue<StompSession> sessions = new ConcurrentLinkedQueue<>();
         //lambda to open connection and start sessions
         Consumer<NodeInfo> sessionBuildingLambda = (neighbor -> {
-            final CountDownLatch connectionTimeoutLatch = new CountDownLatch(1);
-            final StompSessionHandler sessionHandler = new NodeStompSessionHandler(context, connectionTimeoutLatch);
             final WebSocketClient client = new StandardWebSocketClient();
             final List<Transport> transports = new ArrayList<>(2);
             final RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();

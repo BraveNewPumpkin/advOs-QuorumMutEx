@@ -7,34 +7,47 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
 public class LeaderElectionService {
     private final LeaderElectionController leaderElectionController;
     private final ThisNodeInfo thisNodeInfo;
+    private final GateLock electingNewLeader;
+    private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
+    private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
     private final Vote vote;
     private int roundsWithoutChange;
-    private int leaderUid;
-    private boolean hasLeader;
+    private boolean knowsLeader;
+    private int MaxDistanceFromLeader;
+    private int minDistanceToLeader;
 
     @Autowired
     public LeaderElectionService(
             @Lazy LeaderElectionController leaderElectionController,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") GateLock electingNewLeader,
+            @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
+                    NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
+            @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
+                    NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer
     ) {
         this.leaderElectionController = leaderElectionController;
         this.thisNodeInfo = thisNodeInfo;
+        this.electingNewLeader = electingNewLeader;
+        this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
+        this.leaderDistanceRoundSynchronizer = leaderDistanceRoundSynchronizer;
 
         this.vote = new Vote();
         roundsWithoutChange = 0;
-        hasLeader = false;
+        knowsLeader = false;
     }
 
     public boolean hasLeader() {
-        return hasLeader;
+        return knowsLeader;
     }
 
     public void processNeighborlyAdvice(Queue<LeaderElectionMessage> electionMessages) {
@@ -49,19 +62,19 @@ public class LeaderElectionService {
                 didMaxUidChange = true;
                 didDistanceChange = true;
                 if (log.isDebugEnabled()) {
-                    log.debug("updated vote uid to: {} in round: {}", neighborMaxUid, leaderElectionController.getRoundNumber());
-                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionController.getRoundNumber());
+                    log.debug("updated vote uid to: {} in round: {}", neighborMaxUid, leaderElectionRoundSynchronizer.getRoundNumber());
+                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionRoundSynchronizer.getRoundNumber());
                 }
             } else if (neighborMaxUid == vote.getMaxUidSeen() && neighborMaxDistanceSeen > vote.getMaxDistanceSeen()) {
                 if (log.isDebugEnabled()) {
-                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionController.getRoundNumber());
+                    log.debug("updated distance to: {} in round: {}", neighborMaxDistanceSeen, leaderElectionRoundSynchronizer.getRoundNumber());
                 }
                 //Note: we don't count this as vote changing
                 vote.setMaxDistanceSeen(neighborMaxDistanceSeen);
                 didDistanceChange = true;
             }
         }
-        if(didMaxUidChange) {
+        if(didMaxUidChange || didDistanceChange) {
             roundsWithoutChange = 0;
         } else {
             roundsWithoutChange++;
@@ -70,23 +83,61 @@ public class LeaderElectionService {
             log.trace("round without vote change: {}", roundsWithoutChange);
         }
         //increment round in controller before control is handed back
-        leaderElectionController.incrementRoundNumber();
+        leaderElectionRoundSynchronizer.incrementRoundNumber();
         if(roundsWithoutChange >= 2 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
-            log.debug("--------I am leader");
+            log.debug("--------I am leader--------");
             vote.setThisNodeLeader(true);
-            leaderAnnounce(thisNodeInfo.getUid());
+            vote.setLeaderUid(thisNodeInfo.getUid());
+            knowsLeader = true;
+            MaxDistanceFromLeader = vote.getMaxDistanceSeen();
+            minDistanceToLeader = 0;
+            thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
+            leaderElectionController.sendLeaderAnnounce(thisNodeInfo.getUid(), MaxDistanceFromLeader);
+            leaderElectionController.sendLeaderDistance();
         } else {
             leaderElectionController.sendLeaderElection();
         }
     }
 
-    public void leaderAnnounce(int leaderUid) {
-        //need to check if we have already learned of election result and suppress message if so
-        if(!hasLeader) {
-            this.leaderUid = leaderUid;
-            hasLeader = true;
-            leaderElectionController.announceLeader(leaderUid);
+    public void processLeaderAnnouncement(int leaderUid, int MaxDistanceFromLeader) {
+        //check if we have already learned of election result and suppress message if so
+        if(!knowsLeader) {
+            vote.setThisNodeLeader(false);
+            vote.setLeaderUid(leaderUid);
+            knowsLeader = true;
+            this.MaxDistanceFromLeader = MaxDistanceFromLeader;
+            //set to a number we know will be higher than any number we will receive
+            minDistanceToLeader = MaxDistanceFromLeader + 1;
+            leaderElectionController.sendLeaderAnnounce(leaderUid, MaxDistanceFromLeader);
+            leaderElectionController.sendLeaderDistance();
         }
+    }
+
+    public void processLeaderDistances(Queue<LeaderDistanceMessage> distanceMessages) {
+        if(leaderDistanceRoundSynchronizer.getRoundNumber() < MaxDistanceFromLeader) {
+            if(!vote.isThisNodeLeader()) {
+                for (LeaderDistanceMessage message : distanceMessages) {
+                    if (message.getDistance() < minDistanceToLeader) {
+                        minDistanceToLeader = message.getDistance();
+                    }
+                }
+            }
+            leaderDistanceRoundSynchronizer.incrementRoundNumber();
+            leaderElectionController.sendLeaderDistance();
+        } else {
+            thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
+            //only move forward with bfs when we know our real distance from root
+            log.trace("done establishing distance to leader, releasing semaphore");
+            electingNewLeader.open();
+        }
+    }
+
+    public int getThisDistanceFromRoot() {
+        return thisNodeInfo.getDistanceToRoot();
+    }
+
+    public int getCurrentMinDistanceToLeader() {
+        return minDistanceToLeader + 1;
     }
 
     @Bean
@@ -99,6 +150,8 @@ public class LeaderElectionService {
         private int maxUidSeen;
         private int maxDistanceSeen;
         private boolean isThisNodeLeader;
+
+        private int leaderUid;
 
         public Vote(){
             maxUidSeen = thisNodeInfo.getUid();
@@ -127,6 +180,14 @@ public class LeaderElectionService {
 
         private void setThisNodeLeader(boolean thisNodeLeader) {
             isThisNodeLeader = thisNodeLeader;
+        }
+
+        public int getLeaderUid() {
+            return leaderUid;
+        }
+
+        public void setLeaderUid(int leaderUid) {
+            this.leaderUid = leaderUid;
         }
     }
 }

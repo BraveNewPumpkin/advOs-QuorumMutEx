@@ -1,7 +1,6 @@
 package Node;
 
-public final class LeaderElectionMessage extends NodeMessage {
-    private int roundNumber;
+public final class LeaderElectionMessage extends NodeRoundSynchronizableMessage {
     private int maxUidSeen;
     private int maxDistanceSeen;
 
@@ -10,8 +9,7 @@ public final class LeaderElectionMessage extends NodeMessage {
     }
 
     public LeaderElectionMessage(int sourceUID, int roundNumber, int maxUidSeen, int maxDistanceSeen) {
-        super(sourceUID);
-        this.roundNumber = roundNumber;
+        super(sourceUID, roundNumber);
         this.maxUidSeen = maxUidSeen;
         this.maxDistanceSeen = maxDistanceSeen;
     }
@@ -19,18 +17,9 @@ public final class LeaderElectionMessage extends NodeMessage {
     @Override
     public String toString() {
         return "LeaderElectionMessage{" +
-                "roundNumber=" + roundNumber +
-                ", maxUidSeen=" + maxUidSeen +
+                "maxUidSeen=" + maxUidSeen +
                 ", maxDistanceSeen=" + maxDistanceSeen +
                 "} " + super.toString();
-    }
-
-    public int getRoundNumber() {
-        return roundNumber;
-    }
-
-    public void setRoundNumber(int roundNumber) {
-        this.roundNumber = roundNumber;
     }
 
     public int getMaxUidSeen() {

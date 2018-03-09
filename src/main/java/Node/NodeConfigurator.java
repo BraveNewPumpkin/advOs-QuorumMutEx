@@ -14,26 +14,37 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 @Configuration
 @Slf4j
 public class NodeConfigurator {
-    @Value("${this.hostName:'localhost'}")
+    @Value("${this.hostName}")
     private String thisHostName;
+
+    @Value("${this.isLocal:false}")
+    private boolean isLocal;
 
     @Value("${nodeConfigUri:'file:resources/config.txt'}")
     private String nodeConfigUri;
+
 
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo(
         @Autowired ApplicationContext context
     ) throws UnknownHostException, ConfigurationException {
-//        String hostName = InetAddress.getLocalHost().getHostName();
+        if (thisHostName == null) {
+            thisHostName = InetAddress.getLocalHost().getHostName();
+        }
 
+        //load config using thisHostName to know which node we are
         NodeConfig nodeConfig = readNodeConfig(context, thisHostName);
-        //TODO remove this hardcoding
-        thisHostName = "localhost";
+
+        //if trying to run locally, reset hostname to localhost
+        if(isLocal) {
+            thisHostName = "localhost";
+        }
 
         int thisUid = nodeConfig.thisUid;
         int thisPort = nodeConfig.nodes.get(thisUid).getPort();
@@ -45,6 +56,26 @@ public class NodeConfigurator {
         });
 
         return thisNodeInfo;
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
+    public List<String> getSubscriptionDestinations() {
+        return Arrays.asList(
+            "/topic/leaderElection",
+            "/topic/leaderAnnounce",
+            "/topic/leaderDistance",
+            "/topic/bfsTreeSearch",
+            "/topic/bfsTreeAcknowledge",
+            "/topic/bfsTreeReadyToBuild",
+            "/topic/bfsTreeBuild"
+        );
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+    public CountDownLatch getConnectionTimeoutLatch() {
+        return new CountDownLatch(1);
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
