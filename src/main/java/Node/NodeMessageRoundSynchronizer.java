@@ -7,13 +7,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NodeMessageRoundSynchronizer<T extends RoundSynchronizableMessage> {
     private final List<Queue<T>> roundMessages;
+    private final int roundSize;
 
     private int roundNumber;
 
-   public NodeMessageRoundSynchronizer() {
+   public NodeMessageRoundSynchronizer(int roundSize) {
+       this.roundSize = roundSize;
+
        roundNumber = 0;
        roundMessages = new ArrayList<>(1);
-       roundMessages.add(new ConcurrentLinkedQueue<T>());
+       roundMessages.add(new ConcurrentLinkedQueue<>());
    }
 
     public Queue<T> getMessagesThisRound() {
@@ -29,6 +32,14 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizableMessage> 
             }
         }
         roundMessages.get(messageRoundNumber).add(message);
+    }
+
+    public void enqueueAndRunIfReady(T message, Runnable work) {
+        enqueueMessage(message);
+        int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
+        if (numberOfMessagesSoFarThisRound == roundSize) {
+            work.run();
+        }
     }
 
     public int getRoundNumber() {

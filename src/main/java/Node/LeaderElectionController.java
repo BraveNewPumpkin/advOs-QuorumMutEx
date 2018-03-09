@@ -8,8 +8,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 
 @Controller
@@ -20,34 +18,31 @@ public class LeaderElectionController {
     private final ThisNodeInfo thisNodeInfo;
     private final LeaderElectionService.Vote vote;
     private final ReadWriteLock sendingInitialLeaderElectionMessage;
+    private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
 
-    private final List<Queue<LeaderElectionMessage>> roundMessages;
-    private int roundNumber;
+    private final Runnable leaderElectionWork;
 
     @Autowired
     public LeaderElectionController(
             LeaderElectionService leaderElectionService,
             SimpMessagingTemplate template,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage") ReadWriteLock sendingInitialLeaderElectionMessage
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo")
+            ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
+            ReadWriteLock sendingInitialLeaderElectionMessage,
+            @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
+            NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
             ){
         this.leaderElectionService = leaderElectionService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.vote = leaderElectionService.getVote();
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
+        this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
 
-        roundNumber = 0;
-        roundMessages = new ArrayList<>(1);
-        roundMessages.add(new ConcurrentLinkedQueue<LeaderElectionMessage>());
-    }
-
-    public int getRoundNumber() {
-        return roundNumber;
-    }
-
-    public void incrementRoundNumber(){
-        roundNumber++;
+        leaderElectionWork = () -> {
+            leaderElectionService.processNeighborlyAdvice(leaderElectionRoundSynchronizer.getMessagesThisRound());
+        };
     }
 
     @MessageMapping("/leaderElection")
@@ -63,12 +58,10 @@ public class LeaderElectionController {
             sendingInitialLeaderElectionMessage.readLock().lock();
             try {
                 synchronized (this) {
-                    enqueueMessage(message);
-                    int numberOfMessagesSoFarThisRound = roundMessages.get(roundNumber).size();
-                    int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-                    if (numberOfMessagesSoFarThisRound == numberOfNeighbors) {
-                        leaderElectionService.processNeighborlyAdvice(getMessagesThisRound());
-                    }
+                    leaderElectionRoundSynchronizer.enqueueAndRunIfReady(
+                            message,
+                            leaderElectionWork
+                    );
                 }
             } finally {
                 sendingInitialLeaderElectionMessage.readLock().unlock();
@@ -84,19 +77,21 @@ public class LeaderElectionController {
         leaderElectionService.leaderAnnounce(message.getLeaderUid(), message.getDistance());
     }
 
-    private void enqueueMessage(LeaderElectionMessage message) {
-        int messageRoundNumber = message.getRoundNumber();
-        int currentRoundIndex = roundMessages.size() - 1;
-        if(currentRoundIndex != messageRoundNumber){
-            for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
-                roundMessages.add(new ConcurrentLinkedQueue<>());
-            }
         }
-        roundMessages.get(messageRoundNumber).add(message);
     }
 
-    private Queue<LeaderElectionMessage> getMessagesThisRound() {
-        return roundMessages.get(roundNumber);
+    public void sendLeaderElection() throws MessagingException {
+        LeaderElectionMessage message = new LeaderElectionMessage(
+                thisNodeInfo.getUid(),
+                leaderElectionRoundSynchronizer.getRoundNumber(),
+                vote.getMaxUidSeen(),
+                vote.getMaxDistanceSeen()
+                );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending leader election message: {}", message);
+        }
+        template.convertAndSend("/topic/leaderElection", message);
+        log.trace("leader election message sent");
     }
 
     public void announceLeader(int leaderUid) throws MessagingException {

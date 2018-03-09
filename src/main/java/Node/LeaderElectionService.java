@@ -16,6 +16,7 @@ public class LeaderElectionService {
     private final LeaderElectionController leaderElectionController;
     private final ThisNodeInfo thisNodeInfo;
     private final Semaphore electingNewLeader;
+    private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
 
     private final Vote vote;
     private final List<Integer> receivedDistances;
@@ -27,11 +28,14 @@ public class LeaderElectionService {
     public LeaderElectionService(
             @Lazy LeaderElectionController leaderElectionController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader
+            @Qualifier("Node/LeaderElectionConfig/electingNewLeader") Semaphore electingNewLeader,
+            @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
+                    NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer
     ) {
         this.leaderElectionController = leaderElectionController;
         this.thisNodeInfo = thisNodeInfo;
         this.electingNewLeader = electingNewLeader;
+        this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
 
         this.vote = new Vote();
         roundsWithoutChange = 0;
@@ -76,7 +80,7 @@ public class LeaderElectionService {
             log.trace("round without vote change: {}", roundsWithoutChange);
         }
         //increment round in controller before control is handed back
-        leaderElectionController.incrementRoundNumber();
+        leaderElectionRoundSynchronizer.incrementRoundNumber();
         if(roundsWithoutChange >= 2 && thisNodeInfo.getUid() == vote.getMaxUidSeen()) {
             log.debug("--------I am leader--------");
             vote.setThisNodeLeader(true);
