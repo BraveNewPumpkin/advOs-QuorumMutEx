@@ -1,5 +1,14 @@
 # LeaderElectionPractice
-a practice implementation of peleg's algorithm for leader election
+a practice implementation using Spring WebSocket of Peleg's algorithm for leader election and asynchronously building a Breadth First Search Tree of with the leader as the root node.
+
+parameters are:
+
+**this.hostName** - the hostname to use when finding this nodes information in the config file
+
+**this.isLocal** - set this to true if you wish to run all of your nodes on localhost
+
+**nodeConfigUri** - the URI of the config file. example: "nodeConfigUri=file:/home/BraveNewPumpkin/config.txt"
+
 
 References:
 David Peleg,
