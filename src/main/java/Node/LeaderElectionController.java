@@ -62,7 +62,7 @@ public class LeaderElectionController {
                 log.debug("<---received leader election message {}", message);
             }
             sendingInitialLeaderElectionMessage.enter();
-            synchronized (this) {
+            synchronized (leaderElectionWork) {
                 leaderElectionRoundSynchronizer.enqueueAndRunIfReady(
                         message,
                         leaderElectionWork
@@ -84,7 +84,7 @@ public class LeaderElectionController {
         if(log.isDebugEnabled()) {
             log.debug("<---received leader distance message {}", message);
         }
-        synchronized (this) {
+        synchronized (leaderDistanceWork) {
             leaderDistanceRoundSynchronizer.enqueueAndRunIfReady(
                     message,
                     leaderDistanceWork

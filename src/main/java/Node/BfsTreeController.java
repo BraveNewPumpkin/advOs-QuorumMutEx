@@ -18,6 +18,9 @@ public class BfsTreeController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
 
+    private final Object searchMonitor;
+    private final Object readyToBuildMonitor;
+    private final Object buildMonitor;
 
     @Autowired
     public BfsTreeController(
@@ -28,6 +31,10 @@ public class BfsTreeController {
         this.bfsTreeService = bfsTreeService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
+
+        searchMonitor = new Object();
+        readyToBuildMonitor = new Object();
+        buildMonitor = new Object();
     }
 
 
@@ -37,7 +44,7 @@ public class BfsTreeController {
         if (log.isDebugEnabled()) {
             log.debug("<---received bfs tree search message {}", message);
         }
-        synchronized (this) {
+        synchronized (searchMonitor) {
             bfsTreeService.search(message.getSourceUID(), message.getDistance());
        }
     }
@@ -61,7 +68,7 @@ public class BfsTreeController {
                 log.debug("<---ignoring bfs tree ready to build message {}", message);
             }
         }
-        synchronized (this) {
+        synchronized (readyToBuildMonitor) {
             bfsTreeService.buildReady();
         }
     }
@@ -73,7 +80,7 @@ public class BfsTreeController {
                 log.debug("<---received bfs tree build message {}", message);
             }
         }
-        synchronized (this) {
+        synchronized (buildMonitor) {
             bfsTreeService.build(message.getParentUid(), message.getTree());
         }
     }
