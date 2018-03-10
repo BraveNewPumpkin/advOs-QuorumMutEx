@@ -6,12 +6,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 
 @Controller
-@EnableAsync
 @Slf4j
 public class BfsTreeController {
     private final BfsTreeService bfsTreeService;
@@ -38,7 +35,6 @@ public class BfsTreeController {
     }
 
 
-    @Async("clientInboundChannelExecutor")
     @MessageMapping("/bfsTreeSearch")
     public void bfsTreeSearch(BfsTreeSearchMessage message) {
         if (log.isDebugEnabled()) {
