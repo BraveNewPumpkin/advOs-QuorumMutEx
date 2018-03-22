@@ -19,13 +19,13 @@ import java.util.concurrent.CountDownLatch;
 @Configuration
 @Slf4j
 public class NodeConfigurator {
-    @Value("${this.hostName}")
+    @Value("${this.hostName:}")
     private String thisHostName;
 
     @Value("${this.isLocal:false}")
     private boolean isLocal;
 
-    @Value("${nodeConfigUri:'file:resources/config.txt'}")
+    @Value("${nodeConfigUri:file:resources/config.txt}")
     private String nodeConfigUri;
 
 
@@ -34,7 +34,7 @@ public class NodeConfigurator {
     public ThisNodeInfo getThisNodeInfo(
         @Autowired ApplicationContext context
     ) throws UnknownHostException, ConfigurationException {
-        if (thisHostName == null) {
+        if (thisHostName.equals("")) {
             thisHostName = InetAddress.getLocalHost().getHostName();
         }
 
@@ -106,8 +106,9 @@ public class NodeConfigurator {
                         if(thisNodeHostName.equals(hostName)){
                             thisNodeUid = uid;
                         }
-                        //TODO remove
-                        hostName = "localhost";
+                        if(isLocal) {
+                            hostName = "localhost";
+                        }
                         NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
                         nodes.put(uid, nodeInfo);
                         count++;
