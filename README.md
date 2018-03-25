@@ -1,5 +1,5 @@
-# LeaderElectionPractice
-a practice implementation using Spring WebSocket of Peleg's algorithm for leader election and asynchronously building a Breadth First Search Tree of with the leader as the root node.
+# Synchronous GHS
+a practice implementation using Spring WebSocket of GHS algorithm.
 
 parameters are:
 
@@ -11,12 +11,4 @@ parameters are:
 
 
 References:
-David Peleg,
-Time-optimal leader election in general networks,
-Journal of Parallel and Distributed Computing,
-Volume 8, Issue 1,
-1990,
-Pages 96-99,
-ISSN 0743-7315,
-https://doi.org/10.1016/0743-7315(90)90074-Y.
-(http://www.sciencedirect.com/science/article/pii/074373159090074Y)
+R. G. Gallager, P. A. Humblet, and P. M. Spira. 1983. A Distributed Algorithm for Minimum-Weight Spanning Trees. ACM Trans. Program. Lang. Syst. 5, 1 (January 1983), 66-77. DOI=http://dx.doi.org/10.1145/357195.357200
