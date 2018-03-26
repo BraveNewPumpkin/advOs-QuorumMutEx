@@ -10,21 +10,21 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class ElectNewLeader implements Runnable{
+public class DoSynchGhs implements Runnable{
     private final WebSocketConnector webSocketConnector;
-    private final LeaderElectionController leaderElectionController;
+    private final SynchGhsController synchGhsController;
     private final GateLock sendingInitialLeaderElectionMessage;
 
     @Autowired
-    public ElectNewLeader(
-        WebSocketConnector webSocketConnector,
-        LeaderElectionController leaderElectionController,
-        @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
+    public DoSynchGhs(
+            WebSocketConnector webSocketConnector,
+            SynchGhsController synchGhsController,
+            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
         GateLock sendingInitialLeaderElectionMessage
     ){
         this.webSocketConnector = webSocketConnector;
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
-        this.leaderElectionController = leaderElectionController;
+        this.synchGhsController = synchGhsController;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class ElectNewLeader implements Runnable{
         try {
             Thread.sleep(30 * 1000);
         } catch (InterruptedException e) {
-            log.warn("leader election thread interrupted!");
+            log.warn("SynchGhs thread interrupted!");
         }
         log.trace("before getting sessions");
         //get sessions to ensure that they are initialized
@@ -46,7 +46,7 @@ public class ElectNewLeader implements Runnable{
             log.warn("thread interrupted!");
         }
         log.trace("before sending leader election message");
-        leaderElectionController.sendLeaderElection();
+        synchGhsController.sendLeaderElection();
         sendingInitialLeaderElectionMessage.open();
     }
 }

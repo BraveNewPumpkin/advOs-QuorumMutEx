@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class LeaderElectionConfig {
+public class SynchGhsConfig {
     private final ThisNodeInfo thisNodeInfo;
 
     @Autowired
-    public LeaderElectionConfig(
+    public SynchGhsConfig(
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo
     ) {
@@ -35,12 +35,6 @@ public class LeaderElectionConfig {
     @Bean
     @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
     public NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer(){
-        return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
-    }
-
-    @Bean
-    @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
-    public NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer(){
         return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
     }
 }

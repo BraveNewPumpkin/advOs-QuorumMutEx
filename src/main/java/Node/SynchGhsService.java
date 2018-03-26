@@ -8,16 +8,14 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.Semaphore;
 
 @Service
 @Slf4j
-public class LeaderElectionService {
-    private final LeaderElectionController leaderElectionController;
+public class SynchGhsService {
+    private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
     private final GateLock electingNewLeader;
     private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
-    private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
     private final Vote vote;
     private int roundsWithoutChange;
@@ -26,20 +24,17 @@ public class LeaderElectionService {
     private int minDistanceToLeader;
 
     @Autowired
-    public LeaderElectionService(
-            @Lazy LeaderElectionController leaderElectionController,
+    public SynchGhsService(
+            @Lazy SynchGhsController synchGhsController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/electingNewLeader") GateLock electingNewLeader,
             @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
                     NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
-            @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
-                    NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer
     ) {
-        this.leaderElectionController = leaderElectionController;
+        this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
         this.electingNewLeader = electingNewLeader;
         this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
-        this.leaderDistanceRoundSynchronizer = leaderDistanceRoundSynchronizer;
 
         this.vote = new Vote();
         roundsWithoutChange = 0;
@@ -92,10 +87,10 @@ public class LeaderElectionService {
             MaxDistanceFromLeader = vote.getMaxDistanceSeen();
             minDistanceToLeader = 0;
             thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
-            leaderElectionController.sendLeaderAnnounce(thisNodeInfo.getUid(), MaxDistanceFromLeader);
-            leaderElectionController.sendLeaderDistance();
+            synchGhsController.sendLeaderAnnounce(thisNodeInfo.getUid(), MaxDistanceFromLeader);
+            synchGhsController.sendLeaderDistance();
         } else {
-            leaderElectionController.sendLeaderElection();
+            synchGhsController.sendLeaderElection();
         }
     }
 
@@ -108,8 +103,8 @@ public class LeaderElectionService {
             this.MaxDistanceFromLeader = MaxDistanceFromLeader;
             //set to a number we know will be higher than any number we will receive
             minDistanceToLeader = MaxDistanceFromLeader + 1;
-            leaderElectionController.sendLeaderAnnounce(leaderUid, MaxDistanceFromLeader);
-            leaderElectionController.sendLeaderDistance();
+            synchGhsController.sendLeaderAnnounce(leaderUid, MaxDistanceFromLeader);
+            synchGhsController.sendLeaderDistance();
         }
     }
 
@@ -123,7 +118,7 @@ public class LeaderElectionService {
                 }
             }
             leaderDistanceRoundSynchronizer.incrementRoundNumber();
-            leaderElectionController.sendLeaderDistance();
+            synchGhsController.sendLeaderDistance();
         } else {
             thisNodeInfo.setDistanceToRoot(minDistanceToLeader);
             //only move forward with bfs when we know our real distance from root

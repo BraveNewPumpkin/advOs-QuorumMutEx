@@ -13,14 +13,14 @@ import java.util.concurrent.CountDownLatch;
 @Component
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
-    private LeaderElectionController leaderElectionController;
+    private SynchGhsController synchGhsController;
     private BfsTreeController bfsTreeController;
     private CountDownLatch connectionTimeoutLatch;
     private List<String> subscriptionsDestinations;
 
     @Autowired
     public NodeStompSessionHandler(
-            LeaderElectionController leaderElectionController,
+            SynchGhsController synchGhsController,
             BfsTreeController bfsTreeController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
@@ -28,7 +28,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             List<String> subscriptionsDestinations
     ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
-        this.leaderElectionController = leaderElectionController;
+        this.synchGhsController = synchGhsController;
         this.bfsTreeController = bfsTreeController;
         this.subscriptionsDestinations = subscriptionsDestinations;
     }
@@ -86,19 +86,19 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         }
         switch (stompHeaders.getDestination()) {
             case "/topic/leaderElection":
-                log.trace("calling LeaderElectionController.leaderElection");
+                log.trace("calling SynchGhsController.leaderElection");
                 LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage) message;
-                leaderElectionController.leaderElection(leaderElectionMessage);
+                synchGhsController.leaderElection(leaderElectionMessage);
                 break;
             case "/topic/leaderAnnounce":
-                log.trace("calling LeaderElectionController.leaderAnnounce");
+                log.trace("calling SynchGhsController.leaderAnnounce");
                 LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage) message;
-                leaderElectionController.leaderAnnounce(leaderAnnounceMessage);
+                synchGhsController.leaderAnnounce(leaderAnnounceMessage);
                 break;
             case "/topic/leaderDistance":
-                log.trace("calling LeaderElectionController.leaderDistance");
+                log.trace("calling SynchGhsController.leaderDistance");
                 LeaderDistanceMessage leaderDistanceMessage = (LeaderDistanceMessage) message;
-                leaderElectionController.leaderDistance(leaderDistanceMessage);
+                synchGhsController.leaderDistance(leaderDistanceMessage);
                 break;
             case "/topic/bfsTreeSearch":
                 log.trace("calling BfsTreeService.bfsTreeSearch");

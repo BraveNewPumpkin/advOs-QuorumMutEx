@@ -10,21 +10,20 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 @Slf4j
-public class LeaderElectionController {
-    private final LeaderElectionService leaderElectionService;
+public class SynchGhsController {
+    private final SynchGhsService synchGhsService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-    private final LeaderElectionService.Vote vote;
+    private final SynchGhsService.Vote vote;
     private final GateLock sendingInitialLeaderElectionMessage;
     private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
-    private final NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer;
 
     private final Runnable leaderElectionWork;
     private final Runnable leaderDistanceWork;
 
     @Autowired
-    public LeaderElectionController(
-            LeaderElectionService leaderElectionService,
+    public SynchGhsController(
+            SynchGhsService synchGhsService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
@@ -35,25 +34,21 @@ public class LeaderElectionController {
             @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
             NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer
             ){
-        this.leaderElectionService = leaderElectionService;
+        this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
-        this.vote = leaderElectionService.getVote();
+        this.vote = synchGhsService.getVote();
         this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
         this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
-        this.leaderDistanceRoundSynchronizer = leaderDistanceRoundSynchronizer;
 
         leaderElectionWork = () -> {
-            leaderElectionService.processNeighborlyAdvice(leaderElectionRoundSynchronizer.getMessagesThisRound());
-        };
-        leaderDistanceWork = () -> {
-            leaderElectionService.processLeaderDistances(leaderDistanceRoundSynchronizer.getMessagesThisRound());
+            synchGhsService.processNeighborlyAdvice(leaderElectionRoundSynchronizer.getMessagesThisRound());
         };
     }
 
     @MessageMapping("/leaderElection")
     public void leaderElection(LeaderElectionMessage message) {
-        if(leaderElectionService.hasLeader()) {
+        if(synchGhsService.hasLeader()) {
             if (log.isDebugEnabled()) {
                 log.debug("<---ignoring leader election message {}", message);
             }
@@ -71,27 +66,6 @@ public class LeaderElectionController {
         }
     }
 
-    @MessageMapping("/leaderAnnounce")
-    public void leaderAnnounce(LeaderAnnounceMessage message) {
-        if(log.isDebugEnabled()) {
-            log.debug("<---received leader announce message {}", message);
-        }
-        leaderElectionService.processLeaderAnnouncement(message.getLeaderUid(), message.getMaxDistanceFromLeader());
-    }
-
-    @MessageMapping("/leaderDistance")
-    public void leaderDistance(LeaderDistanceMessage message) {
-        if(log.isDebugEnabled()) {
-            log.debug("<---received leader distance message {}", message);
-        }
-        synchronized (leaderDistanceWork) {
-            leaderDistanceRoundSynchronizer.enqueueAndRunIfReady(
-                    message,
-                    leaderDistanceWork
-            );
-        }
-    }
-
     public void sendLeaderElection() throws MessagingException {
         LeaderElectionMessage message = new LeaderElectionMessage(
                 thisNodeInfo.getUid(),
@@ -106,29 +80,4 @@ public class LeaderElectionController {
         log.trace("leader election message sent");
     }
 
-    public void sendLeaderAnnounce(int leaderUid, int MaxDistanceFromLeader) throws MessagingException {
-        LeaderAnnounceMessage message = new LeaderAnnounceMessage(
-                thisNodeInfo.getUid(),
-                leaderUid,
-                MaxDistanceFromLeader
-        );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending leader announce message: {}", message);
-        }
-        template.convertAndSend("/topic/leaderAnnounce", message);
-        log.trace("done sending the leader announce message");
-    }
-
-    public void sendLeaderDistance() throws MessagingException {
-        LeaderDistanceMessage message = new LeaderDistanceMessage(
-                thisNodeInfo.getUid(),
-                leaderDistanceRoundSynchronizer.getRoundNumber(),
-                leaderElectionService.getCurrentMinDistanceToLeader()
-        );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending leader distance message: {}", message);
-        }
-        template.convertAndSend("/topic/leaderDistance", message);
-        log.trace("done sending the leader distance message");
-    }
 }
