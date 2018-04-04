@@ -63,7 +63,7 @@ public class NodeConfigurator {
     public List<String> getSubscriptionDestinations() {
         return Arrays.asList(
             "/topic/mwoeSearch",
-            "/topic/mwoeResponse",
+            "/topic/mwoeResponse"
         );
     }
 
