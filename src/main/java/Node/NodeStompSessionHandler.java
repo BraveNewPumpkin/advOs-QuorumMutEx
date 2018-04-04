@@ -14,14 +14,12 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     private SynchGhsController synchGhsController;
-    private BfsTreeController bfsTreeController;
     private CountDownLatch connectionTimeoutLatch;
     private List<String> subscriptionsDestinations;
 
     @Autowired
     public NodeStompSessionHandler(
             SynchGhsController synchGhsController,
-            BfsTreeController bfsTreeController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
             @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
@@ -29,7 +27,6 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
         this.synchGhsController = synchGhsController;
-        this.bfsTreeController = bfsTreeController;
         this.subscriptionsDestinations = subscriptionsDestinations;
     }
 
