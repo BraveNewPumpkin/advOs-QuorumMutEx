@@ -49,26 +49,11 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         log.trace("getting payload type");
         Type payloadType = Object.class;
         switch (stompHeaders.getDestination()) {
-            case "/topic/leaderElection":
-                payloadType = LeaderElectionMessage.class;
+            case "/topic/mwoeSearch":
+                payloadType = MwoeSearchMessage.class;
                 break;
-            case "/topic/leaderAnnounce":
-                payloadType = LeaderAnnounceMessage.class;
-                break;
-            case "/topic/leaderDistance":
-                payloadType = LeaderDistanceMessage.class;
-                break;
-            case "/topic/bfsTreeSearch":
-                payloadType = BfsTreeSearchMessage.class;
-                break;
-            case "/topic/bfsTreeAcknowledge":
-                payloadType = BfsTreeAcknowledgeMessage.class;
-                break;
-            case "/topic/bfsTreeReadyToBuild":
-                payloadType = BfsTreeReadyToBuildMessage.class;
-                break;
-            case "/topic/bfsTreeBuild":
-                payloadType = BfsTreeBuildMessage.class;
+            case "/topic/mwoeResponse":
+                payloadType = MwoeResponseMessage.class;
                 break;
             default:
                 if (log.isErrorEnabled()) {
@@ -85,40 +70,15 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             log.debug("handling frame. Destination: {}", stompHeaders.getDestination());
         }
         switch (stompHeaders.getDestination()) {
-            case "/topic/leaderElection":
-                log.trace("calling SynchGhsController.leaderElection");
-                LeaderElectionMessage leaderElectionMessage = (LeaderElectionMessage) message;
-                synchGhsController.leaderElection(leaderElectionMessage);
+            case "/topic/mwoeSearch":
+                log.trace("calling SynchGhsController.mwoeSearch");
+                MwoeSearchMessage mwoeSearchMessage = (MwoeSearchMessage) message;
+                synchGhsController.mwoeSearch(mwoeSearchMessage);
                 break;
-            case "/topic/leaderAnnounce":
-                log.trace("calling SynchGhsController.leaderAnnounce");
-                LeaderAnnounceMessage leaderAnnounceMessage = (LeaderAnnounceMessage) message;
-                synchGhsController.leaderAnnounce(leaderAnnounceMessage);
-                break;
-            case "/topic/leaderDistance":
-                log.trace("calling SynchGhsController.leaderDistance");
-                LeaderDistanceMessage leaderDistanceMessage = (LeaderDistanceMessage) message;
-                synchGhsController.leaderDistance(leaderDistanceMessage);
-                break;
-            case "/topic/bfsTreeSearch":
-                log.trace("calling BfsTreeService.bfsTreeSearch");
-                BfsTreeSearchMessage bfsTreeSearchMessage = (BfsTreeSearchMessage) message;
-                bfsTreeController.bfsTreeSearch(bfsTreeSearchMessage);
-                break;
-            case "/topic/bfsTreeAcknowledge":
-                log.trace("calling BfsTreeService.bfsTreeAcknowledge");
-                BfsTreeAcknowledgeMessage bfsTreeAcknowledgeMessage = (BfsTreeAcknowledgeMessage) message;
-                bfsTreeController.bfsTreeAcknowledge(bfsTreeAcknowledgeMessage);
-                break;
-            case "/topic/bfsTreeReadyToBuild":
-                log.trace("calling BfsTreeService.bfsTreeReadyToBuild");
-                BfsTreeReadyToBuildMessage bfsTreeReadyToBuildMessage = (BfsTreeReadyToBuildMessage) message;
-                bfsTreeController.bfsTreeReadyToBuild(bfsTreeReadyToBuildMessage);
-                break;
-            case "/topic/bfsTreeBuild":
-                log.trace("calling BfsTreeService.bfsTreeBuild");
-                BfsTreeBuildMessage bfsTreeBuildMessage = (BfsTreeBuildMessage) message;
-                bfsTreeController.bfsTreeBuild(bfsTreeBuildMessage);
+            case "/topic/mwoeResponse":
+                log.trace("calling SynchGhsController.mwoeResponse");
+                MwoeResponseMessage mwoeResponseMessage = (MwoeResponseMessage) message;
+                synchGhsController.mwoeResponse(mwoeResponseMessage);
                 break;
         }
     }

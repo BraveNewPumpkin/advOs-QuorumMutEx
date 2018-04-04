@@ -10,11 +10,16 @@ public final class ThisNodeInfo extends NodeInfo{
     private final Map<NodeInfo, Edge> edges;
     private final int totalNumberOfNodes;
 
+    private int componentId;
+
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
         super(uid, hostName, port);
         this.totalNumberOfNodes = totalNumberOfNodes;
         neighbors = new ArrayList<>();
         edges = new HashMap<>();
+
+        //initially we are the only node in our component so we own it
+        this.componentId = uid;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
@@ -37,4 +42,11 @@ public final class ThisNodeInfo extends NodeInfo{
         return totalNumberOfNodes;
     }
 
+    public int getComponentId() {
+        return componentId;
+    }
+
+    public void setComponentId(int componentId) {
+        this.componentId = componentId;
+    }
 }

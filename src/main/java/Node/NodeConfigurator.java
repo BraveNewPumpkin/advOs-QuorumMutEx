@@ -62,13 +62,8 @@ public class NodeConfigurator {
     @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
     public List<String> getSubscriptionDestinations() {
         return Arrays.asList(
-            "/topic/leaderElection",
-            "/topic/leaderAnnounce",
-            "/topic/leaderDistance",
-            "/topic/bfsTreeSearch",
-            "/topic/bfsTreeAcknowledge",
-            "/topic/bfsTreeReadyToBuild",
-            "/topic/bfsTreeBuild"
+            "/topic/mwoeSearch",
+            "/topic/mwoeResponse",
         );
     }
 
@@ -79,6 +74,7 @@ public class NodeConfigurator {
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
+        //TODO store N and distances to neighbors in ThisNodeInfo
         Resource resource = context.getResource(nodeConfigUri);
         Map<Integer, NodeInfo> nodes = new HashMap<>();
         List<Integer> neighbors = new ArrayList<>();

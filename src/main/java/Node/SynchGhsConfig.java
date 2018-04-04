@@ -26,15 +26,22 @@ public class SynchGhsConfig {
     }
 
     @Bean
-    @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
-    public GateLock sendingInitialLeaderElectionMessage() {
-        GateLock sendingInitialLeaderElectionMessage = new GateLock();
-        return sendingInitialLeaderElectionMessage;
+    @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
+    public GateLock sendingInitialMwoeSearchMessage() {
+        GateLock sendingInitialMwoeSearchMessage = new GateLock();
+        return sendingInitialMwoeSearchMessage;
     }
 
     @Bean
-    @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
-    public NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer(){
+    @Qualifier("Node/SynchGhsConfig/mwoeSearchGate")
+    public GateLock mwoeSearchGate() {
+        GateLock mwoeSearchGate = new GateLock();
+        return mwoeSearchGate;
+    }
+
+    @Bean
+    @Qualifier("Node/SynchGhsConfig/SynchGhsRoundSynchronizer")
+    public NodeMessageRoundSynchronizer<MwoeSearchMessage> SynchGhsRoundSynchronizer(){
         return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
     }
 }

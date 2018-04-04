@@ -14,12 +14,8 @@ public class SynchGhsController {
     private final SynchGhsService synchGhsService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-    private final SynchGhsService.Vote vote;
-    private final GateLock sendingInitialLeaderElectionMessage;
-    private final NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer;
-
-    private final Runnable leaderElectionWork;
-    private final Runnable leaderDistanceWork;
+    private final GateLock sendingInitialMwoeSearchMessage;
+    private final Object mwoeSearchBarrier;
 
     @Autowired
     public SynchGhsController(
@@ -27,56 +23,65 @@ public class SynchGhsController {
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
-            GateLock sendingInitialLeaderElectionMessage,
-            @Qualifier("Node/LeaderElectionConfig/leaderElectionRoundSynchronizer")
-            NodeMessageRoundSynchronizer<LeaderElectionMessage> leaderElectionRoundSynchronizer,
-            @Qualifier("Node/LeaderElectionConfig/leaderDistanceRoundSynchronizer")
-            NodeMessageRoundSynchronizer<LeaderDistanceMessage> leaderDistanceRoundSynchronizer
+            @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
+            GateLock sendingInitialMwoeSearchMessage
             ){
         this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
-        this.vote = synchGhsService.getVote();
-        this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
-        this.leaderElectionRoundSynchronizer = leaderElectionRoundSynchronizer;
+        this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
 
-        leaderElectionWork = () -> {
-            synchGhsService.processNeighborlyAdvice(leaderElectionRoundSynchronizer.getMessagesThisRound());
-        };
+        mwoeSearchBarrier = new Object();
     }
 
-    @MessageMapping("/leaderElection")
-    public void leaderElection(LeaderElectionMessage message) {
-        if(synchGhsService.hasLeader()) {
-            if (log.isDebugEnabled()) {
-                log.debug("<---ignoring leader election message {}", message);
+    @MessageMapping("/mwoeSearch")
+    public void mwoeSearch(MwoeSearchMessage message) {
+        if(synchGhsService.isFromComponentNode(message.getComponentId())) {
+            sendingInitialMwoeSearchMessage.enter();
+            //need to have barrier here to prevent race condition between reading and writing isSearched
+            // note that it is also written when phase is transitioned, but we should have guarantee that all mwoeSearch
+            // has been completed by then
+            synchronized(mwoeSearchBarrier) {
+                if (synchGhsService.isSearched()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("<---ignoring MwoeSearch message {}", message);
+                    }
+                } else {
+                    synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
+                }
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received leader election message {}", message);
+                log.debug("<---received MwoeSearch message {}", message);
             }
-            sendingInitialLeaderElectionMessage.enter();
-            synchronized (leaderElectionWork) {
-                leaderElectionRoundSynchronizer.enqueueAndRunIfReady(
-                        message,
-                        leaderElectionWork
-                );
-            }
+            synchGhsService.mwoeInterComponentSearch(message.getSourceUID(), message.getComponentId());
         }
     }
 
-    public void sendLeaderElection() throws MessagingException {
-        LeaderElectionMessage message = new LeaderElectionMessage(
+
+    @MessageMapping("/mwoeResponse")
+    public void mwoeResponse(MwoeResponseMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget().getUid()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---ignoring MwoeResponse message {}", message);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received MwoeResponse message {}", message);
+            }
+            //TODO implement
+        }
+    }
+
+    public void sendMwoeSearch() throws MessagingException {
+        MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
-                leaderElectionRoundSynchronizer.getRoundNumber(),
-                vote.getMaxUidSeen(),
-                vote.getMaxDistanceSeen()
+                thisNodeInfo.getComponentId()
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending leader election message: {}", message);
         }
-        template.convertAndSend("/topic/leaderElection", message);
+        template.convertAndSend("/topic/mwoeSearch", message);
         log.trace("leader election message sent");
     }
 

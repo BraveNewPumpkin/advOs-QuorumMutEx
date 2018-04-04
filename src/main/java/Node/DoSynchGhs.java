@@ -13,23 +13,27 @@ import java.util.List;
 public class DoSynchGhs implements Runnable{
     private final WebSocketConnector webSocketConnector;
     private final SynchGhsController synchGhsController;
-    private final GateLock sendingInitialLeaderElectionMessage;
+    private final SynchGhsService synchGhsService;
+    private final GateLock sendingInitialMwoeSearchMessage;
+
 
     @Autowired
     public DoSynchGhs(
             WebSocketConnector webSocketConnector,
             SynchGhsController synchGhsController,
-            @Qualifier("Node/LeaderElectionConfig/sendingInitialLeaderElectionMessage")
-        GateLock sendingInitialLeaderElectionMessage
+            SynchGhsService synchGhsService,
+            @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
+            GateLock sendingInitialMwoeSearchMessage
     ){
         this.webSocketConnector = webSocketConnector;
-        this.sendingInitialLeaderElectionMessage = sendingInitialLeaderElectionMessage;
+        this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
         this.synchGhsController = synchGhsController;
+        this.synchGhsService = synchGhsService;
     }
 
     @Override
     public void run(){
-        sendingInitialLeaderElectionMessage.close();
+        sendingInitialMwoeSearchMessage.close();
         log.info("sleeping to allow other instances to spin up");
         try {
             Thread.sleep(30 * 1000);
@@ -45,8 +49,9 @@ public class DoSynchGhs implements Runnable{
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
-        log.trace("before sending leader election message");
-        synchGhsController.sendLeaderElection();
-        sendingInitialLeaderElectionMessage.open();
+        synchGhsService.markAsSearched();
+        log.trace("before sending MwoeSearch message");
+        synchGhsController.sendMwoeSearch();
+        sendingInitialMwoeSearchMessage.open();
     }
 }

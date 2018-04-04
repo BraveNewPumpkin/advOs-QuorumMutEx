@@ -14,7 +14,9 @@
     • if have MWOE and received notification of neighbor having MWOE
         § send message to leader to notify all children on its tree that notifying of new leader
 6. new leader must broadcast that merging is done for current round and build a new tree
-    a. increment round upon receipt of this message
+    • upon receipt of this message
+        i. increment round
+        ii. unset isMarked for MwoeSearch
 7. if am node with MWOE or have received MWOE notification, send message across MWOE with new leader UID
     • buffer message until we have received broadcast with notification of MWOE
 convergecast to notify leader that merging completion is acknowledged and to build a tree as it proceeds to leader
