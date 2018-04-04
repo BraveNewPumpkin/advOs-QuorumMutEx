@@ -38,10 +38,4 @@ public class SynchGhsConfig {
         GateLock mwoeSearchGate = new GateLock();
         return mwoeSearchGate;
     }
-
-    @Bean
-    @Qualifier("Node/SynchGhsConfig/SynchGhsRoundSynchronizer")
-    public NodeMessageRoundSynchronizer<MwoeSearchMessage> SynchGhsRoundSynchronizer(){
-        return new NodeMessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
-    }
 }
