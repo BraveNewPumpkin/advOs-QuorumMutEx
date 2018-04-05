@@ -59,6 +59,7 @@ public class NodeConfigurator {
             int edgeWeight = nodeConfig.distancesToNeighbors.get(neighbor);
             Edge edge = new Edge(thisUid, neighborUid, edgeWeight);
             thisNodeInfo.addEdge(edge, neighbor);
+
         });
 
         return thisNodeInfo;
@@ -107,6 +108,8 @@ public class NodeConfigurator {
                 if(!hasNumNodesBeenFound && words.size() == 1) {
                     hasNumNodesBeenFound = true;
                     numberOfNodes = Integer.parseInt(words.remove());
+                    System.out.println(numberOfNodes);
+
                 } else if(count < numberOfNodes) {
                     //parse nodes
                     int uid = Integer.parseInt(words.remove());
@@ -125,23 +128,28 @@ public class NodeConfigurator {
                     count++;
                 } else if(count < numberOfNodes * 2) {
                     //parse neighbors
+                    String nodePair  = words.remove();
+                    nodePair =  nodePair.substring(1,nodePair.length()-1);
+                    int firstUid = Integer.parseInt( nodePair.substring(0,nodePair.lastIndexOf(',')));
+                    int secondUid = Integer.parseInt( nodePair.substring(nodePair.lastIndexOf(',')+1, nodePair.length()));
+
                     if(!hasThisNodeUidBeenFound) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
-                    Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
+                   /* Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
                     if(!edgeNodesMatcher.matches()) {
                         throw new  ConfigurationException("could not match pattern for edges");
                     }
                     int firstUid = Integer.parseInt(edgeNodesMatcher.group("firstUid"));
-                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));
+                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));*/
                     int otherUid = 0;
                     boolean isNeighbor = false;
                     if(thisNodeUid == firstUid) {
                         isNeighbor = true;
-                        otherUid = firstUid;
+                        otherUid = secondUid;
                     } else if(thisNodeUid == secondUid){
                         isNeighbor = true;
-                        otherUid = secondUid;
+                        otherUid = firstUid;
                     }
                     if(isNeighbor) {
                         neighbors.add(otherUid);
@@ -155,6 +163,7 @@ public class NodeConfigurator {
         }catch(IOException e){
             log.error(e.getMessage());
         }
+        System.out.println("List" + thisNodeUid+" "+numberOfNodes+" "+ nodes+" "+ neighbors+" "+ distancesToNeighbors);
         return new NodeConfig(thisNodeUid, numberOfNodes, nodes, neighbors, distancesToNeighbors);
     }
 
