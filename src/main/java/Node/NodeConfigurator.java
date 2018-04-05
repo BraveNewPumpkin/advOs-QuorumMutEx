@@ -15,6 +15,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Configuration
 @Slf4j
@@ -47,12 +49,16 @@ public class NodeConfigurator {
         }
 
         int thisUid = nodeConfig.thisUid;
+        int totalNumberOfNodes = nodeConfig.totalNumberOfNodes;
         int thisPort = nodeConfig.nodes.get(thisUid).getPort();
-        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, thisHostName, thisPort);
+        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, totalNumberOfNodes, thisHostName, thisPort);
 
         nodeConfig.neighbors.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
+            int edgeWeight = nodeConfig.distancesToNeighbors.get(neighbor);
+            Edge edge = new Edge(thisUid, neighborUid, edgeWeight);
+            thisNodeInfo.addEdge(edge, neighbor);
         });
 
         return thisNodeInfo;
@@ -74,69 +80,102 @@ public class NodeConfigurator {
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
-        //TODO store N and distances to neighbors in ThisNodeInfo
         Resource resource = context.getResource(nodeConfigUri);
         Map<Integer, NodeInfo> nodes = new HashMap<>();
         List<Integer> neighbors = new ArrayList<>();
+        Map<NodeInfo, Integer> distancesToNeighbors = new HashMap<>();
         String line;
         int count = 0;
-        Integer thisNodeUid = null;
+
+        int thisNodeUid = 0;
+        boolean hasThisNodeUidBeenFound = false;
+        int numberOfNodes = 0;
+        boolean hasNumNodesBeenFound = false;
+        Pattern edgeNodesPattern = Pattern.compile("\\((?<firstUid>\\d+),(?<secondUid>\\d+)\\)");
         try(
                 InputStream is = resource.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
         ){
-            //throw away first line
-            br.readLine();
-            int numberOfNodes = Integer.parseInt(br.readLine());
             while ((line = br.readLine()) != null) {
-                if (!line.startsWith("#") && !line.matches("^\\s*\\R")) {
-                    Queue<String> words = new LinkedList<>(Arrays.asList(line.trim().split("\\s+")));
-                    if(words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
-                        continue;
-                    }
-                    if(count < numberOfNodes){
-                        int uid = Integer.parseInt(words.remove());
-                        String hostName = words.remove();
-                        int port = Integer.parseInt(words.remove());
+                if (line.startsWith("#") || line.matches("^\\s*\\R")) {
+                    continue;
+                }
+                Queue<String> words = new LinkedList<>(Arrays.asList(line.trim().split("\\s+")));
+                if(words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
+                    continue;
+                }
+                if(!hasNumNodesBeenFound && words.size() == 1) {
+                    hasNumNodesBeenFound = true;
+                    numberOfNodes = Integer.parseInt(words.remove());
+                } else if(count < numberOfNodes) {
+                    //parse nodes
+                    int uid = Integer.parseInt(words.remove());
+                    String hostName = words.remove();
+                    int port = Integer.parseInt(words.remove());
 
-                        if(thisNodeHostName.equals(hostName)){
-                            thisNodeUid = uid;
-                        }
-                        if(isLocal) {
-                            hostName = "localhost";
-                        }
-                        NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
-                        nodes.put(uid, nodeInfo);
-                        count++;
-                    } else if(count < numberOfNodes * 2) {
-                        if(thisNodeUid == null) {
-                            throw new ConfigurationException("could not find node matching HOSTNAME");
-                        }
-                        int uid = Integer.parseInt(words.remove());
-                        if(thisNodeUid.equals(uid)) {
-                            for (String word : words) {
-                                neighbors.add(Integer.parseInt(word));
-                            }
-                        }
-                        count++;
+                    if(thisNodeHostName.equals(hostName)){
+                        hasThisNodeUidBeenFound = true;
+                        thisNodeUid = uid;
                     }
+                    if(isLocal) {
+                        hostName = "localhost";
+                    }
+                    NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
+                    nodes.put(uid, nodeInfo);
+                    count++;
+                } else if(count < numberOfNodes * 2) {
+                    //parse neighbors
+                    if(!hasThisNodeUidBeenFound) {
+                        throw new ConfigurationException("could not find node matching HOSTNAME");
+                    }
+                    Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
+                    if(!edgeNodesMatcher.matches()) {
+                        throw new  ConfigurationException("could not match pattern for edges");
+                    }
+                    int firstUid = Integer.parseInt(edgeNodesMatcher.group("firstUid"));
+                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));
+                    int otherUid = 0;
+                    boolean isNeighbor = false;
+                    if(thisNodeUid == firstUid) {
+                        isNeighbor = true;
+                        otherUid = firstUid;
+                    } else if(thisNodeUid == secondUid){
+                        isNeighbor = true;
+                        otherUid = secondUid;
+                    }
+                    if(isNeighbor) {
+                        neighbors.add(otherUid);
+                        int distanceToNeighbor = Integer.parseInt(words.remove());
+                        NodeInfo neighbor = nodes.get(otherUid);
+                        distancesToNeighbors.put(neighbor, distanceToNeighbor);
+                    }
+                    count++;
                 }
             }
         }catch(IOException e){
             log.error(e.getMessage());
         }
-        return new NodeConfig(thisNodeUid, nodes, neighbors);
+        return new NodeConfig(thisNodeUid, numberOfNodes, nodes, neighbors, distancesToNeighbors);
     }
 
     private class NodeConfig {
         private int thisUid;
+        private int totalNumberOfNodes;
         private Map<Integer, NodeInfo> nodes;
         private List<Integer> neighbors;
+        private Map<NodeInfo, Integer> distancesToNeighbors;
 
-        public NodeConfig(int thisUid, Map<Integer, NodeInfo> nodes, List<Integer> neighbors) {
+        public NodeConfig(int thisUid,
+                          int totalNumberOfNodes,
+                          Map<Integer, NodeInfo> nodes,
+                          List<Integer> neighbors,
+                          Map<NodeInfo, Integer> distancesToNeighbors
+                          ) {
             this.thisUid = thisUid;
+            this.totalNumberOfNodes = totalNumberOfNodes;
             this.nodes = nodes;
             this.neighbors = neighbors;
+            this.distancesToNeighbors = distancesToNeighbors;
         }
     }
 }
