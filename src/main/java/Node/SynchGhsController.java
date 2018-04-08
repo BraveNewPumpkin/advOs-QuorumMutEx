@@ -72,7 +72,22 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MwoeResponse message {}", message);
             }
-            //TODO buffer localMinMessages AND mwoeResonseMessages until we have one from EVERY node that isn't our "parent"
+            //TODO buffer localMinMessages AND mwoeResonseMessages AND mwoeRejectMessages until we have one from EVERY node that isn't our "parent"
+            //TODO implement
+        }
+    }
+
+    @MessageMapping("/mwoeReject")
+    public void mwoeReject(MwoeRejectMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  MwoeReject message {}", message);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received MwoeReject message {}", message);
+            }
+            //TODO buffer localMinMessages AND mwoeResonseMessages AND mwoeRejectMessages until we have one from EVERY node that isn't our "parent"
             //TODO implement
         }
     }
