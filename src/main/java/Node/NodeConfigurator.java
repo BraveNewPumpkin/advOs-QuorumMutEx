@@ -52,6 +52,7 @@ public class NodeConfigurator {
         int totalNumberOfNodes = nodeConfig.totalNumberOfNodes;
         int thisPort = nodeConfig.nodes.get(thisUid).getPort();
         ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, totalNumberOfNodes, thisHostName, thisPort);
+        thisNodeInfo.setComponentId(thisUid);
 
         nodeConfig.neighbors.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
