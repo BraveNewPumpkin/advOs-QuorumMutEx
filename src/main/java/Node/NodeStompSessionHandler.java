@@ -52,6 +52,9 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/mwoeResponse":
                 payloadType = MwoeResponseMessage.class;
                 break;
+            case "/topic/mwoeReject":
+                payloadType = MwoeRejectMessage.class;
+                break;
             default:
                 if (log.isErrorEnabled()) {
                     log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -76,6 +79,11 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 log.trace("calling SynchGhsController.mwoeResponse");
                 MwoeResponseMessage mwoeResponseMessage = (MwoeResponseMessage) message;
                 synchGhsController.mwoeResponse(mwoeResponseMessage);
+                break;
+            case "/topic/mwoeReject":
+                log.trace("calling SynchGhsController.mwoeReject");
+                MwoeRejectMessage mwoeRejectMessage = (MwoeRejectMessage) message;
+                synchGhsController.mwoeReject(mwoeRejectMessage);
                 break;
         }
     }
