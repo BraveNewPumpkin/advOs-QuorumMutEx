@@ -83,10 +83,21 @@ public class SynchGhsController {
                 thisNodeInfo.getComponentId()
                 );
         if(log.isDebugEnabled()){
-            log.debug("--->sending leader election message: {}", message);
+            log.debug("--->sending MwoeSearch message: {}", message);
         }
         template.convertAndSend("/topic/mwoeSearch", message);
         log.trace("leader election message sent");
     }
 
+    public void sendMwoeResponse() throws MessagingException {
+        MwoeResponseMessage message = new MwoeResponseMessage(
+                thisNodeInfo.getUid(),
+                synchGhsService.getParentUid()
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending MwoeResponse message: {}", message);
+        }
+        template.convertAndSend("/topic/mwoeResponse", message);
+        log.trace("MwoeSearch message sent");
+    }
 }
