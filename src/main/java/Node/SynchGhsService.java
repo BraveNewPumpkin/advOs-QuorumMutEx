@@ -13,10 +13,6 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
 
-    public int getParentUid() {
-        return parentUid;
-    }
-
     private int parentUid;
     private boolean isSearched;
 
@@ -53,4 +49,9 @@ public class SynchGhsService {
     public boolean isSearched() {
         return isSearched;
     }
+
+    public int getParentUid() {
+        return parentUid;
+    }
+
 }
