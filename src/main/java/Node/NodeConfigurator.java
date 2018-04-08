@@ -58,7 +58,9 @@ public class NodeConfigurator {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
             int edgeWeight = nodeConfig.distancesToNeighbors.get(neighbor);
-            Edge edge = new Edge(thisUid, neighborUid, edgeWeight);
+            int biggerUid = Math.max(thisUid, neighborUid);
+            int smallerUid = Math.min(thisUid, neighborUid);
+            Edge edge = new Edge(biggerUid, smallerUid, edgeWeight);
             thisNodeInfo.addEdge(edge, neighbor);
 
         });
@@ -130,20 +132,16 @@ public class NodeConfigurator {
                     count++;
                 } else if(count < numberOfNodes * 2) {
                     //parse neighbors
-                    String nodePair  = words.remove();
-                    nodePair =  nodePair.substring(1,nodePair.length()-1);
-                    int firstUid = Integer.parseInt( nodePair.substring(0,nodePair.lastIndexOf(',')));
-                    int secondUid = Integer.parseInt( nodePair.substring(nodePair.lastIndexOf(',')+1, nodePair.length()));
 
                     if(!hasThisNodeUidBeenFound) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
-                   /* Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
+                    Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
                     if(!edgeNodesMatcher.matches()) {
                         throw new  ConfigurationException("could not match pattern for edges");
                     }
                     int firstUid = Integer.parseInt(edgeNodesMatcher.group("firstUid"));
-                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));*/
+                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));
                     int otherUid = 0;
                     boolean isNeighbor = false;
                     if(thisNodeUid == firstUid) {

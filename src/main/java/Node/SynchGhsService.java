@@ -39,7 +39,7 @@ public class SynchGhsService {
     }
 
     public void mwoeInterComponentSearch(int sourceUid, int componentId) {
-        //TODO implement
+        synchGhsController.sendMwoeResponse(sourceUid);
     }
 
     public boolean isFromComponentNode(int componentId) {
@@ -62,4 +62,6 @@ public class SynchGhsService {
     public void setPhaseNumber(int phaseNumber) {
         this.phaseNumber = phaseNumber;
     }
+
+
 }

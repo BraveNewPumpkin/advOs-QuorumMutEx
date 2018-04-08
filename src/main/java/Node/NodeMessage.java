@@ -10,7 +10,6 @@ public abstract class NodeMessage {
         this.setPhaseNumber(phaseNumber);
     }
 
-
     public int getSourceUID() {
         return sourceUID;
     }
