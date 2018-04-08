@@ -1,23 +1,23 @@
 package Node;
 
-public class MwoeResponseMessage extends NodeMessage implements TargetableMessage<NodeInfo> {
-    private NodeInfo target;
+public class MwoeResponseMessage extends NodeMessage implements TargetableMessage<Integer> {
+    private Integer target;
 
     public MwoeResponseMessage() {
     }
 
-    public MwoeResponseMessage(int sourceUID, NodeInfo target) {
+    public MwoeResponseMessage(int sourceUID, Integer target) {
         super(sourceUID);
         this.target = target;
     }
 
     @Override
-    public NodeInfo getTarget() {
+    public Integer getTarget() {
         return target;
     }
 
     @Override
-    public void setTarget(NodeInfo target) {
+    public void setTarget(Integer target) {
         this.target = target;
     }
 

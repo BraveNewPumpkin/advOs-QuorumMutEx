@@ -64,7 +64,7 @@ public class SynchGhsController {
 
     @MessageMapping("/mwoeResponse")
     public void mwoeResponse(MwoeResponseMessage message) {
-        if(thisNodeInfo.getUid() != message.getTarget().getUid()) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
                 log.trace("<---received  MwoeResponse message {}", message);
             }
