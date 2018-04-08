@@ -46,10 +46,10 @@ public class SynchGhsController {
             synchronized(mwoeSearchBarrier) {
                 if (synchGhsService.isSearched()) {
                     if (log.isDebugEnabled()) {
-                        log.debug("<---ignoring MwoeSearch message {}", message);
+                        log.debug("<---received another MwoeSearch message {}", message);
                     }
+                    //TODO send targeted searchRejectMessage to sender
                 } else {
-                    //TODO save the node from which i received first search
                     synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
                 }
             }
@@ -66,7 +66,7 @@ public class SynchGhsController {
     public void mwoeResponse(MwoeResponseMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget().getUid()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---ignoring MwoeResponse message {}", message);
+                log.trace("<---received  MwoeResponse message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {

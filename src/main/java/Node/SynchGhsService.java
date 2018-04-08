@@ -13,6 +13,7 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
 
+    private int parentUid;
     private boolean isSearched;
 
     @Autowired
@@ -27,6 +28,8 @@ public class SynchGhsService {
     }
 
     public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
+        //TODO save the node from which i received first search
+
         isSearched = true;
         synchGhsController.sendMwoeSearch();
     }
