@@ -36,6 +36,8 @@ public class SynchGhsController {
 
     @MessageMapping("/mwoeSearch")
     public void mwoeSearch(MwoeSearchMessage message) {
+        //TODO buffer messages from other phases and only process them when we receive notification from leader that we
+        // are going into that phase
         if(synchGhsService.isFromComponentNode(message.getComponentId())) {
             sendingInitialMwoeSearchMessage.enter();
             //need to have barrier here to prevent race condition between reading and writing isSearched
@@ -47,6 +49,7 @@ public class SynchGhsController {
                         log.debug("<---ignoring MwoeSearch message {}", message);
                     }
                 } else {
+                    //TODO save the node from which i received first search
                     synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
                 }
             }
@@ -69,6 +72,7 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MwoeResponse message {}", message);
             }
+            //TODO buffer localMinMessages AND mwoeResonseMessages until we have one from EVERY node that isn't our "parent"
             //TODO implement
         }
     }
