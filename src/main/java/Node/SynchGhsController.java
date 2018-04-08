@@ -89,10 +89,22 @@ public class SynchGhsController {
         log.trace("leader election message sent");
     }
 
-    public void sendMwoeResponse() throws MessagingException {
+    public void sendMwoeResponse(int targetUid) throws MessagingException {
         MwoeResponseMessage message = new MwoeResponseMessage(
                 thisNodeInfo.getUid(),
-                synchGhsService.getParentUid()
+                targetUid
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending MwoeResponse message: {}", message);
+        }
+        template.convertAndSend("/topic/mwoeResponse", message);
+        log.trace("MwoeSearch message sent");
+    }
+
+    public void sendMwoeReject(int targetUid) throws MessagingException {
+        MwoeRejectMessage message = new MwoeRejectMessage(
+                thisNodeInfo.getUid(),
+                targetUid
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MwoeResponse message: {}", message);
