@@ -7,8 +7,8 @@ public final class MwoeSearchMessage extends NodeMessage{
         super();
     }
 
-    public MwoeSearchMessage(int sourceUID, int componentId) {
-        super(sourceUID);
+    public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
+        super(sourceUID,phaseNumber);
         this.componentId = componentId;
     }
 

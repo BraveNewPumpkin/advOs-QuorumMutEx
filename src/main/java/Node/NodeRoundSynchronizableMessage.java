@@ -7,8 +7,8 @@ public class NodeRoundSynchronizableMessage extends NodeMessage implements Round
         super();
     }
 
-    public NodeRoundSynchronizableMessage(int sourceUID, int roundNumber) {
-        super(sourceUID);
+    public NodeRoundSynchronizableMessage(int sourceUID, int phaseNumber, int roundNumber) {
+        super(sourceUID,phaseNumber);
         this.roundNumber = roundNumber;
     }
 

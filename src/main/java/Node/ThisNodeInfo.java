@@ -12,6 +12,7 @@ public final class ThisNodeInfo extends NodeInfo{
     private int componentId;
     private List<Edge> treeEdges;
 
+
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
         super(uid, hostName, port);
         this.totalNumberOfNodes = totalNumberOfNodes;

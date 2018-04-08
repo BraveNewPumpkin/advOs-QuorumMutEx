@@ -13,8 +13,13 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
 
+    public int getParentUid() {
+        return parentUid;
+    }
+
     private int parentUid;
     private boolean isSearched;
+    private int phaseNumber;
 
     @Autowired
     public SynchGhsService(
@@ -23,8 +28,8 @@ public class SynchGhsService {
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
-
         isSearched = false;
+        this.phaseNumber =0;
     }
 
     public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
@@ -50,8 +55,11 @@ public class SynchGhsService {
         return isSearched;
     }
 
-    public int getParentUid() {
-        return parentUid;
+    public int getPhaseNumber() {
+        return phaseNumber;
     }
 
+    public void setPhaseNumber(int phaseNumber) {
+        this.phaseNumber = phaseNumber;
+    }
 }

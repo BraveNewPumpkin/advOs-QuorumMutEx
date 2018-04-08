@@ -6,8 +6,8 @@ public class MwoeResponseMessage extends NodeMessage implements TargetableMessag
     public MwoeResponseMessage() {
     }
 
-    public MwoeResponseMessage(int sourceUID, Integer target) {
-        super(sourceUID);
+    public MwoeResponseMessage(int sourceUID, Integer target, int phaseNumber) {
+        super(sourceUID, phaseNumber);
         this.target = target;
     }
 

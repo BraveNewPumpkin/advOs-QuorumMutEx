@@ -36,8 +36,8 @@ public class SynchGhsController {
 
     @MessageMapping("/mwoeSearch")
     public void mwoeSearch(MwoeSearchMessage message) {
-        //TODO buffer messages from other phases and only process them when we receive notification from leader that we
-        // are going into that phase
+        /*TODO buffer messages from other phases and only process them when we receive notification from leader that we
+        are going into that phase*/
         if(synchGhsService.isFromComponentNode(message.getComponentId())) {
             sendingInitialMwoeSearchMessage.enter();
             //need to have barrier here to prevent race condition between reading and writing isSearched
@@ -80,6 +80,7 @@ public class SynchGhsController {
     public void sendMwoeSearch() throws MessagingException {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
+                synchGhsService.getPhaseNumber(),
                 thisNodeInfo.getComponentId()
                 );
         if(log.isDebugEnabled()){
@@ -92,6 +93,7 @@ public class SynchGhsController {
     public void sendMwoeResponse(int targetUid) throws MessagingException {
         MwoeResponseMessage message = new MwoeResponseMessage(
                 thisNodeInfo.getUid(),
+                synchGhsService.getPhaseNumber(),
                 targetUid
         );
         if(log.isDebugEnabled()){
@@ -104,8 +106,10 @@ public class SynchGhsController {
     public void sendMwoeReject(int targetUid) throws MessagingException {
         MwoeRejectMessage message = new MwoeRejectMessage(
                 thisNodeInfo.getUid(),
+                synchGhsService.getPhaseNumber(),
                 targetUid
         );
+
         if(log.isDebugEnabled()){
             log.debug("--->sending MwoeResponse message: {}", message);
         }

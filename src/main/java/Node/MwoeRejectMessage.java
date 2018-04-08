@@ -6,9 +6,10 @@ public class MwoeRejectMessage extends NodeMessage implements TargetableMessage<
 
     }
 
-    public MwoeRejectMessage(int sourceUID, Integer target) {
-        super(sourceUID);
+    public MwoeRejectMessage(int sourceUID, int phaseNumber,  Integer target) {
+        super(sourceUID,phaseNumber);
         this.target = target;
+
     }
 
     @Override
