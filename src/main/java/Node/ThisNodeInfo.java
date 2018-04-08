@@ -9,15 +9,15 @@ public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> neighbors;
     private final Map<NodeInfo, Edge> edges;
     private final int totalNumberOfNodes;
-
     private int componentId;
+    private List<Edge> treeEdges;
 
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
         super(uid, hostName, port);
         this.totalNumberOfNodes = totalNumberOfNodes;
         neighbors = new ArrayList<>();
         edges = new HashMap<>();
-
+        treeEdges = new ArrayList<>();
         //initially we are the only node in our component so we own it
         this.componentId = uid;
     }
@@ -49,4 +49,14 @@ public final class ThisNodeInfo extends NodeInfo{
     public void setComponentId(int componentId) {
         this.componentId = componentId;
     }
+
+    public List<Edge> getTreeEdges() {
+        return treeEdges;
+    }
+
+    public void addTreeEdges(Edge treeEdge) {
+        treeEdges.add(treeEdge);
+    }
+
+
 }
