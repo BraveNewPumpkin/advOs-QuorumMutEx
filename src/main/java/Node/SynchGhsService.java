@@ -29,7 +29,7 @@ public class SynchGhsService {
 
     public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
         //TODO save the node from which i received first search
-
+        parentUid = sourceUid;
         isSearched = true;
         synchGhsController.sendMwoeSearch();
     }
