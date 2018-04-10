@@ -8,6 +8,11 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.stream.Collectors;
+
 @Controller
 @Slf4j
 public class SynchGhsController {
@@ -15,7 +20,10 @@ public class SynchGhsController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final GateLock sendingInitialMwoeSearchMessage;
+    private final MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer;
     private final Object mwoeSearchBarrier;
+
+    private final Runnable mwoeLocalMinWork;
 
     @Autowired
     public SynchGhsController(
@@ -24,14 +32,24 @@ public class SynchGhsController {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
-            GateLock sendingInitialMwoeSearchMessage
+            GateLock sendingInitialMwoeSearchMessage,
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
+            MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer
             ){
         this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
+        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
 
         mwoeSearchBarrier = new Object();
+        mwoeLocalMinWork = () -> {
+            Queue<MwoeCandidateMessage> mwoeCandidateMessages = mwoeSearchRoundSynchronizer.getMessagesThisRound();
+            List<Edge> candidateEdges = mwoeCandidateMessages.parallelStream()
+                    .map(MwoeCandidateMessage::getMwoeCandidate)
+                    .collect(Collectors.toList());
+            synchGhsService.calcLocalMin(candidateEdges);
+        };
     }
 
     @MessageMapping("/mwoeSearch")
@@ -48,7 +66,7 @@ public class SynchGhsController {
                     if (log.isDebugEnabled()) {
                         log.debug("<---received another MwoeSearch message {}", message);
                     }
-                    //TODO send targeted searchRejectMessage to sender
+                    sendMwoeReject(message.getSourceUID());
                 } else {
                     synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
                 }
@@ -62,18 +80,19 @@ public class SynchGhsController {
     }
 
 
-    @MessageMapping("/mwoeResponse")
-    public void mwoeResponse(MwoeResponseMessage message) {
+    @MessageMapping("/mwoeCandidate")
+    public void mwoeCandidate(MwoeCandidateMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  MwoeResponse message {}", message);
+                log.trace("<---received  MwoeCandidate message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received MwoeResponse message {}", message);
+                log.debug("<---received MwoeCandidate message {}", message);
             }
-            //TODO buffer localMinMessages AND mwoeResonseMessages AND mwoeRejectMessages until we have one from EVERY node that isn't our "parent"
-            //TODO implement
+            synchronized (mwoeLocalMinWork) {
+                mwoeSearchRoundSynchronizer.enqueueAndRunIfReady(message, mwoeLocalMinWork);
+            }
         }
     }
 
@@ -87,8 +106,9 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MwoeReject message {}", message);
             }
-            //TODO buffer localMinMessages AND mwoeResonseMessages AND mwoeRejectMessages until we have one from EVERY node that isn't our "parent"
-            //TODO implement
+            synchronized (mwoeLocalMinWork) {
+                mwoeSearchRoundSynchronizer.incrementProgressAndRunIfReady(message.getPhaseNumber(), mwoeLocalMinWork);
+            }
         }
     }
 
@@ -105,11 +125,12 @@ public class SynchGhsController {
         log.trace("leader election message sent");
     }
 
-    public void sendMwoeResponse(int targetUid) throws MessagingException {
-        MwoeResponseMessage message = new MwoeResponseMessage(
+    public void sendMwoeCandidate(int targetUid, Edge candidate) throws MessagingException {
+        MwoeCandidateMessage message = new MwoeCandidateMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
-                targetUid
+                targetUid,
+                candidate
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MwoeResponse message: {}", message);

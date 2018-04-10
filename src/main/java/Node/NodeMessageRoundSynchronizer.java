@@ -5,8 +5,9 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class NodeMessageRoundSynchronizer<T extends RoundSynchronizableMessage> {
+public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     private final List<Queue<T>> roundMessages;
+
     private final int roundSize;
 
     private int roundNumber;
@@ -36,6 +37,10 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizableMessage> 
 
     public void enqueueAndRunIfReady(T message, Runnable work) {
         enqueueMessage(message);
+        runIfReady(work);
+    }
+
+    public void runIfReady(Runnable work) {
         int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
         if (numberOfMessagesSoFarThisRound == roundSize) {
             work.run();
@@ -52,5 +57,9 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizableMessage> 
 
     public void incrementRoundNumber() {
         roundNumber++;
+    }
+
+    public int getRoundSize() {
+        return roundSize;
     }
 }

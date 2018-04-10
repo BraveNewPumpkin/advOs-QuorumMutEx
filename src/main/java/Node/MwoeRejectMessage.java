@@ -3,7 +3,6 @@ package Node;
 public class MwoeRejectMessage extends NodeMessage implements TargetableMessage<Integer> {
     private Integer target;
     public MwoeRejectMessage() {
-
     }
 
     public MwoeRejectMessage(int sourceUID, int phaseNumber,  Integer target) {

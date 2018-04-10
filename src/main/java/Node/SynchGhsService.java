@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 
 @Service
 @Slf4j
@@ -39,7 +41,12 @@ public class SynchGhsService {
     }
 
     public void mwoeInterComponentSearch(int sourceUid, int componentId) {
-        synchGhsController.sendMwoeResponse(sourceUid);
+        Edge candidate = thisNodeInfo.getEdges().get(sourceUid);
+        synchGhsController.sendMwoeCandidate(sourceUid, candidate);
+    }
+
+    public void calcLocalMin(List<Edge> candidates) {
+        //TODO calculate local min and tell controller to send to parentUid
     }
 
     public boolean isFromComponentNode(int componentId) {
@@ -62,6 +69,4 @@ public class SynchGhsService {
     public void setPhaseNumber(int phaseNumber) {
         this.phaseNumber = phaseNumber;
     }
-
-
 }
