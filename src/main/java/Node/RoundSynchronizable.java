@@ -1,6 +1,6 @@
 package Node;
 
-public interface RoundSynchronizableMessage {
+public interface RoundSynchronizable {
     public int getRoundNumber();
 
     public void setRoundNumber(int roundNumber);

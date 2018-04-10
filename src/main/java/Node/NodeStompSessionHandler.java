@@ -50,7 +50,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 payloadType = MwoeSearchMessage.class;
                 break;
             case "/topic/mwoeResponse":
-                payloadType = MwoeResponseMessage.class;
+                payloadType = MwoeCandidateMessage.class;
                 break;
             case "/topic/mwoeReject":
                 payloadType = MwoeRejectMessage.class;
@@ -77,8 +77,8 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 break;
             case "/topic/mwoeResponse":
                 log.trace("calling SynchGhsController.mwoeResponse");
-                MwoeResponseMessage mwoeResponseMessage = (MwoeResponseMessage) message;
-                synchGhsController.mwoeResponse(mwoeResponseMessage);
+                MwoeCandidateMessage mwoeCandidateMessage = (MwoeCandidateMessage) message;
+                synchGhsController.mwoeResponse(mwoeCandidateMessage);
                 break;
             case "/topic/mwoeReject":
                 log.trace("calling SynchGhsController.mwoeReject");

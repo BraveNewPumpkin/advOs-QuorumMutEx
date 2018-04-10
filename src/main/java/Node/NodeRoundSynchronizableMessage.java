@@ -1,6 +1,6 @@
 package Node;
 
-public class NodeRoundSynchronizableMessage extends NodeMessage implements RoundSynchronizableMessage{
+public class NodeRoundSynchronizableMessage extends NodeMessage implements RoundSynchronizable {
     private int roundNumber;
 
     public NodeRoundSynchronizableMessage() {
