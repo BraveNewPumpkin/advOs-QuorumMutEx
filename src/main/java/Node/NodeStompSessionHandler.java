@@ -75,15 +75,25 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 MwoeSearchMessage mwoeSearchMessage = (MwoeSearchMessage) message;
                 synchGhsController.mwoeSearch(mwoeSearchMessage);
                 break;
-            case "/topic/mwoeResponse":
-                log.trace("calling SynchGhsController.mwoeResponse");
+            case "/topic/mwoeCandidate":
+                log.trace("calling SynchGhsController.mwoeCandidate");
                 MwoeCandidateMessage mwoeCandidateMessage = (MwoeCandidateMessage) message;
-                synchGhsController.mwoeResponse(mwoeCandidateMessage);
+                synchGhsController.mwoeCandidate(mwoeCandidateMessage);
                 break;
             case "/topic/mwoeReject":
                 log.trace("calling SynchGhsController.mwoeReject");
                 MwoeRejectMessage mwoeRejectMessage = (MwoeRejectMessage) message;
                 synchGhsController.mwoeReject(mwoeRejectMessage);
+                break;
+            case "/topic/initiateMerge":
+                log.trace("calling SynchGhsController.initiateMerge");
+                InitiateMergeMessage initiateMergeMessage = (InitiateMergeMessage) message;
+                synchGhsController.initiateMerge(initiateMergeMessage);
+                break;
+            case "/topic/newLeader":
+                log.trace("calling SynchGhsController.newLeader");
+                NewLeaderMessage NewLeaderMessage = (NewLeaderMessage) message;
+                synchGhsController.newLeader(NewLeaderMessage);
                 break;
         }
     }

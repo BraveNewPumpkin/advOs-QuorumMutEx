@@ -72,7 +72,9 @@ public class NodeConfigurator {
         return Arrays.asList(
             "/topic/mwoeSearch",
             "/topic/mwoeResponse",
-            "/topic/mwoeReject"
+            "/topic/mwoeReject",
+            "/topic/initiateMerge",
+            "/topic/newLeader"
         );
     }
 

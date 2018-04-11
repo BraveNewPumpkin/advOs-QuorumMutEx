@@ -16,10 +16,6 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
 
-    public int getParentUid() {
-        return parentUid;
-    }
-
     private int parentUid;
     private boolean isSearched;
     private int phaseNumber;
@@ -48,7 +44,11 @@ public class SynchGhsService {
 
     public void calcLocalMin(List<Edge> candidates) {
         if(isThisNodeLeader()) {
-            //TODO send notification to node with MWOE
+            if(thisNodeInfo.getTreeEdges().size() == 0) {
+                //TODO call merge procedure
+            } else {
+                //TODO send notification to node with MWOE
+            }
         } else {
             Collections.sort(candidates);
             Edge localMin = candidates.get(0);
@@ -68,7 +68,6 @@ public class SynchGhsService {
         isSearched = true;
     }
 
-
     public boolean isSearched() {
         return isSearched;
     }
@@ -80,4 +79,9 @@ public class SynchGhsService {
     public void setPhaseNumber(int phaseNumber) {
         this.phaseNumber = phaseNumber;
     }
+
+    public int getParentUid() {
+        return parentUid;
+    }
+
 }
