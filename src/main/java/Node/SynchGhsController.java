@@ -137,6 +137,11 @@ public class SynchGhsController {
                 log.debug("<---received newLeader message {}", message);
             }
             //TODO call service method to update leader. send to other neighbors. other things?
+            synchGhsService.newLeaderRelay();
+            for(Edge edge: thisNodeInfo.getTreeEdges()) {
+                //TODO get uid from edge
+                sendNewLeader(targetUid, message.getNewLeaderUID();
+            }
         }
     }
 
@@ -199,7 +204,8 @@ public class SynchGhsController {
         NewLeaderMessage message = new NewLeaderMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
-                targetUid
+                targetUid,
+
         );
 
         if(log.isDebugEnabled()){
