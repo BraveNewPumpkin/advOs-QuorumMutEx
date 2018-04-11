@@ -112,6 +112,34 @@ public class SynchGhsController {
         }
     }
 
+    @MessageMapping("/initiateMerge")
+    public void initiateMerge(InitiateMergeMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  initiateMerge message {}", message);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received initiateMerge message {}", message);
+            }
+            //TODO implement receiving initiate merge message (relay or whatever)
+        }
+    }
+
+    @MessageMapping("/newLeader")
+    public void newLeader(NewLeaderMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  newLeader message {}", message);
+            }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received newLeader message {}", message);
+            }
+            //TODO call service method to update leader. send to other neighbors. other things?
+        }
+    }
+
     public void sendMwoeSearch() throws MessagingException {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
@@ -122,7 +150,7 @@ public class SynchGhsController {
             log.debug("--->sending MwoeSearch message: {}", message);
         }
         template.convertAndSend("/topic/mwoeSearch", message);
-        log.trace("leader election message sent");
+        log.trace("MwoeSearch message sent");
     }
 
     public void sendMwoeCandidate(int targetUid, Edge candidate) throws MessagingException {
@@ -133,10 +161,10 @@ public class SynchGhsController {
                 candidate
         );
         if(log.isDebugEnabled()){
-            log.debug("--->sending MwoeResponse message: {}", message);
+            log.debug("--->sending MwoeCandidate message: {}", message);
         }
-        template.convertAndSend("/topic/mwoeResponse", message);
-        log.trace("MwoeSearch message sent");
+        template.convertAndSend("/topic/mwoeCandidate", message);
+        log.trace("MwoeCandidate message sent");
     }
 
     public void sendMwoeReject(int targetUid) throws MessagingException {
@@ -147,9 +175,37 @@ public class SynchGhsController {
         );
 
         if(log.isDebugEnabled()){
-            log.debug("--->sending MwoeResponse message: {}", message);
+            log.debug("--->sending MwoeReject message: {}", message);
         }
-        template.convertAndSend("/topic/mwoeResponse", message);
-        log.trace("MwoeSearch message sent");
+        template.convertAndSend("/topic/mwoeReject", message);
+        log.trace("MwoeReject message sent");
+    }
+
+    public void sendInitiateMerge(int targetUid) throws MessagingException {
+        InitiateMergeMessage message = new InitiateMergeMessage(
+                thisNodeInfo.getUid(),
+                synchGhsService.getPhaseNumber(),
+                targetUid
+        );
+
+        if(log.isDebugEnabled()){
+            log.debug("--->sending InitiateMerge message: {}", message);
+        }
+        template.convertAndSend("/topic/initiateMerge", message);
+        log.trace("InitiateMerge message sent");
+    }
+
+    public void sendNewLeader(int targetUid) throws MessagingException {
+        NewLeaderMessage message = new NewLeaderMessage(
+                thisNodeInfo.getUid(),
+                synchGhsService.getPhaseNumber(),
+                targetUid
+        );
+
+        if(log.isDebugEnabled()){
+            log.debug("--->sending NewLeaderMessage message: {}", message);
+        }
+        template.convertAndSend("/topic/newLeader", message);
+        log.trace("NewLeader message sent");
     }
 }
