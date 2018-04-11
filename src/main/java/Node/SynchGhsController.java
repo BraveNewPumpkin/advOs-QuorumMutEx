@@ -181,9 +181,18 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received newLeader message {}", message);
             }
-            //TODO call service method to update leader. send to other neighbors. other things?
-            //synchGhsService.newLeaderRelay();
-            thisNodeInfo.setComponentId(message.newLeaderUID);
+
+            //update this nodes component id with new leaders UID
+
+            thisNodeInfo.setComponentId(message.getNewLeaderUID());
+
+            // then relay that message to all its tree edges
+            for(Edge edge: thisNodeInfo.getTreeEdges()) {
+                int targetUID= edge.getFirstUid()!=thisNodeInfo.getUid()?edge.getFirstUid():edge.getSecondUid();
+
+                if(targetUID!= message.getSourceUID())
+                    sendNewLeader(targetUID, message.getNewLeaderUID());
+            }
         }
     }
     public void sendMwoeSearch() throws MessagingException {
