@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import javax.xml.soap.Node;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -123,7 +124,51 @@ public class SynchGhsController {
                 log.debug("<---received initiateMerge message {}", message);
             }
             //TODO implement receiving initiate merge message (relay or whatever)
+            Edge selectedMwoeEdge = message.getMwoeEdge();
+            if(message.getComponentId()==thisNodeInfo.getComponentId())
+            {
+                if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
+                {
+                    int otherComponentNode = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
+                            selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
+                    List<NodeInfo> neighbors= thisNodeInfo.getNeighbors();
+                    for(NodeInfo n: neighbors)
+                    {
+                       if(n.getUid() == otherComponentNode)
+                           thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                    }
+                }
+                for(Edge edge: thisNodeInfo.getTreeEdges()) {
+                    int targetUID;
+                    if(edge.firstUid!=thisNodeInfo.getUid())
+                        targetUID = edge.firstUid;
+                    else
+                        targetUID = edge.secondUid;
+
+                    if(targetUID!=message.getSourceUID())
+                        sendInitiateMerge(targetUID,selectedMwoeEdge);
+                }
+
+            }
+            else if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
+            {
+                int targetUID = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
+                        selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
+                if(thisNodeInfo.getUid() == targetUID)
+                {
+                    if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge))
+                        thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                    else
+                    {
+                        int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
+                        //TODO broadast newLeader in the new merged component
+                    }
+
+                }
+            }
+
         }
+
     }
 
     @MessageMapping("/newLeader")
@@ -136,22 +181,11 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received newLeader message {}", message);
             }
-
-            //update this nodes component id with new leaders UID
-
-            thisNodeInfo.setComponentId(message.getNewLeaderUID());
-
-            // then relay that message to all its tree edges
-            for(Edge edge: thisNodeInfo.getTreeEdges()) {
-                int targetUID= edge.getFirstUid()!=thisNodeInfo.getUid()?edge.getFirstUid():edge.getSecondUid();
-
-                //relay message to all tree edges except from which it received the new leader message
-                if(targetUID!= message.getSourceUID())
-                    sendNewLeader(targetUID, message.getNewLeaderUID());
-            }
+            //TODO call service method to update leader. send to other neighbors. other things?
+            //synchGhsService.newLeaderRelay();
+            thisNodeInfo.setComponentId(message.newLeaderUID);
         }
     }
-
     public void sendMwoeSearch() throws MessagingException {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
@@ -193,11 +227,13 @@ public class SynchGhsController {
         log.trace("MwoeReject message sent");
     }
 
-    public void sendInitiateMerge(int targetUid) throws MessagingException {
+    public void sendInitiateMerge(int targetUid, Edge selectedMwoeEdge) throws MessagingException {
         InitiateMergeMessage message = new InitiateMergeMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
-                targetUid
+                targetUid,
+                selectedMwoeEdge,
+                thisNodeInfo.getComponentId()
         );
 
         if(log.isDebugEnabled()){
@@ -207,12 +243,12 @@ public class SynchGhsController {
         log.trace("InitiateMerge message sent");
     }
 
-    public void sendNewLeader(int targetUid, int newLeaderUID) throws MessagingException {
+    public void sendNewLeader(int targetUid) throws MessagingException {
         NewLeaderMessage message = new NewLeaderMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
                 targetUid,
-                newLeaderUID
+                thisNodeInfo.getComponentId()
         );
 
         if(log.isDebugEnabled()){

@@ -19,4 +19,5 @@ public class NewLeaderMessage extends SimpleTargetableMessage {
     public void setNewLeaderUID(int newLeaderUID) {
         this.newLeaderUID = newLeaderUID;
     }
+
 }
