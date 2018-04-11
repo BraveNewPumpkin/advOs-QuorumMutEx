@@ -46,14 +46,18 @@ public class SynchGhsService {
         synchGhsController.sendMwoeCandidate(sourceUid, candidate);
     }
 
-    public Edge calcLocalMin(List<Edge> candidates) {
-        //TODO calculate local min and tell controller to send to parentUid
-        Collections.sort(candidates);
+    public void calcLocalMin(List<Edge> candidates) {
+        if(isThisNodeLeader()) {
+            //TODO send notification to node with MWOE
+        } else {
+            Collections.sort(candidates);
+            Edge localMin = candidates.get(0);
+            synchGhsController.sendMwoeCandidate(parentUid, localMin);
+        }
+    }
 
-        if(candidates.size()>=1)
-            return candidates.get(0);
-        else
-            return null;
+    public boolean isThisNodeLeader(){
+        return thisNodeInfo.getComponentId() == thisNodeInfo.getUid();
     }
 
     public boolean isFromComponentNode(int componentId) {
