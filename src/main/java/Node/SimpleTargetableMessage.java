@@ -18,4 +18,11 @@ public abstract class SimpleTargetableMessage extends NodeMessage implements Tar
     public void setTarget(Integer target) {
         this.target = target;
     }
+
+    @Override
+    public String toString() {
+        return "SimpleTargetableMessage{" +
+                "target=" + target +
+                "} " + super.toString();
+    }
 }

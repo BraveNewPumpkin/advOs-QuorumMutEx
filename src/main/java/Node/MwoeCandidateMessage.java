@@ -30,4 +30,12 @@ public class MwoeCandidateMessage extends NodeRoundSynchronizableMessage impleme
     public void setMwoeCandidate(Edge mwoeCandidate) {
         this.mwoeCandidate = mwoeCandidate;
     }
+
+    @Override
+    public String toString() {
+        return "MwoeCandidateMessage{" +
+                "target=" + target +
+                ", mwoeCandidate=" + mwoeCandidate +
+                "} " + super.toString();
+    }
 }

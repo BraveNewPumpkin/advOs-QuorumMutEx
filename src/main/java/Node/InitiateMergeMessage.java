@@ -27,4 +27,12 @@ public class InitiateMergeMessage extends SimpleTargetableMessage {
     public void setComponentId(int componentId) {
         this.componentId = componentId;
     }
+
+    @Override
+    public String toString() {
+        return "InitiateMergeMessage{" +
+                "mwoeEdge=" + mwoeEdge +
+                ", componentId=" + componentId +
+                "} " + super.toString();
+    }
 }

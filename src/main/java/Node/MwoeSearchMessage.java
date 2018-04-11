@@ -12,16 +12,18 @@ public final class MwoeSearchMessage extends NodeMessage{
         this.componentId = componentId;
     }
 
-    @Override
-    public String toString() {
-        return "MwoeSearchMessage{} " + super.toString();
-    }
-
     public int getComponentId() {
         return componentId;
     }
 
     public void setComponentId(int componentId) {
         this.componentId = componentId;
+    }
+
+    @Override
+    public String toString() {
+        return "MwoeSearchMessage{" +
+                "componentId=" + componentId +
+                "} " + super.toString();
     }
 }

@@ -20,4 +20,10 @@ public class NewLeaderMessage extends SimpleTargetableMessage {
         this.newLeaderUID = newLeaderUID;
     }
 
+    @Override
+    public String toString() {
+        return "NewLeaderMessage{" +
+                "newLeaderUID=" + newLeaderUID +
+                "} " + super.toString();
+    }
 }

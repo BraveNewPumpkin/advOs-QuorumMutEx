@@ -20,4 +20,11 @@ public class MwoeRejectMessage extends NodeMessage implements TargetableMessage<
     public void setTarget(Integer target) {
         this.target = target;
     }
+
+    @Override
+    public String toString() {
+        return "MwoeRejectMessage{" +
+                "target=" + target +
+                "} " + super.toString();
+    }
 }
