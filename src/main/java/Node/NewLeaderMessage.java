@@ -7,10 +7,6 @@ public class NewLeaderMessage extends SimpleTargetableMessage {
     public NewLeaderMessage() {
     }
 
-    public NewLeaderMessage(int sourceUID, int phaseNumber, int target) {
-        super(sourceUID, phaseNumber, target);
-    }
-
     public NewLeaderMessage(int sourceId, int phaseNumber, int target, int newLeaderUID){
         super(sourceId, phaseNumber, target);
         this.newLeaderUID = newLeaderUID;
