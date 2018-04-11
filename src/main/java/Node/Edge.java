@@ -13,6 +13,15 @@ public class Edge implements Comparable<Edge> {
         this.weight = weight;
     }
 
+    @Override
+    public String toString() {
+        return "Edge{" +
+                "firstUid=" + firstUid +
+                ", secondUid=" + secondUid +
+                ", weight=" + weight +
+                '}';
+    }
+
     public int compareTo(Edge edge) {
         if(weight > edge.getWeight()) {
             return 1;

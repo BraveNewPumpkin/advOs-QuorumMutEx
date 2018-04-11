@@ -38,7 +38,19 @@ public class SynchGhsService {
     }
 
     public void mwoeInterComponentSearch(int sourceUid, int componentId) {
-        Edge candidate = thisNodeInfo.getEdges().get(sourceUid);
+        List<NodeInfo> nodeInfoList = thisNodeInfo.getNeighbors();
+
+        NodeInfo node = null;
+        for(NodeInfo tempNode: nodeInfoList)
+        {
+            if(tempNode.getUid()==sourceUid)
+            {
+                node = tempNode;
+                break;
+            }
+        }
+        log.info("Nodeinfo node is " + node.getUid());
+        Edge candidate = thisNodeInfo.getEdges().get(node);
         synchGhsController.sendMwoeCandidate(sourceUid, candidate);
     }
 

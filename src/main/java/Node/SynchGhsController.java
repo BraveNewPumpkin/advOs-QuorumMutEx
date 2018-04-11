@@ -8,7 +8,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import javax.xml.soap.Node;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -191,7 +190,7 @@ public class SynchGhsController {
                 int targetUID= edge.getFirstUid()!=thisNodeInfo.getUid()?edge.getFirstUid():edge.getSecondUid();
 
                 if(targetUID!= message.getSourceUID())
-                    sendNewLeader(targetUID, message.getNewLeaderUID());
+                    sendNewLeader(targetUID);
             }
         }
     }
