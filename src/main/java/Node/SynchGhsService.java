@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Collections;
 
 
 @Service
@@ -45,8 +46,14 @@ public class SynchGhsService {
         synchGhsController.sendMwoeCandidate(sourceUid, candidate);
     }
 
-    public void calcLocalMin(List<Edge> candidates) {
+    public Edge calcLocalMin(List<Edge> candidates) {
         //TODO calculate local min and tell controller to send to parentUid
+        Collections.sort(candidates);
+
+        if(candidates.size()>=1)
+            return candidates.get(0);
+        else
+            return null;
     }
 
     public boolean isFromComponentNode(int componentId) {
