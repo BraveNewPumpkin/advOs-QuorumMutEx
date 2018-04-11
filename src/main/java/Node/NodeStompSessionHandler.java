@@ -49,11 +49,17 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/mwoeSearch":
                 payloadType = MwoeSearchMessage.class;
                 break;
-            case "/topic/mwoeResponse":
+            case "/topic/mwoeCandidate":
                 payloadType = MwoeCandidateMessage.class;
                 break;
             case "/topic/mwoeReject":
                 payloadType = MwoeRejectMessage.class;
+                break;
+            case "/topic/initiateMerge":
+                payloadType = InitiateMergeMessage.class;
+                break;
+            case "/topic/newLeader":
+                payloadType = NewLeaderMessage.class;
                 break;
             default:
                 if (log.isErrorEnabled()) {
