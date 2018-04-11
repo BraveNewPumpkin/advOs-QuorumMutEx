@@ -136,11 +136,18 @@ public class SynchGhsController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received newLeader message {}", message);
             }
-            //TODO call service method to update leader. send to other neighbors. other things?
-            synchGhsService.newLeaderRelay();
+
+            //update this nodes component id with new leaders UID
+
+            thisNodeInfo.setComponentId(message.getNewLeaderUID());
+
+            // then relay that message to all its tree edges
             for(Edge edge: thisNodeInfo.getTreeEdges()) {
-                //TODO get uid from edge
-                sendNewLeader(targetUid, message.getNewLeaderUID();
+                int targetUID= edge.getFirstUid()!=thisNodeInfo.getUid()?edge.getFirstUid():edge.getSecondUid();
+
+                //relay message to all tree edges except from which it received the new leader message
+                if(targetUID!= message.getSourceUID())
+                    sendNewLeader(targetUID, message.getNewLeaderUID());
             }
         }
     }
@@ -200,12 +207,12 @@ public class SynchGhsController {
         log.trace("InitiateMerge message sent");
     }
 
-    public void sendNewLeader(int targetUid) throws MessagingException {
+    public void sendNewLeader(int targetUid, int newLeaderUID) throws MessagingException {
         NewLeaderMessage message = new NewLeaderMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
                 targetUid,
-
+                newLeaderUID
         );
 
         if(log.isDebugEnabled()){
