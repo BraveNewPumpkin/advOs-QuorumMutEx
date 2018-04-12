@@ -131,7 +131,7 @@ public class SynchGhsController {
                         || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
                 {
                     int otherComponentNode;
-                    //save the node on the edge that isn't us
+                    //save the node on the side of the edge that isn't us
                     if(thisNodeInfo.getUid() == selectedMwoeEdge.getFirstUid()) {
                         otherComponentNode = selectedMwoeEdge.getSecondUid();
                     } else {
@@ -172,7 +172,7 @@ public class SynchGhsController {
                         thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
                     else
                     {
-                        //the edge was a tree edge so we have a new leader
+                        //the edge was already a tree edge so we have a new leader
                         int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
                         //TODO broadast newLeader in the new merged component
                     }
