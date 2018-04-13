@@ -165,9 +165,9 @@ public class SynchGhsController {
                 {
                     log.debug("Message is targeted to me, inside  if(thisNodeInfo.getUid() == message.getTarget()) block");
 
-                    if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge)) {
+                    if(!GHSUtil.checkList(thisNodeInfo,selectedMwoeEdge)) {
                         log.debug("TreeEdge list does not contain selected MWOE-> {}", selectedMwoeEdge.toString());
-                        log.debug("thisnodeinfo object id {}", thisNodeInfo);
+                        log.debug("thisnodeinfo object id {}", System.identityHashCode(thisNodeInfo));
                         thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
                     }
 

@@ -22,6 +22,16 @@ public class Edge implements Comparable<Edge> {
                 '}';
     }
 
+    @Override
+    public boolean equals(Object obj) {
+
+        Edge e = (Edge) obj;
+        if(this.firstUid==e.firstUid && this.secondUid==e.secondUid && this.weight==e.weight)
+            return true;
+        else
+            return false;
+    }
+
     public int compareTo(Edge edge) {
         if(weight > edge.getWeight()) {
             return 1;

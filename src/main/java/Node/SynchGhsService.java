@@ -88,9 +88,9 @@ public class SynchGhsService {
                 int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
                    localMin.getSecondUid() : localMin.getFirstUid();
 
-                if(!thisNodeInfo.getTreeEdges().contains(localMin)) {
+                if(!GHSUtil.checkList(thisNodeInfo,localMin)) {
                     log.debug("TreeEdge list does not contain selected MWOE-> {}", localMin.toString());
-                    log.debug("thisnodeinfo object id {}", thisNodeInfo);
+                    log.debug("thisnodeinfo object id {}", System.identityHashCode(thisNodeInfo));
                     thisNodeInfo.getTreeEdges().add(localMin);
                     synchGhsController.sendInitiateMerge(targetUID, localMin);
                 }
