@@ -84,16 +84,20 @@ public class SynchGhsService {
             // changing this logic for first phase, when there is only one node in component
             if(thisNodeInfo.getUid()==localMin.firstUid || thisNodeInfo.getUid()==localMin.secondUid)
             {
+                log.debug("Local min found and i am node on mwoe{}", localMin.toString());
                 int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
                    localMin.getSecondUid() : localMin.getFirstUid();
 
                 if(!thisNodeInfo.getTreeEdges().contains(localMin)) {
+                    log.debug("TreeEdge list does not contain selected MWOE-> {}", localMin.toString());
+                    log.debug("thisnodeinfo object id {}", thisNodeInfo);
                     thisNodeInfo.getTreeEdges().add(localMin);
                     synchGhsController.sendInitiateMerge(targetUID, localMin);
                 }
                 else
                 {
                     //Todo initiate new leader broadcast
+                    log.debug("New leader detection logic triggered");
                     int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
                     System.out.println("New Leader is:" + newLeader);
                 }

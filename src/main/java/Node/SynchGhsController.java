@@ -128,7 +128,7 @@ public class SynchGhsController {
             Edge selectedMwoeEdge = message.getMwoeEdge();
             if(message.getComponentId()==thisNodeInfo.getComponentId())
             {
-                System.out.println("Inside initate Merge if");
+                //System.out.println("Inside initate Merge if");
                 if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
                 {
                     int otherComponentNode = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
@@ -158,22 +158,22 @@ public class SynchGhsController {
             }
             else if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
             {
-                System.out.println("Inside else");
-                System.out.println("Nodes are in diff compoenent: IntiateMerge MEssage Processing");
+                log.debug("Initiate merge message received from node which is in different component");
                 int targetUID = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
                         selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
-                System.out.println("Message.getTarget ininite Merge" + message.getTarget());
                 if(thisNodeInfo.getUid() == message.getTarget())
                 {
-                    System.out.println("Intitae merge thisNodeInfo.getUid() == message.getTarget()");
+                    log.debug("Message is targeted to me, inside  if(thisNodeInfo.getUid() == message.getTarget()) block");
+
                     if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge)) {
-                        System.out.println("Tree Edge List size: " + thisNodeInfo.getTreeEdges().size());
+                        log.debug("TreeEdge list does not contain selected MWOE-> {}", selectedMwoeEdge.toString());
+                        log.debug("thisnodeinfo object id {}", thisNodeInfo);
                         thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
                     }
 
                     else
                     {
-                        System.out.println("Tree Edge List size: "+ thisNodeInfo.getTreeEdges().size());
+                        log.debug("New leader detection logic triggered");
                         int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
                         System.out.println("New Leader is:" + newLeader);
                         //TODO broadast newLeader in the new merged component
