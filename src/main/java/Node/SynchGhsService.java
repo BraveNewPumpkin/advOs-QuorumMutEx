@@ -72,15 +72,33 @@ public class SynchGhsService {
             e.printStackTrace();
         }
         if(isThisNodeLeader()) {
-            int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
-                    localMin.getSecondUid() : localMin.getFirstUid();
-            if(thisNodeInfo.getTreeEdges().size() == 0) {
-                //TODO call merge procedure
-                System.out.println("inside cal min:" + localMin.toString());
-                thisNodeInfo.getTreeEdges().add(localMin);
-                synchGhsController.sendInitiateMerge(targetUID,localMin);
+//            int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
+//                    localMin.getSecondUid() : localMin.getFirstUid();
+//            if(thisNodeInfo.getTreeEdges().size() == 0) {
+//                //TODO call merge procedure
+//                System.out.println("inside cal min:" + localMin.toString());
+//                thisNodeInfo.getTreeEdges().add(localMin);
+//                synchGhsController.sendInitiateMerge(targetUID,localMin);
+//
+//            }
+            // changing this logic for first phase, when there is only one node in component
+            if(thisNodeInfo.getUid()==localMin.firstUid || thisNodeInfo.getUid()==localMin.secondUid)
+            {
+                int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
+                   localMin.getSecondUid() : localMin.getFirstUid();
 
-            } else {
+                if(!thisNodeInfo.getTreeEdges().contains(localMin)) {
+                    thisNodeInfo.getTreeEdges().add(localMin);
+                    synchGhsController.sendInitiateMerge(targetUID, localMin);
+                }
+                else
+                {
+                    //Todo initiate new leader broadcast
+                    int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
+                    System.out.println("New Leader is:" + newLeader);
+                }
+            }
+            else {
                 //TODO send notification to node with MWOE
                 List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
                 synchronized(treeEdgeListSync) {
