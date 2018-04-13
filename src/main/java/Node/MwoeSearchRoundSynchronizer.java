@@ -8,6 +8,7 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
 
     public MwoeSearchRoundSynchronizer(int roundSize) {
         super(roundSize);
+        System.out.println("SRS Round Size: "+ roundSize);
         roundProgress = new ArrayList<>();
     }
 
@@ -15,6 +16,7 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
     public void enqueueMessage(MwoeCandidateMessage message) {
         int messageRoundNumber = message.getRoundNumber();
         int currentRoundIndex = roundProgress.size() - 1;
+        System.out.println(" SRSync : Current Rounde Index: "+ currentRoundIndex);
         if(currentRoundIndex != messageRoundNumber){
             for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
                 roundProgress.add(0);
@@ -40,6 +42,7 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
 
     @Override
     public void runIfReady(Runnable work) {
+        System.out.println("SRS run if ready");
         int progressSoFarThisRound = roundProgress.get(getRoundNumber());
         if (progressSoFarThisRound == getRoundSize()) {
             work.run();

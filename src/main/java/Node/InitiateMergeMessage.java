@@ -3,8 +3,8 @@ package Node;
 public class InitiateMergeMessage extends SimpleTargetableMessage {
     Edge mwoeEdge;
     int componentId;
-    public InitiateMergeMessage() {
-    }
+
+    public InitiateMergeMessage(){}
 
     public InitiateMergeMessage(int sourceUID, int phaseNumber, int target, Edge mwoeEdge, int componentId) {
         super(sourceUID, phaseNumber, target);

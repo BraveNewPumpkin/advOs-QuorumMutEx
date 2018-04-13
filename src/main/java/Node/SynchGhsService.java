@@ -1,11 +1,13 @@
 package Node;
 
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Collections;
 
@@ -54,16 +56,44 @@ public class SynchGhsService {
         synchGhsController.sendMwoeCandidate(sourceUid, candidate);
     }
 
-    public void calcLocalMin(List<Edge> candidates) {
+    public void calcLocalMin(List<Edge> candidates)  {
+        Collections.sort(candidates);
+        for(Edge e: candidates)
+        {
+            System.out.println(e.toString());
+        }
+        Edge localMin = candidates.get(0);
+        log.info(thisNodeInfo.getUid()+ " Local min is:{}",  localMin.toString());
+        try{
+            Thread.sleep(10 * 1000);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         if(isThisNodeLeader()) {
+            int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
+                    localMin.getSecondUid() : localMin.getFirstUid();
             if(thisNodeInfo.getTreeEdges().size() == 0) {
                 //TODO call merge procedure
+                System.out.println("inside cal min:" + localMin.toString());
+                thisNodeInfo.getTreeEdges().add(localMin);
+                synchGhsController.sendInitiateMerge(targetUID,localMin);
+
             } else {
                 //TODO send notification to node with MWOE
+                List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+                synchronized(treeEdgeListSync) {
+                    for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext();) {
+                        Edge e = itr.next();
+                        int localTarget = (thisNodeInfo.getUid() == e.getFirstUid()) ?
+                                e.getSecondUid() : e.getFirstUid();
+                        System.out.println("LocalTarget:" + localTarget);
+                        synchGhsController.sendInitiateMerge(localTarget, localMin);
+                    }
+                }
             }
         } else {
-            Collections.sort(candidates);
-            Edge localMin = candidates.get(0);
             synchGhsController.sendMwoeCandidate(parentUid, localMin);
         }
     }

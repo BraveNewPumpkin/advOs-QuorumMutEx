@@ -27,21 +27,36 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public void enqueueMessage(T message) {
         int messageRoundNumber = message.getRoundNumber();
         int currentRoundIndex = roundMessages.size() - 1;
+        System.out.println(" NMSync : Current Rounde Index: "+ currentRoundIndex + "Msg round num " + messageRoundNumber);
         if(currentRoundIndex != messageRoundNumber){
             for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
                 roundMessages.add(new ConcurrentLinkedQueue<>());
             }
         }
         roundMessages.get(messageRoundNumber).add(message);
+        System.out.println("Message size: " + roundMessages.get(messageRoundNumber).size());
     }
 
     public void enqueueAndRunIfReady(T message, Runnable work) {
         enqueueMessage(message);
-        runIfReady(work);
+        System.out.println("run if ready starts");
+        this.runIfReady1(work);
+        System.out.println("run if ready stops");
     }
 
     public void runIfReady(Runnable work) {
+        System.out.println("round number L48" + roundNumber);
         int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
+        System.out.println(" numberOfMessagesSoFarThisRound "+ numberOfMessagesSoFarThisRound + "roundSize "+roundSize);
+        if (numberOfMessagesSoFarThisRound == roundSize) {
+            work.run();
+        }
+    }
+
+    public void runIfReady1(Runnable work) {
+        System.out.println("round number L48" + roundNumber);
+        int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
+        System.out.println(" numberOfMessagesSoFarThisRound "+ numberOfMessagesSoFarThisRound + "roundSize "+roundSize);
         if (numberOfMessagesSoFarThisRound == roundSize) {
             work.run();
         }

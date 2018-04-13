@@ -36,7 +36,7 @@ public class DoSynchGhs implements Runnable{
         sendingInitialMwoeSearchMessage.close();
         log.info("sleeping to allow other instances to spin up");
         try {
-            Thread.sleep(30 * 1000);
+            Thread.sleep(25 * 1000);
         } catch (InterruptedException e) {
             log.warn("SynchGhs thread interrupted!");
         }
@@ -45,7 +45,7 @@ public class DoSynchGhs implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            Thread.sleep(30 * 1000);
+            Thread.sleep(25 * 1000);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }

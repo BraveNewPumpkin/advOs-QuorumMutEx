@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.stream.Collectors;
@@ -48,6 +49,7 @@ public class SynchGhsController {
             List<Edge> candidateEdges = mwoeCandidateMessages.parallelStream()
                     .map(MwoeCandidateMessage::getMwoeCandidate)
                     .collect(Collectors.toList());
+            System.out.println("inside work ");
             synchGhsService.calcLocalMin(candidateEdges);
         };
     }
@@ -116,16 +118,17 @@ public class SynchGhsController {
     public void initiateMerge(InitiateMergeMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  initiateMerge message {}", message);
+               // log.trace("<---received  initiateMerge message in if {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received initiateMerge message {}", message);
+                log.debug("<---received initiateMerge message in else {}", message);
             }
             //TODO implement receiving initiate merge message (relay or whatever)
             Edge selectedMwoeEdge = message.getMwoeEdge();
             if(message.getComponentId()==thisNodeInfo.getComponentId())
             {
+                System.out.println("Inside initate Merge if");
                 if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
                 {
                     int otherComponentNode = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
@@ -137,29 +140,42 @@ public class SynchGhsController {
                            thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
                     }
                 }
-                for(Edge edge: thisNodeInfo.getTreeEdges()) {
-                    int targetUID;
-                    if(edge.firstUid!=thisNodeInfo.getUid())
-                        targetUID = edge.firstUid;
-                    else
-                        targetUID = edge.secondUid;
+                List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+                synchronized(treeEdgeListSync) {
+                    for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
+                        Edge edge = itr.next();
+                        int targetUID;
+                        if (edge.firstUid != thisNodeInfo.getUid())
+                            targetUID = edge.firstUid;
+                        else
+                            targetUID = edge.secondUid;
 
-                    if(targetUID!=message.getSourceUID())
-                        sendInitiateMerge(targetUID,selectedMwoeEdge);
+                        if (targetUID != message.getSourceUID())
+                            sendInitiateMerge(targetUID, selectedMwoeEdge);
+                    }
                 }
 
             }
             else if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
             {
+                System.out.println("Inside else");
+                System.out.println("Nodes are in diff compoenent: IntiateMerge MEssage Processing");
                 int targetUID = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
                         selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
-                if(thisNodeInfo.getUid() == targetUID)
+                System.out.println("Message.getTarget ininite Merge" + message.getTarget());
+                if(thisNodeInfo.getUid() == message.getTarget())
                 {
-                    if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge))
+                    System.out.println("Intitae merge thisNodeInfo.getUid() == message.getTarget()");
+                    if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge)) {
+                        System.out.println("Tree Edge List size: " + thisNodeInfo.getTreeEdges().size());
                         thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                    }
+
                     else
                     {
+                        System.out.println("Tree Edge List size: "+ thisNodeInfo.getTreeEdges().size());
                         int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
+                        System.out.println("New Leader is:" + newLeader);
                         //TODO broadast newLeader in the new merged component
                     }
 
@@ -186,11 +202,15 @@ public class SynchGhsController {
             thisNodeInfo.setComponentId(message.getNewLeaderUID());
 
             // then relay that message to all its tree edges
-            for(Edge edge: thisNodeInfo.getTreeEdges()) {
-                int targetUID= edge.getFirstUid()!=thisNodeInfo.getUid()?edge.getFirstUid():edge.getSecondUid();
+            List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+            synchronized(treeEdgeListSync) {
+                for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext();) {
+                    Edge edge = itr.next();
+                    int targetUID = edge.getFirstUid() != thisNodeInfo.getUid() ? edge.getFirstUid() : edge.getSecondUid();
 
-                if(targetUID!= message.getSourceUID())
-                    sendNewLeader(targetUID);
+                    if (targetUID != message.getSourceUID())
+                        sendNewLeader(targetUID);
+                }
             }
         }
     }

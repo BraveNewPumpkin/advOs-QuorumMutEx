@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> neighbors;
     private final Map<NodeInfo, Edge> edges;
     private final int totalNumberOfNodes;
     private int componentId;
-    private List<Edge> treeEdges;
+    private CopyOnWriteArrayList<Edge> treeEdges;
 
 
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
@@ -18,7 +19,7 @@ public final class ThisNodeInfo extends NodeInfo{
         this.totalNumberOfNodes = totalNumberOfNodes;
         neighbors = new ArrayList<>();
         edges = new HashMap<>();
-        treeEdges = new ArrayList<>();
+        treeEdges = new CopyOnWriteArrayList<>();
         //initially we are the only node in our component so we own it
         this.componentId = uid;
     }
@@ -51,7 +52,7 @@ public final class ThisNodeInfo extends NodeInfo{
         this.componentId = componentId;
     }
 
-    public List<Edge> getTreeEdges() {
+    public synchronized CopyOnWriteArrayList<Edge> getTreeEdges() {
         return treeEdges;
     }
 

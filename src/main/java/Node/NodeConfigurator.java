@@ -58,8 +58,10 @@ public class NodeConfigurator {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
             int edgeWeight = nodeConfig.distancesToNeighbors.get(neighbor);
+
             int biggerUid = Math.max(thisUid, neighborUid);
             int smallerUid = Math.min(thisUid, neighborUid);
+
             Edge edge = new Edge(biggerUid, smallerUid, edgeWeight);
             thisNodeInfo.addEdge(edge, neighbor);
 
@@ -132,7 +134,7 @@ public class NodeConfigurator {
                     NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
                     nodes.put(uid, nodeInfo);
                     count++;
-                } else if(count < numberOfNodes * 2) {
+                } else  {
                     //parse neighbors
 
                     if(!hasThisNodeUidBeenFound) {
