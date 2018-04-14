@@ -96,10 +96,32 @@ public class SynchGhsService {
                 }
                 else
                 {
+                    System.out.println("mwoe already exist, still sending");
+                    synchGhsController.sendInitiateMerge(targetUID, localMin);
                     //Todo initiate new leader broadcast
                     log.debug("New leader detection logic triggered");
                     int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
                     System.out.println("New Leader is:" + newLeader);
+
+                    thisNodeInfo.setPhaseNumber(thisNodeInfo.getPhaseNumber()+1);
+                    List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+                    synchronized(treeEdgeListSync) {
+                        for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
+                            Edge edge = itr.next();
+                            int sendTo;
+                            if (edge.firstUid != thisNodeInfo.getUid())
+                                sendTo = edge.firstUid;
+                            else
+                                sendTo = edge.secondUid;
+
+                            if (sendTo != targetUID) {
+                                System.out.println("sending new leader message to " + sendTo);
+                                synchGhsController.sendNewLeader(sendTo);
+                            }
+                        }
+                    }
+
+                    //synchGhsController.sendNewLeader(targetUID);
                 }
             }
             else {

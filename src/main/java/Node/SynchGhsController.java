@@ -128,16 +128,19 @@ public class SynchGhsController {
             Edge selectedMwoeEdge = message.getMwoeEdge();
             if(message.getComponentId()==thisNodeInfo.getComponentId())
             {
-                //System.out.println("Inside initate Merge if");
+                System.out.println("Inside message.getComponentId()==thisNodeInfo.getComponentId() block");
                 if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
                 {
                     int otherComponentNode = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
                             selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
+                    System.out.println("Other Component Node" + otherComponentNode);
                     List<NodeInfo> neighbors= thisNodeInfo.getNeighbors();
                     for(NodeInfo n: neighbors)
                     {
-                       if(n.getUid() == otherComponentNode)
+                       if(n.getUid() == otherComponentNode) {
+                           System.out.println("MWOE Edge added because of Parent message");
                            thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                       }
                     }
                 }
                 List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
@@ -169,6 +172,12 @@ public class SynchGhsController {
                         log.debug("TreeEdge list does not contain selected MWOE-> {}", selectedMwoeEdge.toString());
                         log.debug("thisnodeinfo object id {}", System.identityHashCode(thisNodeInfo));
                         thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                        //TODO : receive merge requet after new leader is elected
+                        if(thisNodeInfo.getPhaseNumber()!=message.getPhaseNumber())
+                        {
+                            sendNewLeader(message.getSourceUID());
+                        }
+
                     }
 
                     else
@@ -176,7 +185,32 @@ public class SynchGhsController {
                         log.debug("New leader detection logic triggered");
                         int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
                         System.out.println("New Leader is:" + newLeader);
+                        try{
+                            Thread.sleep(10 * 1000);
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                        thisNodeInfo.setComponentId(newLeader);
+                        thisNodeInfo.setPhaseNumber(thisNodeInfo.getPhaseNumber()+1);
                         //TODO broadast newLeader in the new merged component
+                        List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+                        synchronized(treeEdgeListSync) {
+                            for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
+                                Edge edge = itr.next();
+                                int sendTo;
+                                if (edge.firstUid != thisNodeInfo.getUid())
+                                    sendTo = edge.firstUid;
+                                else
+                                    sendTo = edge.secondUid;
+
+                                if (sendTo != message.getSourceUID()) {
+                                    System.out.println("sending new leader message to "+ sendTo);
+                                    sendNewLeader(sendTo);
+                                }
+                            }
+                        }
                     }
 
                 }
@@ -198,9 +232,8 @@ public class SynchGhsController {
             }
 
             //update this nodes component id with new leaders UID
-
             thisNodeInfo.setComponentId(message.getNewLeaderUID());
-
+            thisNodeInfo.setPhaseNumber(message.getPhaseNumber());
             // then relay that message to all its tree edges
             List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
             synchronized(treeEdgeListSync) {
@@ -258,7 +291,7 @@ public class SynchGhsController {
     public void sendInitiateMerge(int targetUid, Edge selectedMwoeEdge) throws MessagingException {
         InitiateMergeMessage message = new InitiateMergeMessage(
                 thisNodeInfo.getUid(),
-                synchGhsService.getPhaseNumber(),
+                thisNodeInfo.getPhaseNumber(),
                 targetUid,
                 selectedMwoeEdge,
                 thisNodeInfo.getComponentId()
@@ -274,7 +307,7 @@ public class SynchGhsController {
     public void sendNewLeader(int targetUid) throws MessagingException {
         NewLeaderMessage message = new NewLeaderMessage(
                 thisNodeInfo.getUid(),
-                synchGhsService.getPhaseNumber(),
+                thisNodeInfo.getPhaseNumber(),
                 targetUid,
                 thisNodeInfo.getComponentId()
         );

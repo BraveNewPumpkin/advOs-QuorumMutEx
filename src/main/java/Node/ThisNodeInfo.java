@@ -9,6 +9,7 @@ public final class ThisNodeInfo extends NodeInfo{
     private final int totalNumberOfNodes;
     private int componentId;
     private List<Edge> treeEdges;
+    private int phaseNumber;
 
 
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
@@ -19,6 +20,7 @@ public final class ThisNodeInfo extends NodeInfo{
         treeEdges =  Collections.synchronizedList(new ArrayList<>());
         //initially we are the only node in our component so we own it
         this.componentId = uid;
+        this.phaseNumber = 0;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
@@ -57,5 +59,11 @@ public final class ThisNodeInfo extends NodeInfo{
         treeEdges.add(treeEdge);
     }
 
+    public int getPhaseNumber() {
+        return phaseNumber;
+    }
 
+    public void setPhaseNumber(int phaseNumber) {
+        this.phaseNumber = phaseNumber;
+    }
 }
