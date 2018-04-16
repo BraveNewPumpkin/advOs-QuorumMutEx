@@ -55,10 +55,11 @@ public class SynchGhsService {
     public void mwoeInterComponentSearch(int sourceUid, int componentId) {
         List<NodeInfo> nodeInfoList = thisNodeInfo.getNeighbors();
 
+        //find node that sent me this
         NodeInfo node = null;
         for(NodeInfo tempNode: nodeInfoList)
         {
-            if(tempNode.getUid()==sourceUid)
+            if(tempNode.getUid() == sourceUid)
             {
                 node = tempNode;
                 break;

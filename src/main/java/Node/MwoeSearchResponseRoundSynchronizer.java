@@ -38,7 +38,10 @@ public class MwoeSearchResponseRoundSynchronizer extends NodeMessageRoundSynchro
 
     public void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
         incrementProgressForRound(roundNumber);
-        runIfReady(work);
+        //only try to run if the round we're progressing is current round
+        if(getRoundNumber() == roundNumber) {
+            runIfReady(work);
+        }
     }
 
     @Override

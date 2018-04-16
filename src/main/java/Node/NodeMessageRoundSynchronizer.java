@@ -38,10 +38,13 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     }
 
     public void enqueueAndRunIfReady(T message, Runnable work) {
-       System.out.println("Message to enqueue: "+message);
-       enqueueMessage(message);
+        System.out.println("Message to enqueue: "+message);
+        enqueueMessage(message);
         System.out.println("run if ready starts");
-        this.runIfReady(work);
+        //only try running if the message round is current round
+        if(roundNumber == message.getRoundNumber()) {
+            this.runIfReady(work);
+        }
         System.out.println("run if ready stops");
     }
 
