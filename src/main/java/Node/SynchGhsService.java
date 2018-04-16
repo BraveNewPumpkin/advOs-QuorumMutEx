@@ -17,7 +17,7 @@ import java.util.Collections;
 public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
-
+    private final MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer;
     private int parentUid;
     private boolean isSearched;
     private int phaseNumber;
@@ -25,12 +25,15 @@ public class SynchGhsService {
     @Autowired
     public SynchGhsService(
             @Lazy SynchGhsController synchGhsController,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
+            MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
         isSearched = false;
         this.phaseNumber =0;
+        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
     }
 
     public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
@@ -103,8 +106,7 @@ public class SynchGhsService {
                     log.debug("New leader detection logic triggered");
                     int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
                     System.out.println("New Leader is:" + newLeader);
-
-                    thisNodeInfo.setPhaseNumber(thisNodeInfo.getPhaseNumber()+1);
+                    moveToNextPhase();
                     List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
                     synchronized(treeEdgeListSync) {
                         for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
@@ -122,14 +124,14 @@ public class SynchGhsService {
                         }
                     }
                     try{
-                        Thread.sleep(3*1000);
+                        Thread.sleep(10*1000);
                     }
                     catch (Exception e)
                     {
                         e.printStackTrace();
                     }
-
-                    synchGhsController.sendMwoeSearch();
+                    if(thisNodeInfo.getUid()==newLeader)
+                        synchGhsController.sendMwoeSearch();
 
                     //synchGhsController.sendNewLeader(targetUID);
                 }
@@ -152,6 +154,12 @@ public class SynchGhsService {
         }
     }
 
+    public void moveToNextPhase()
+    {
+        setPhaseNumber(getPhaseNumber()+1);
+        mwoeSearchRoundSynchronizer.incrementRoundNumber();
+
+    }
     public boolean isThisNodeLeader(){
         return thisNodeInfo.getComponentId() == thisNodeInfo.getUid();
     }

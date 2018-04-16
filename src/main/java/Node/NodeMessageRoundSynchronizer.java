@@ -40,9 +40,8 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public void enqueueAndRunIfReady(T message, Runnable work) {
        System.out.println("Message to enqueue: "+message);
        enqueueMessage(message);
-
         System.out.println("run if ready starts");
-        this.runIfReady1(work);
+        this.runIfReady(work);
         System.out.println("run if ready stops");
     }
 

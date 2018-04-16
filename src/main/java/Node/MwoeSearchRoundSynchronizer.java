@@ -24,6 +24,7 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
         }
         //2 steps because Integer is immutable
         int messageRoundProgress = roundProgress.get(messageRoundNumber);
+        messageRoundProgress++;
         roundProgress.set(messageRoundNumber, messageRoundProgress);
 
         super.enqueueMessage(message);
@@ -44,6 +45,7 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
     public void runIfReady(Runnable work) {
         System.out.println("SRS run if ready");
         int progressSoFarThisRound = roundProgress.get(getRoundNumber());
+
         if (progressSoFarThisRound == getRoundSize()) {
             work.run();
         }
