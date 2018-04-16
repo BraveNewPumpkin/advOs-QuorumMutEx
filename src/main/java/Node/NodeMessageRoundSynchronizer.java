@@ -54,15 +54,6 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
         }
     }
 
-    public void runIfReady1(Runnable work) {
-        System.out.println("round number L48" + roundNumber);
-        int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
-        System.out.println(" numberOfMessagesSoFarThisRound "+ numberOfMessagesSoFarThisRound + "roundSize "+roundSize);
-        if (numberOfMessagesSoFarThisRound == roundSize) {
-            work.run();
-        }
-    }
-
     public int getRoundNumber() {
         return roundNumber;
     }
