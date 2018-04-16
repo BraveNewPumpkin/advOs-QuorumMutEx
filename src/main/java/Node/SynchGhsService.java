@@ -17,6 +17,7 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
     private final MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer;
+    private final NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer;
 
     private int parentUid;
     private boolean isSearched;
@@ -27,11 +28,14 @@ public class SynchGhsService {
             @Lazy SynchGhsController synchGhsController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
-            MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer
+            MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer,
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
+            NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
         this.mwoeSearchResponseRoundSynchronizer = mwoeSearchResponseRoundSynchronizer;
+        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
 
         isSearched = false;
         this.phaseNumber =0;
@@ -163,8 +167,9 @@ public class SynchGhsService {
     {
         setPhaseNumber(getPhaseNumber()+1);
         mwoeSearchResponseRoundSynchronizer.incrementRoundNumber();
-
+        mwoeSearchRoundSynchronizer.incrementRoundNumber();
     }
+
     public boolean isThisNodeLeader(){
         return thisNodeInfo.getComponentId() == thisNodeInfo.getUid();
     }
