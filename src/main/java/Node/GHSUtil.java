@@ -1,8 +1,10 @@
 package Node;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Iterator;
 import java.util.List;
-
+@Slf4j
 public class GHSUtil {
 
     public static synchronized boolean checkList(ThisNodeInfo nodeInfo, Edge edge)
@@ -20,6 +22,16 @@ public class GHSUtil {
             }
 
             return false;
+        }
+    }
+
+    public static void printTreeEdgeList(List<Edge> treeEdges) {
+        System.out.println("All tree edges: ");
+        synchronized (treeEdges) {
+            for (Iterator<Edge> itr = treeEdges.iterator(); itr.hasNext(); ) {
+                Edge edge = itr.next();
+                System.out.println(edge.toString());
+            }
         }
     }
 }

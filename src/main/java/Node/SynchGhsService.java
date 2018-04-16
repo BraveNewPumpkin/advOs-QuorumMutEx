@@ -92,12 +92,13 @@ public class SynchGhsService {
                     log.debug("TreeEdge list does not contain selected MWOE-> {}", localMin.toString());
                     log.debug("thisnodeinfo object id {}", System.identityHashCode(thisNodeInfo));
                     thisNodeInfo.getTreeEdges().add(localMin);
+                    GHSUtil.printTreeEdgeList(thisNodeInfo.getTreeEdges());
                     synchGhsController.sendInitiateMerge(targetUID, localMin);
                 }
                 else
                 {
                     System.out.println("mwoe already exist, still sending");
-                    synchGhsController.sendInitiateMerge(targetUID, localMin);
+                    //synchGhsController.sendInitiateMerge(targetUID, localMin);
                     //Todo initiate new leader broadcast
                     log.debug("New leader detection logic triggered");
                     int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
@@ -114,12 +115,21 @@ public class SynchGhsService {
                             else
                                 sendTo = edge.secondUid;
 
-                            if (sendTo != targetUID) {
+                            /*if (sendTo != targetUID) {*/
                                 System.out.println("sending new leader message to " + sendTo);
                                 synchGhsController.sendNewLeader(sendTo);
-                            }
+                            //}
                         }
                     }
+                    try{
+                        Thread.sleep(3*1000);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+
+                    synchGhsController.sendMwoeSearch();
 
                     //synchGhsController.sendNewLeader(targetUID);
                 }
@@ -152,6 +162,10 @@ public class SynchGhsService {
 
     public void markAsSearched() {
         isSearched = true;
+    }
+
+    public void markAsUnSearched() {
+        isSearched = false;
     }
 
     public boolean isSearched() {

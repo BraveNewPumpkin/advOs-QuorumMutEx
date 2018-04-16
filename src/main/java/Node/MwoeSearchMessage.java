@@ -24,6 +24,7 @@ public final class MwoeSearchMessage extends NodeMessage{
     public String toString() {
         return "MwoeSearchMessage{" +
                 "componentId=" + componentId +
+                ", phase number="+ getPhaseNumber()+
                 "} " + super.toString();
     }
 }
