@@ -153,7 +153,6 @@ public class SynchGhsService {
             synchGhsController.sendMwoeCandidate(parentUid, localMin);
         }
     }
-
     public void moveToNextPhase()
     {
         setPhaseNumber(getPhaseNumber()+1);
