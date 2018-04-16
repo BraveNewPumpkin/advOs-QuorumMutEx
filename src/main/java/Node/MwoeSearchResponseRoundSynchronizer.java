@@ -3,10 +3,10 @@ package Node;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<MwoeCandidateMessage> {
+public class MwoeSearchResponseRoundSynchronizer extends NodeMessageRoundSynchronizer<MwoeCandidateMessage> {
     public final List<Integer> roundProgress;
 
-    public MwoeSearchRoundSynchronizer(int roundSize) {
+    public MwoeSearchResponseRoundSynchronizer(int roundSize) {
         super(roundSize);
         System.out.println("SRS Round Size: "+ roundSize);
         roundProgress = new ArrayList<>();

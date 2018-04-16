@@ -1,6 +1,6 @@
 package Node;
 
-public final class MwoeSearchMessage extends NodeMessage{
+public final class MwoeSearchMessage extends NodeRoundSynchronizableMessage{
     private int componentId;
 
     public MwoeSearchMessage() {
@@ -8,7 +8,7 @@ public final class MwoeSearchMessage extends NodeMessage{
     }
 
     public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
-        super(sourceUID,phaseNumber);
+        super(sourceUID, phaseNumber, phaseNumber);
         this.componentId = componentId;
     }
 

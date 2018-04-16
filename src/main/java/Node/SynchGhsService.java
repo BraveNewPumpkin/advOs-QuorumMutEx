@@ -1,6 +1,5 @@
 package Node;
 
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,7 +16,8 @@ import java.util.Collections;
 public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
-    private final MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer;
+    private final MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer;
+
     private int parentUid;
     private boolean isSearched;
     private int phaseNumber;
@@ -26,14 +26,20 @@ public class SynchGhsService {
     public SynchGhsService(
             @Lazy SynchGhsController synchGhsController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
+            MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
+        this.mwoeSearchResponseRoundSynchronizer = mwoeSearchResponseRoundSynchronizer;
+
         isSearched = false;
         this.phaseNumber =0;
-        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
+
+    }
+
+    public void processSearches(List<MwoeSearchMessage> searchMessages) {
+
     }
 
     public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
@@ -156,7 +162,7 @@ public class SynchGhsService {
     public void moveToNextPhase()
     {
         setPhaseNumber(getPhaseNumber()+1);
-        mwoeSearchRoundSynchronizer.incrementRoundNumber();
+        mwoeSearchResponseRoundSynchronizer.incrementRoundNumber();
 
     }
     public boolean isThisNodeLeader(){
