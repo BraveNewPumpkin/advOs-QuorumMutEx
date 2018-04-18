@@ -31,12 +31,16 @@ public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> e
     }
 
     public void incrementProgressForRound(int roundNumber) {
-        int selectedRoundProgress = roundProgress.get(roundNumber);
-        selectedRoundProgress++;
+        int selectedRoundProgress = 0;
+        if(roundProgress.size() >= roundNumber) {
+            selectedRoundProgress = roundProgress.get(roundNumber);
+            selectedRoundProgress++;
+        }
         roundProgress.set(roundNumber, selectedRoundProgress);
+        ensureQueueForRoundIsInitialized(roundNumber);
     }
 
-    public void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
+    public synchronized void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
         incrementProgressForRound(roundNumber);
         //only try to run if the round we're progressing is current round
         if(getRoundNumber() == roundNumber) {

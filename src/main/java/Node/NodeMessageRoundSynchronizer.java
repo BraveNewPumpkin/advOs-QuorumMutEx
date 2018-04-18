@@ -75,4 +75,12 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public int getRoundSize() {
         return roundSize;
     }
+
+    public void ensureQueueForRoundIsInitialized(int roundNumber) {
+       if(roundMessages.size() < roundNumber) {
+           for(int i = roundMessages.size(); i <= roundNumber; i++) {
+               roundMessages.add(new ConcurrentLinkedQueue<>());
+           }
+       }
+    }
 }
