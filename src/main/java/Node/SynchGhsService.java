@@ -70,105 +70,134 @@ public class SynchGhsService {
         synchGhsController.sendMwoeCandidate(sourceUid, candidate);
     }
 
-    public void calcLocalMin(List<Edge> candidates)  {
+    public void calcLocalMin(List<Edge> candidates) {
+        if (candidates.size() == 0) {
+            callTermination();
+            return ;
+        }
         Collections.sort(candidates);
-        for(Edge e: candidates)
-        {
+        for (Edge e : candidates)
             System.out.println(e.toString());
-        }
-        Edge localMin = candidates.get(0);
-        log.info(thisNodeInfo.getUid()+ " Local min is:{}",  localMin.toString());
-        try{
-            Thread.sleep(10 * 1000);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        if(isThisNodeLeader()) {
-//            int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
-//                    localMin.getSecondUid() : localMin.getFirstUid();
-//            if(thisNodeInfo.getTreeEdges().size() == 0) {
-//                //TODO call merge procedure
-//                System.out.println("inside cal min:" + localMin.toString());
-//                thisNodeInfo.getTreeEdges().add(localMin);
-//                synchGhsController.sendInitiateMerge(targetUID,localMin);
-//
-//            }
-            // changing this logic for first phase, when there is only one node in component
-            if(thisNodeInfo.getUid()==localMin.firstUid || thisNodeInfo.getUid()==localMin.secondUid)
-            {
-                log.debug("Local min found and i am node on mwoe{}", localMin.toString());
-                int targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
-                   localMin.getSecondUid() : localMin.getFirstUid();
 
-                if(!GHSUtil.checkList(thisNodeInfo,localMin)) {
-                    log.debug("TreeEdge list does not contain selected MWOE-> {}", localMin.toString());
-                    log.debug("thisnodeinfo object id {}", System.identityHashCode(thisNodeInfo));
-                    thisNodeInfo.getTreeEdges().add(localMin);
-                    GHSUtil.printTreeEdgeList(thisNodeInfo.getTreeEdges());
+        Edge localMin = candidates.get(0);
+        log.info(thisNodeInfo.getUid() + " Local min is:{}", localMin.toString());
+        processMinEdge(localMin);
+    }
+
+    public void processMinEdge(Edge localMin){
+         if(isThisNodeLeader()) {
+            int targetUID =  checkThisEdgeBelongsToMe(thisNodeInfo, localMin);
+            if(targetUID!=-1){
+                //This edge belongs to me, check if it is already in my tree edge list , if not, add it adn send merge request to target node
+                if(addIfTreeEdgeDoesntExist(thisNodeInfo, localMin))
                     synchGhsController.sendInitiateMerge(targetUID, localMin);
-                }
                 else
                 {
-                    System.out.println("mwoe already exist, still sending");
-                    //synchGhsController.sendInitiateMerge(targetUID, localMin);
-                    //Todo initiate new leader broadcast
                     log.debug("New leader detection logic triggered");
-                    int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
-                    System.out.println("New Leader is:" + newLeader);
-                    moveToNextPhase();
-                    List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
-                    synchronized(treeEdgeListSync) {
-                        for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
-                            Edge edge = itr.next();
-                            int sendTo;
-                            if (edge.firstUid != thisNodeInfo.getUid())
-                                sendTo = edge.firstUid;
-                            else
-                                sendTo = edge.secondUid;
-
-                            /*if (sendTo != targetUID) {*/
-                                System.out.println("sending new leader message to " + sendTo);
-                                synchGhsController.sendNewLeader(sendTo);
-                            //}
-                        }
-                    }
-                    try{
-                        Thread.sleep(10*1000);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                    if(thisNodeInfo.getUid()==newLeader)
-                        synchGhsController.sendMwoeSearch(false);
-
-                    //synchGhsController.sendNewLeader(targetUID);
+                    triggerNewLeaderElectionAndSend(thisNodeInfo, localMin);
                 }
             }
             else {
-                //TODO send notification to node with MWOE
-                List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
-                synchronized(treeEdgeListSync) {
-                    for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext();) {
-                        Edge e = itr.next();
-                        int localTarget = (thisNodeInfo.getUid() == e.getFirstUid()) ?
-                                e.getSecondUid() : e.getFirstUid();
-                        System.out.println("LocalTarget:" + localTarget);
-                        synchGhsController.sendInitiateMerge(localTarget, localMin);
-                    }
-                }
+                //If lcoalMin edge doesn't belongs to me, relay it to all my treeEdges
+                relayLocalMinEdge(thisNodeInfo,localMin,-1);
             }
-        } else {
+         }
+         else {
+             //If I am not the leader, convercast localMin to the parent node
             synchGhsController.sendMwoeCandidate(parentUid, localMin);
+         }
+    }
+
+    public int checkThisEdgeBelongsToMe(ThisNodeInfo node,Edge localMin)
+    {
+        int targetUID = -1;
+        if(thisNodeInfo.getUid()==localMin.firstUid || thisNodeInfo.getUid()==localMin.secondUid)
+        {
+            log.debug("Local min found and i am node on mwoe{}", localMin.toString());
+            targetUID = (thisNodeInfo.getUid()==localMin.getFirstUid()) ?
+                    localMin.getSecondUid() : localMin.getFirstUid();
+        }
+        return targetUID;
+    }
+
+    public boolean addIfTreeEdgeDoesntExist(ThisNodeInfo node, Edge localMin)
+    {
+        if(!GHSUtil.checkList(thisNodeInfo,localMin)) {
+            log.debug("TreeEdge list does not contain selected MWOE-> {}", localMin.toString());
+            thisNodeInfo.getTreeEdges().add(localMin);
+            GHSUtil.printTreeEdgeList(thisNodeInfo.getTreeEdges());
+            return true;
+        }
+        return false;
+    }
+
+    public void triggerNewLeaderElectionAndSend(ThisNodeInfo node, Edge localMin){
+
+        log.debug("New leader detection logic triggered");
+        int newLeader = Math.max(localMin.getFirstUid(),localMin.getSecondUid());
+        System.out.println("New Leader is:" + newLeader);
+        moveToNextPhase(newLeader);
+        List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
+        synchronized(treeEdgeListSync) {
+            for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
+                Edge edge = itr.next();
+                int sendTo = edge.firstUid != thisNodeInfo.getUid() ?  edge.firstUid : edge.secondUid;
+                System.out.println("sending new leader message to " + sendTo);
+                synchGhsController.sendNewLeader(sendTo);
+            }
+        }
+        if(node.getUid()==newLeader) {
+            System.out.println("Intiating MWOE Search for next round in service");
+            synchGhsController.sendMwoeSearch(false);
         }
     }
-    public void moveToNextPhase()
-    {
+
+    public void relayLocalMinEdge(ThisNodeInfo node, Edge localMin, int dontSendToThisUID){
+        List<Edge> treeEdgeListSync = node.getTreeEdges();
+        synchronized(treeEdgeListSync) {
+            for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext();) {
+                Edge e = itr.next();
+                int localTarget = (node.getUid() == e.getFirstUid()) ? e.getSecondUid() : e.getFirstUid();
+                System.out.println("LocalTarget:" + localTarget);
+                if(localTarget!=dontSendToThisUID)
+                    synchGhsController.sendInitiateMerge(localTarget, localMin);
+            }
+        }
+    }
+    public void relayNewLeaderMessage(ThisNodeInfo node, int newLeader, int dontSendToThisUID){
+        List<Edge> treeEdgeListSync = node.getTreeEdges();
+        synchronized (treeEdgeListSync) {
+            for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
+                Edge edge = itr.next();
+                int targetUID = edge.getFirstUid() != node.getUid() ? edge.getFirstUid() : edge.getSecondUid();
+                if (targetUID != dontSendToThisUID)
+                    synchGhsController.sendNewLeader(targetUID);
+            }
+        }
+    }
+
+    public void checkIfTargetNodeIsInMyNeighborList(ThisNodeInfo node, int otherComponentNode, Edge selectedMwoeEdge){
+        List<NodeInfo> neighbors= thisNodeInfo.getNeighbors();
+        for(NodeInfo n: neighbors) {
+            if(n.getUid() == otherComponentNode) {
+                System.out.println("MWOE Edge added because of Parent message");
+                thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
+                GHSUtil.printTreeEdgeList(thisNodeInfo.getTreeEdges());
+            }
+        }
+    }
+    public void moveToNextPhase(int newLeader) {
+        thisNodeInfo.setComponentId(newLeader);
+        System.out.println("isSearched unmarked");
+        markAsUnSearched();
         setPhaseNumber(getPhaseNumber()+1);
-        nodeIncrementableRoundSynchronizer.incrementRoundNumber();
         mwoeSearchSynchronizer.incrementRoundNumber();
+    }
+
+    public void callTermination(){
+        System.out.println("Terminating...");
+        System.out.println("Leader of the final component is: "+ thisNodeInfo.getComponentId());
+        GHSUtil.printTreeEdgeList(thisNodeInfo.getTreeEdges());
     }
 
     public boolean isThisNodeLeader(){

@@ -28,6 +28,7 @@ public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> e
         }
         int selectedRoundProgress = roundProgress.get(roundNumber);
         selectedRoundProgress++;
+        System.out.println("inside incrementProgressForRound Roundnumber: "+ roundNumber + "selectedRoundProgress: " +selectedRoundProgress);
         roundProgress.set(roundNumber, selectedRoundProgress);
         ensureQueueForRoundIsInitialized(roundNumber);
     }
@@ -42,9 +43,8 @@ public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> e
 
     @Override
     public void runIfReady(Runnable work) {
-        System.out.println("SRS run if ready");
         int progressSoFarThisRound = roundProgress.get(getRoundNumber());
-
+        System.out.println("inside SRS run if ready, progressSoFarThisRound: "+ progressSoFarThisRound);
         if (progressSoFarThisRound == getRoundSize()) {
             work.run();
         }

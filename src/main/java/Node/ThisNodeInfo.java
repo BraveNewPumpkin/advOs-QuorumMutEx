@@ -9,6 +9,7 @@ public final class ThisNodeInfo extends NodeInfo{
     private final int totalNumberOfNodes;
     private int componentId;
     private List<Edge> treeEdges;
+    private List<MwoeSearchMessage> mwoeSearchBuffer;
     private int phaseNumber;
 
 
@@ -20,6 +21,7 @@ public final class ThisNodeInfo extends NodeInfo{
         treeEdges =  Collections.synchronizedList(new ArrayList<>());
         //initially we are the only node in our component so we own it
         this.componentId = uid;
+        this.mwoeSearchBuffer = Collections.synchronizedList(new ArrayList<>());
         this.phaseNumber = 0;
     }
 
@@ -65,5 +67,13 @@ public final class ThisNodeInfo extends NodeInfo{
 
     public void setPhaseNumber(int phaseNumber) {
         this.phaseNumber = phaseNumber;
+    }
+
+    public synchronized  List<MwoeSearchMessage> getMwoeSearchBuffer() {
+        return mwoeSearchBuffer;
+    }
+
+    public void setMwoeSearchBuffer(List<MwoeSearchMessage> mwoeSearchBuffer) {
+        this.mwoeSearchBuffer = mwoeSearchBuffer;
     }
 }

@@ -25,6 +25,24 @@ public class GHSUtil {
         }
     }
 
+    public static synchronized boolean receivedAllMwoeSearchMessages(ThisNodeInfo node, int phaseNumber)
+    {
+        int neighbors = node.getNeighbors().size();
+        List<MwoeSearchMessage> messages = node.getMwoeSearchBuffer();
+        int count=0;
+        synchronized (messages)
+        {
+            for(Iterator<MwoeSearchMessage> itr=messages.iterator(); itr.hasNext();)
+            {
+                MwoeSearchMessage m = itr.next();
+                if(m.getPhaseNumber()==phaseNumber)
+                    count++;
+            }
+        }
+        System.out.println(count);
+        return count==neighbors;
+    }
+
     public static void printTreeEdgeList(List<Edge> treeEdges) {
         System.out.println("All tree edges: ");
         synchronized (treeEdges) {
