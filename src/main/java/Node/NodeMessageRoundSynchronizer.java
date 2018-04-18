@@ -28,7 +28,6 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public void enqueueMessage(T message) {
         int messageRoundNumber = message.getRoundNumber();
         int currentRoundIndex = roundMessages.size() - 1;
-        System.out.println(" NMSync : Current Rounde Index: "+ currentRoundIndex + "Msg round num " + messageRoundNumber);
         if(currentRoundIndex != messageRoundNumber){
             for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
                 roundMessages.add(new ConcurrentLinkedQueue<>());
@@ -82,5 +81,10 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
                roundMessages.add(new ConcurrentLinkedQueue<>());
            }
        }
+    }
+
+    public void reset() {
+       roundMessages.clear();
+       roundNumber = 0;
     }
 }

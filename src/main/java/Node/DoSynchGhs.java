@@ -51,7 +51,7 @@ public class DoSynchGhs implements Runnable{
         }
         synchGhsService.markAsSearched();
         log.trace("before sending MwoeSearch message");
-        synchGhsController.sendMwoeSearch();
+        synchGhsController.sendMwoeSearch(false);
         sendingInitialMwoeSearchMessage.open();
     }
 }

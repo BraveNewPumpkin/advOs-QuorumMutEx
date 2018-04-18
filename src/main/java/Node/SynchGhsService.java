@@ -17,7 +17,7 @@ public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
     private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
-    private final NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer;
+    private final MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer;
 
     private int parentUid;
     private boolean isSearched;
@@ -29,13 +29,13 @@ public class SynchGhsService {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
             NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
-            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
+            MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
         this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
-        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
+        this.mwoeSearchSynchronizer = mwoeSearchSynchronizer;
 
         isSearched = false;
         this.phaseNumber =0;
@@ -46,13 +46,13 @@ public class SynchGhsService {
 
     }
 
-    public void mwoeIntraComponentSearch(int sourceUid, int componentId) {
+    public void mwoeIntraComponentSearch(int sourceUid) {
         parentUid = sourceUid;
         isSearched = true;
-        synchGhsController.sendMwoeSearch();
+        synchGhsController.sendMwoeSearch(false);
     }
 
-    public void mwoeInterComponentSearch(int sourceUid, int componentId) {
+    public void mwoeInterComponentSearch(int sourceUid) {
         List<NodeInfo> nodeInfoList = thisNodeInfo.getNeighbors();
 
         //find node that sent me this
@@ -142,7 +142,7 @@ public class SynchGhsService {
                         e.printStackTrace();
                     }
                     if(thisNodeInfo.getUid()==newLeader)
-                        synchGhsController.sendMwoeSearch();
+                        synchGhsController.sendMwoeSearch(false);
 
                     //synchGhsController.sendNewLeader(targetUID);
                 }
@@ -168,7 +168,7 @@ public class SynchGhsService {
     {
         setPhaseNumber(getPhaseNumber()+1);
         nodeIncrementableRoundSynchronizer.incrementRoundNumber();
-        mwoeSearchRoundSynchronizer.incrementRoundNumber();
+        mwoeSearchSynchronizer.incrementRoundNumber();
     }
 
     public boolean isThisNodeLeader(){

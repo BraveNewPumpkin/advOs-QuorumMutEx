@@ -21,11 +21,10 @@ public class SynchGhsController {
     private final ThisNodeInfo thisNodeInfo;
     private final GateLock sendingInitialMwoeSearchMessage;
     private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
-    private final NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer;
-    private final Object mwoeSearchBarrier;
+    private final MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer;
 
+    private final Object mwoeSearchBarrier;
     private final Runnable mwoeLocalMinWork;
-    private final Runnable mwoeSeachWork;
 
     @Autowired
     public SynchGhsController(
@@ -37,22 +36,17 @@ public class SynchGhsController {
             GateLock sendingInitialMwoeSearchMessage,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
             NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
-            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
+            MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer
             ){
         this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
         this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
-        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
+        this.mwoeSearchSynchronizer = mwoeSearchSynchronizer;
 
         mwoeSearchBarrier = new Object();
-
-        mwoeSeachWork = () -> {
-            Queue<MwoeSearchMessage> mwoeSearchMessages = mwoeSearchRoundSynchronizer.getMessagesThisRound();
-            processSearchesForThisRound(mwoeSearchMessages);
-        };
 
         mwoeLocalMinWork = () -> {
             Queue<MwoeCandidateMessage> mwoeCandidateMessages = nodeIncrementableRoundSynchronizer.getMessagesThisRound();
@@ -65,12 +59,41 @@ public class SynchGhsController {
 
     @MessageMapping("/mwoeSearch")
     public void mwoeSearch(MwoeSearchMessage message) {
+        //1 if i am not marked and i get a real search message, send out search message
+        //2 if i am marked and i get any search message, wait to get one from all neighbors in round, send out null message
+        //3 repeat #2 for 3n times
+        Runnable mwoeSearchEndOfPhaseWork = () -> {
+            //reset isSearched
+            synchGhsService.markAsUnSearched();
+            //process all real search messages this phase
+            Queue<MwoeSearchMessage> mwoeSearchMessages = mwoeSearchSynchronizer.getValidMessagesThisPhase();
+            processSearchesForThisPhase(mwoeSearchMessages);
+            //reset round number and queues in synchronizers
+            mwoeSearchSynchronizer.reset();
+        };
         sendingInitialMwoeSearchMessage.enter();
-        if(message.isNullMessage()) {
-            mwoeSearchRoundSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), mwoeSeachWork);
+        if(synchGhsService.isSearched()) {
+            Runnable markedMwoeSearchWork = () -> {
+                sendMwoeSearch(true);
+            };
+            if(!message.isNullMessage()) {
+                //add to list of valid searches received this phase
+                mwoeSearchSynchronizer.addValidMessage(message);
+            }
+            mwoeSearchSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), markedMwoeSearchWork, mwoeSearchEndOfPhaseWork);
         } else {
-            //TODO after search is complete reset rounds in synchronizer
-            mwoeSearchRoundSynchronizer.enqueueAndRunIfReady(message, mwoeSeachWork);
+            Runnable unmarkedMwoeSearchWork = () -> {
+                synchGhsService.markAsSearched();
+            };
+            if(synchGhsService.isFromComponentNode(message.getComponentId())) {
+                //must take these actions now instead of end of round
+                synchGhsService.mwoeIntraComponentSearch(message.getSourceUID());
+                //do not add to list of valid searches since we have already processed it
+            } else {
+                //add to list of valid searches received this phase
+                mwoeSearchSynchronizer.addValidMessage(message);
+            }
+            mwoeSearchSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), unmarkedMwoeSearchWork, mwoeSearchEndOfPhaseWork);
         }
     }
 
@@ -208,7 +231,7 @@ public class SynchGhsController {
                         }
                         System.out.println("Intiating MWOE Search for next round");
                         if(thisNodeInfo.getUid()==newLeader)
-                            sendMwoeSearch();
+                            sendMwoeSearch(false);
                     }
 
                 }
@@ -251,7 +274,7 @@ public class SynchGhsController {
         }
     }
 
-    public void processSearchesForThisRound(Queue<MwoeSearchMessage> searchMessages) {
+    public void processSearchesForThisPhase(Queue<MwoeSearchMessage> searchMessages) {
         searchMessages.parallelStream().forEach((message) -> {
             if(synchGhsService.isFromComponentNode(message.getComponentId())) {
                 //need to have barrier here to prevent race condition between reading and writing isSearched
@@ -263,25 +286,23 @@ public class SynchGhsController {
                             log.debug("<---received another MwoeSearch message {}", message);
                         }
                         sendMwoeReject(message.getSourceUID());
-                    } else {
-                        synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
                     }
                 }
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("<---received MwoeSearch message {}", message);
                 }
-                synchGhsService.mwoeInterComponentSearch(message.getSourceUID(), message.getComponentId());
+                synchGhsService.mwoeInterComponentSearch(message.getSourceUID());
             }
-
         });
     }
 
-    public void sendMwoeSearch() throws MessagingException {
+    public void sendMwoeSearch(boolean isNullMessage) throws MessagingException {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
-                thisNodeInfo.getComponentId()
+                thisNodeInfo.getComponentId(),
+                isNullMessage
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending MwoeSearch message: {}", message);
