@@ -40,7 +40,7 @@ public final class MwoeSearchMessage extends NodeRoundSynchronizableMessage{
     public String toString() {
         return "MwoeSearchMessage{" +
                 "componentId=" + componentId +
-                ", phase number="+ getPhaseNumber()+
+                ", isNullMessage=" + isNullMessage +
                 "} " + super.toString();
     }
 }
