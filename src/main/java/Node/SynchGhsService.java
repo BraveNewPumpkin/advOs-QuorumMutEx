@@ -16,8 +16,8 @@ import java.util.Collections;
 public class SynchGhsService {
     private final SynchGhsController synchGhsController;
     private final ThisNodeInfo thisNodeInfo;
-    private final MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer;
-    private final NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer;
+    private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
+    private final NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer;
 
     private int parentUid;
     private boolean isSearched;
@@ -28,13 +28,13 @@ public class SynchGhsService {
             @Lazy SynchGhsController synchGhsController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
-            MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer,
+            NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer
+            NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer
     ) {
         this.synchGhsController = synchGhsController;
         this.thisNodeInfo = thisNodeInfo;
-        this.mwoeSearchResponseRoundSynchronizer = mwoeSearchResponseRoundSynchronizer;
+        this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
         this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
 
         isSearched = false;
@@ -167,7 +167,7 @@ public class SynchGhsService {
     public void moveToNextPhase()
     {
         setPhaseNumber(getPhaseNumber()+1);
-        mwoeSearchResponseRoundSynchronizer.incrementRoundNumber();
+        nodeIncrementableRoundSynchronizer.incrementRoundNumber();
         mwoeSearchRoundSynchronizer.incrementRoundNumber();
     }
 

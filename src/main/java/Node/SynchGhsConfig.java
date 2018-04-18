@@ -41,15 +41,13 @@ public class SynchGhsConfig {
 
     @Bean
     @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
-    public MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer(){
-        System.out.println( thisNodeInfo.getNeighbors().size()  +" --> L44 Config");
-        return new MwoeSearchResponseRoundSynchronizer(thisNodeInfo.getNeighbors().size());
+    public NodeIncrementableRoundSynchronizer mwoeSearchResponseRoundSynchronizer(){
+        return new NodeIncrementableRoundSynchronizer(thisNodeInfo.getNeighbors().size());
     }
 
     @Bean
     @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-    public NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer(){
-        System.out.println( thisNodeInfo.getNeighbors().size()  +" --> L44 Config");
-        return new NodeMessageRoundSynchronizer(thisNodeInfo.getNeighbors().size());
+    public NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer(){
+        return new NodeIncrementableRoundSynchronizer(thisNodeInfo.getNeighbors().size());
     }
 }

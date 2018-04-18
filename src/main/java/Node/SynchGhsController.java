@@ -20,8 +20,8 @@ public class SynchGhsController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final GateLock sendingInitialMwoeSearchMessage;
-    private final MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer;
-    private final NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer;
+    private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
+    private final NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer;
     private final Object mwoeSearchBarrier;
 
     private final Runnable mwoeLocalMinWork;
@@ -36,15 +36,15 @@ public class SynchGhsController {
             @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
             GateLock sendingInitialMwoeSearchMessage,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
-            MwoeSearchResponseRoundSynchronizer mwoeSearchResponseRoundSynchronizer,
+            NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            NodeMessageRoundSynchronizer mwoeSearchRoundSynchronizer
+            NodeIncrementableRoundSynchronizer mwoeSearchRoundSynchronizer
             ){
         this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
-        this.mwoeSearchResponseRoundSynchronizer = mwoeSearchResponseRoundSynchronizer;
+        this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
         this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
 
         mwoeSearchBarrier = new Object();
@@ -55,11 +55,10 @@ public class SynchGhsController {
         };
 
         mwoeLocalMinWork = () -> {
-            Queue<MwoeCandidateMessage> mwoeCandidateMessages = mwoeSearchResponseRoundSynchronizer.getMessagesThisRound();
+            Queue<MwoeCandidateMessage> mwoeCandidateMessages = nodeIncrementableRoundSynchronizer.getMessagesThisRound();
             List<Edge> candidateEdges = mwoeCandidateMessages.parallelStream()
                     .map(MwoeCandidateMessage::getMwoeCandidate)
                     .collect(Collectors.toList());
-            System.out.println("inside work ");
             synchGhsService.calcLocalMin(candidateEdges);
         };
     }
@@ -67,7 +66,12 @@ public class SynchGhsController {
     @MessageMapping("/mwoeSearch")
     public void mwoeSearch(MwoeSearchMessage message) {
         sendingInitialMwoeSearchMessage.enter();
-        mwoeSearchRoundSynchronizer.enqueueAndRunIfReady(message, mwoeSeachWork);
+        if(message.isNullMessage()) {
+            mwoeSearchRoundSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), mwoeSeachWork);
+        } else {
+            //TODO after search is complete reset rounds in synchronizer
+            mwoeSearchRoundSynchronizer.enqueueAndRunIfReady(message, mwoeSeachWork);
+        }
     }
 
     @MessageMapping("/mwoeCandidate")
@@ -81,7 +85,7 @@ public class SynchGhsController {
                 log.debug("<---received MwoeCandidate message {}", message);
             }
             synchronized (mwoeLocalMinWork) {
-                mwoeSearchResponseRoundSynchronizer.enqueueAndRunIfReady(message, mwoeLocalMinWork);
+                nodeIncrementableRoundSynchronizer.enqueueAndRunIfReady(message, mwoeLocalMinWork);
 
             }
         }
@@ -98,7 +102,7 @@ public class SynchGhsController {
                 log.debug("<---received MwoeReject message {}", message);
             }
             synchronized (mwoeLocalMinWork) {
-                mwoeSearchResponseRoundSynchronizer.incrementProgressAndRunIfReady(message.getPhaseNumber(), mwoeLocalMinWork);
+                nodeIncrementableRoundSynchronizer.incrementProgressAndRunIfReady(message.getPhaseNumber(), mwoeLocalMinWork);
             }
         }
     }
@@ -230,7 +234,7 @@ public class SynchGhsController {
                 synchGhsService.markAsUnSearched();
                 thisNodeInfo.setComponentId(message.getNewLeaderUID());
                 synchGhsService.setPhaseNumber(message.getPhaseNumber());
-                mwoeSearchResponseRoundSynchronizer.incrementRoundNumber();
+                nodeIncrementableRoundSynchronizer.incrementRoundNumber();
                 log.debug("Phase number updated to" + synchGhsService.getPhaseNumber());
                 // then relay that message to all its tree edges
                 List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();

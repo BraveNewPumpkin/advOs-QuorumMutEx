@@ -3,17 +3,17 @@ package Node;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MwoeSearchResponseRoundSynchronizer extends NodeMessageRoundSynchronizer<MwoeCandidateMessage> {
+public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> extends NodeMessageRoundSynchronizer<T> {
     public final List<Integer> roundProgress;
 
-    public MwoeSearchResponseRoundSynchronizer(int roundSize) {
+    public NodeIncrementableRoundSynchronizer(int roundSize) {
         super(roundSize);
         System.out.println("SRS Round Size: "+ roundSize);
         roundProgress = new ArrayList<>();
     }
 
     @Override
-    public void enqueueMessage(MwoeCandidateMessage message) {
+    public void enqueueMessage(T message) {
         int messageRoundNumber = message.getRoundNumber();
         int currentRoundIndex = roundProgress.size() - 1;
         System.out.println(" SRSync : Current Rounde Index: "+ currentRoundIndex);
