@@ -31,21 +31,23 @@ public class MwoeSearchRoundSynchronizer extends NodeMessageRoundSynchronizer<Mw
     }
 
     public void incrementProgressForRound(int roundNumber) {
+        if(roundNumber>roundProgress.size()-1)
+            roundProgress.add(0);
         int selectedRoundProgress = roundProgress.get(roundNumber);
         selectedRoundProgress++;
+        System.out.println("inside incrementProgressForRound Roundnumber: "+ roundNumber + "selectedRoundProgress: " +selectedRoundProgress);
         roundProgress.set(roundNumber, selectedRoundProgress);
     }
 
-    public void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
+    public synchronized  void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
         incrementProgressForRound(roundNumber);
         runIfReady(work);
     }
 
     @Override
     public void runIfReady(Runnable work) {
-        System.out.println("SRS run if ready");
         int progressSoFarThisRound = roundProgress.get(getRoundNumber());
-
+        System.out.println("inside SRS run if ready, progressSoFarThisRound: "+ progressSoFarThisRound);
         if (progressSoFarThisRound == getRoundSize()) {
             work.run();
         }

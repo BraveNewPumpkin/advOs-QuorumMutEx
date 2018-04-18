@@ -26,7 +26,7 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
 
     public void enqueueMessage(T message) {
         int messageRoundNumber = message.getRoundNumber();
-        int currentRoundIndex = roundMessages.size() - 1;
+        int currentRoundIndex = roundMessages.size()-1;
         System.out.println(" NMSync : Current Rounde Index: "+ currentRoundIndex + "Msg round num " + messageRoundNumber);
         if(currentRoundIndex != messageRoundNumber){
             for(int i = currentRoundIndex; i <= messageRoundNumber; i++) {
@@ -37,7 +37,7 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
         System.out.println("Message size: " + roundMessages.get(messageRoundNumber).size());
     }
 
-    public void enqueueAndRunIfReady(T message, Runnable work) {
+    public synchronized void enqueueAndRunIfReady(T message, Runnable work) {
        System.out.println("Message to enqueue: "+message);
        enqueueMessage(message);
         System.out.println("run if ready starts");
