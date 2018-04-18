@@ -10,7 +10,6 @@ public class MwoeSearchSynchronizer<T extends RoundSynchronizable> extends NodeI
     public MwoeSearchSynchronizer(int roundSize, int numRoundsInPhase) {
         super(roundSize);
         this.numRoundsInPhase = numRoundsInPhase;
-
         this.validMessagesThisPhase = new ConcurrentLinkedQueue<>();
     }
 

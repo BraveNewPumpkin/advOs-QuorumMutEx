@@ -70,11 +70,13 @@ public class SynchGhsController {
             processSearchesForThisPhase(mwoeSearchMessages);
             //reset round number and queues in synchronizers
             mwoeSearchSynchronizer.reset();
+
         };
         sendingInitialMwoeSearchMessage.enter();
         if(synchGhsService.isSearched()) {
             Runnable markedMwoeSearchWork = () -> {
                 sendMwoeSearch(true);
+                mwoeSearchSynchronizer.incrementRoundNumber();
             };
             if(!message.isNullMessage()) {
                 //add to list of valid searches received this phase
@@ -83,6 +85,7 @@ public class SynchGhsController {
             mwoeSearchSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), markedMwoeSearchWork, mwoeSearchEndOfPhaseWork);
         } else {
             Runnable unmarkedMwoeSearchWork = () -> {
+                mwoeSearchSynchronizer.incrementRoundNumber();
                 synchGhsService.markAsSearched();
             };
             if(synchGhsService.isFromComponentNode(message.getComponentId())) {
@@ -206,6 +209,7 @@ public class SynchGhsController {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
+                mwoeSearchSynchronizer.getRoundNumber(),
                 thisNodeInfo.getComponentId(),
                 isNullMessage
                 );

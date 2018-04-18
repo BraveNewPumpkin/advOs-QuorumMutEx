@@ -8,14 +8,14 @@ public final class MwoeSearchMessage extends NodeRoundSynchronizableMessage{
         super();
     }
 
-    public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
+    /*public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
         super(sourceUID, phaseNumber, phaseNumber);
         this.componentId = componentId;
         isNullMessage = false;
-    }
+    }*/
 
-    public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId, boolean isNullMessage) {
-        super(sourceUID, phaseNumber, phaseNumber);
+    public MwoeSearchMessage(int sourceUID, int phaseNumber, int roundNumberInSomePhase, int componentId, boolean isNullMessage) {
+        super(sourceUID, phaseNumber, roundNumberInSomePhase);
         this.componentId = componentId;
         this.isNullMessage = isNullMessage;
     }

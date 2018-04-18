@@ -15,7 +15,7 @@ public class DoSynchGhs implements Runnable{
     private final SynchGhsController synchGhsController;
     private final SynchGhsService synchGhsService;
     private final GateLock sendingInitialMwoeSearchMessage;
-
+    private  final MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer;
 
     @Autowired
     public DoSynchGhs(
@@ -23,12 +23,15 @@ public class DoSynchGhs implements Runnable{
             SynchGhsController synchGhsController,
             SynchGhsService synchGhsService,
             @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
-            GateLock sendingInitialMwoeSearchMessage
+            GateLock sendingInitialMwoeSearchMessage,
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
+                    MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer
     ){
         this.webSocketConnector = webSocketConnector;
         this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
         this.synchGhsController = synchGhsController;
         this.synchGhsService = synchGhsService;
+        this.mwoeSearchSynchronizer = mwoeSearchSynchronizer;
     }
 
     @Override
@@ -52,6 +55,7 @@ public class DoSynchGhs implements Runnable{
         synchGhsService.markAsSearched();
         log.trace("before sending MwoeSearch message");
         synchGhsController.sendMwoeSearch(false);
+        mwoeSearchSynchronizer.incrementRoundNumber();
         sendingInitialMwoeSearchMessage.open();
     }
 }
