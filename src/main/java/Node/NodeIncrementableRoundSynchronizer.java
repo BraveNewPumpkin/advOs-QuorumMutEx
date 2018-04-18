@@ -1,8 +1,11 @@
 package Node;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> extends NodeMessageRoundSynchronizer<T> {
     public final List<Integer> roundProgress;
 
@@ -36,6 +39,9 @@ public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> e
     public synchronized void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
         incrementProgressForRound(roundNumber);
         //only try to run if the round we're progressing is current round
+        if(log.isTraceEnabled()) {
+            log.trace("we are in round: {} message is in round: {}", getRoundNumber(), roundNumber);
+        }
         if(getRoundNumber() == roundNumber) {
             runIfReady(work);
         }
