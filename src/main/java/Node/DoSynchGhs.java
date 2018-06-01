@@ -48,7 +48,7 @@ public class DoSynchGhs implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(5 * 1000);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }

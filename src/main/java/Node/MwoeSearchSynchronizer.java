@@ -3,7 +3,7 @@ package Node;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class MwoeSearchSynchronizer<T extends RoundSynchronizable> extends NodeIncrementableRoundSynchronizer<T>{
+public class MwoeSearchSynchronizer<T extends RoundSynchronizable> extends NodeIncrementableRoundSynchronizer<T> {
     private final Queue<T> validMessagesThisPhase;
     private final int numRoundsInPhase;
 
@@ -15,7 +15,7 @@ public class MwoeSearchSynchronizer<T extends RoundSynchronizable> extends NodeI
 
     public synchronized void incrementProgressAndRunIfReady(int roundNumber, Runnable endOfRoundWork, Runnable endOfPhaseWork) {
         super.incrementProgressAndRunIfReady(roundNumber, endOfRoundWork);
-        if(getRoundNumber() == numRoundsInPhase) {
+        if (getRoundNumber() == numRoundsInPhase) {
             endOfPhaseWork.run();
         }
     }
@@ -33,5 +33,4 @@ public class MwoeSearchSynchronizer<T extends RoundSynchronizable> extends NodeI
         super.reset();
         validMessagesThisPhase.clear();
     }
-
 }

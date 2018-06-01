@@ -7,7 +7,7 @@ import java.util.List;
 
 @Slf4j
 public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> extends NodeMessageRoundSynchronizer<T> {
-    public final List<Integer> roundProgress;
+    private final List<Integer> roundProgress;
 
     public NodeIncrementableRoundSynchronizer(int roundSize) {
         super(roundSize);
@@ -34,6 +34,10 @@ public class NodeIncrementableRoundSynchronizer<T extends RoundSynchronizable> e
         System.out.println("inside incrementProgressForRound Roundnumber: "+ roundNumber + "selectedRoundProgress: " +selectedRoundProgress);
         roundProgress.set(roundNumber, selectedRoundProgress);
         ensureQueueForRoundIsInitialized(roundNumber);
+    }
+
+    public int getProgressForRound(int roundNumber) {
+        return roundProgress.get(roundNumber);
     }
 
     public synchronized void incrementProgressAndRunIfReady(int roundNumber, Runnable work) {
