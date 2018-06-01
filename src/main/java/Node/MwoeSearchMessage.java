@@ -1,15 +1,23 @@
 package Node;
 
-public final class MwoeSearchMessage extends NodeMessage{
+public final class MwoeSearchMessage extends NodeRoundSynchronizableMessage{
     private int componentId;
+    private boolean isNullMessage;
 
     public MwoeSearchMessage() {
         super();
     }
 
-    public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
-        super(sourceUID,phaseNumber);
+    /*public MwoeSearchMessage(int sourceUID, int phaseNumber, int componentId) {
+        super(sourceUID, phaseNumber, phaseNumber);
         this.componentId = componentId;
+        isNullMessage = false;
+    }*/
+
+    public MwoeSearchMessage(int sourceUID, int phaseNumber, int roundNumberInSomePhase, int componentId, boolean isNullMessage) {
+        super(sourceUID, phaseNumber, roundNumberInSomePhase);
+        this.componentId = componentId;
+        this.isNullMessage = isNullMessage;
     }
 
     public int getComponentId() {
@@ -20,10 +28,19 @@ public final class MwoeSearchMessage extends NodeMessage{
         this.componentId = componentId;
     }
 
+    public boolean isNullMessage() {
+        return isNullMessage;
+    }
+
+    public void setNullMessage(boolean nullMessage) {
+        isNullMessage = nullMessage;
+    }
+
     @Override
     public String toString() {
         return "MwoeSearchMessage{" +
                 "componentId=" + componentId +
+                ", isNullMessage=" + isNullMessage +
                 "} " + super.toString();
     }
 }

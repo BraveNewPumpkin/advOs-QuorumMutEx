@@ -1,9 +1,6 @@
 package Node;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class ThisNodeInfo extends NodeInfo{
@@ -11,7 +8,9 @@ public final class ThisNodeInfo extends NodeInfo{
     private final Map<NodeInfo, Edge> edges;
     private final int totalNumberOfNodes;
     private int componentId;
-    private CopyOnWriteArrayList<Edge> treeEdges;
+    private List<Edge> treeEdges;
+    private List<MwoeSearchMessage> mwoeSearchBuffer;
+    private int phaseNumber;
 
 
     ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
@@ -19,9 +18,11 @@ public final class ThisNodeInfo extends NodeInfo{
         this.totalNumberOfNodes = totalNumberOfNodes;
         neighbors = new ArrayList<>();
         edges = new HashMap<>();
-        treeEdges = new CopyOnWriteArrayList<>();
+        treeEdges =  Collections.synchronizedList(new ArrayList<>());
         //initially we are the only node in our component so we own it
         this.componentId = uid;
+        this.mwoeSearchBuffer = Collections.synchronizedList(new ArrayList<>());
+        this.phaseNumber = 0;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
@@ -52,7 +53,7 @@ public final class ThisNodeInfo extends NodeInfo{
         this.componentId = componentId;
     }
 
-    public synchronized CopyOnWriteArrayList<Edge> getTreeEdges() {
+    public synchronized List<Edge> getTreeEdges() {
         return treeEdges;
     }
 
@@ -60,5 +61,19 @@ public final class ThisNodeInfo extends NodeInfo{
         treeEdges.add(treeEdge);
     }
 
+    public int getPhaseNumber() {
+        return phaseNumber;
+    }
 
+    public void setPhaseNumber(int phaseNumber) {
+        this.phaseNumber = phaseNumber;
+    }
+
+    public synchronized  List<MwoeSearchMessage> getMwoeSearchBuffer() {
+        return mwoeSearchBuffer;
+    }
+
+    public void setMwoeSearchBuffer(List<MwoeSearchMessage> mwoeSearchBuffer) {
+        this.mwoeSearchBuffer = mwoeSearchBuffer;
+    }
 }

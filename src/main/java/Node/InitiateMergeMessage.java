@@ -33,6 +33,7 @@ public class InitiateMergeMessage extends SimpleTargetableMessage {
         return "InitiateMergeMessage{" +
                 "mwoeEdge=" + mwoeEdge +
                 ", componentId=" + componentId +
+                ", phase Number=" + getPhaseNumber()+
                 "} " + super.toString();
     }
 }

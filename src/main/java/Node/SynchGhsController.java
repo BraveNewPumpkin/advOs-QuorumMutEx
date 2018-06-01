@@ -8,7 +8,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
@@ -21,9 +20,10 @@ public class SynchGhsController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final GateLock sendingInitialMwoeSearchMessage;
-    private final MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer;
-    private final Object mwoeSearchBarrier;
+    private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
+    private final MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer;
 
+    private final Object mwoeSearchBarrier;
     private final Runnable mwoeLocalMinWork;
 
     @Autowired
@@ -34,66 +34,88 @@ public class SynchGhsController {
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/SynchGhsConfig/sendingInitialMwoeSearchMessage")
             GateLock sendingInitialMwoeSearchMessage,
-            @Qualifier("Node/LeaderElectionConfig/mwoeSearchRoundSynchronizer")
-            MwoeSearchRoundSynchronizer mwoeSearchRoundSynchronizer
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
+            NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
+            @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
+            MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer
             ){
         this.synchGhsService = synchGhsService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.sendingInitialMwoeSearchMessage = sendingInitialMwoeSearchMessage;
-        this.mwoeSearchRoundSynchronizer = mwoeSearchRoundSynchronizer;
+        this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
+        this.mwoeSearchSynchronizer = mwoeSearchSynchronizer;
 
         mwoeSearchBarrier = new Object();
+
         mwoeLocalMinWork = () -> {
-            Queue<MwoeCandidateMessage> mwoeCandidateMessages = mwoeSearchRoundSynchronizer.getMessagesThisRound();
+            Queue<MwoeCandidateMessage> mwoeCandidateMessages = nodeIncrementableRoundSynchronizer.getMessagesThisRound();
             List<Edge> candidateEdges = mwoeCandidateMessages.parallelStream()
                     .map(MwoeCandidateMessage::getMwoeCandidate)
                     .collect(Collectors.toList());
-            System.out.println("inside work ");
             synchGhsService.calcLocalMin(candidateEdges);
         };
     }
 
     @MessageMapping("/mwoeSearch")
     public void mwoeSearch(MwoeSearchMessage message) {
-        /*TODO buffer messages from other phases and only process them when we receive notification from leader that we
-        are going into that phase*/
-        if(synchGhsService.isFromComponentNode(message.getComponentId())) {
-            sendingInitialMwoeSearchMessage.enter();
-            //need to have barrier here to prevent race condition between reading and writing isSearched
-            // note that it is also written when phase is transitioned, but we should have guarantee that all mwoeSearch
-            // has been completed by then
-            synchronized(mwoeSearchBarrier) {
-                if (synchGhsService.isSearched()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("<---received another MwoeSearch message {}", message);
-                    }
-                    sendMwoeReject(message.getSourceUID());
-                } else {
-                    synchGhsService.mwoeIntraComponentSearch(message.getSourceUID(), message.getComponentId());
-                }
+        //1 if i am not marked and i get a real search message, send out search message
+        //2 if i am marked and i get any search message, wait to get one from all neighbors in round, send out null message
+        //3 repeat #2 for 3n times
+        Runnable mwoeSearchEndOfPhaseWork = () -> {
+            //reset isSearched
+            synchGhsService.markAsUnSearched();
+            //process all real search messages this phase
+            Queue<MwoeSearchMessage> mwoeSearchMessages = mwoeSearchSynchronizer.getValidMessagesThisPhase();
+            processSearchesForThisPhase(mwoeSearchMessages);
+            //reset round number and queues in synchronizers
+            mwoeSearchSynchronizer.reset();
+        };
+        sendingInitialMwoeSearchMessage.enter();
+        if (log.isDebugEnabled()) {
+            log.debug("<---received MwoeSearch message {}", message);
+        }
+        if(synchGhsService.isSearched()) {
+            Runnable markedMwoeSearchWork = () -> {
+                mwoeSearchSynchronizer.incrementRoundNumber();
+                sendMwoeSearch(true);
+            };
+            if(!message.isNullMessage()) {
+                //add to list of valid searches received this phase
+                mwoeSearchSynchronizer.addValidMessage(message);
             }
+            mwoeSearchSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), markedMwoeSearchWork, mwoeSearchEndOfPhaseWork);
         } else {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received MwoeSearch message {}", message);
+            Runnable unmarkedMwoeSearchWork = () -> {
+                mwoeSearchSynchronizer.incrementRoundNumber();
+                synchGhsService.markAsSearched();
+            };
+            if(synchGhsService.isFromComponentNode(message.getComponentId())) {
+                //must take these actions now instead of end of round
+                synchGhsService.mwoeIntraComponentSearch(message.getSourceUID());
+                mwoeSearchSynchronizer.incrementRoundNumber();
+                //do not add to list of valid searches since we have already processed it
+            } else {
+                //add to list of valid searches received this phase
+                mwoeSearchSynchronizer.addValidMessage(message);
             }
-            synchGhsService.mwoeInterComponentSearch(message.getSourceUID(), message.getComponentId());
+            mwoeSearchSynchronizer.incrementProgressAndRunIfReady(message.getRoundNumber(), unmarkedMwoeSearchWork, mwoeSearchEndOfPhaseWork);
         }
     }
-
 
     @MessageMapping("/mwoeCandidate")
     public void mwoeCandidate(MwoeCandidateMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  MwoeCandidate message {}", message);
+               // log.trace("<---received  MwoeCandidate message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MwoeCandidate message {}", message);
             }
             synchronized (mwoeLocalMinWork) {
-                mwoeSearchRoundSynchronizer.enqueueAndRunIfReady(message, mwoeLocalMinWork);
+                nodeIncrementableRoundSynchronizer.enqueueAndRunIfReady(message, mwoeLocalMinWork);
+
             }
         }
     }
@@ -102,14 +124,14 @@ public class SynchGhsController {
     public void mwoeReject(MwoeRejectMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  MwoeReject message {}", message);
+              //  log.trace("<---received  MwoeReject message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MwoeReject message {}", message);
             }
             synchronized (mwoeLocalMinWork) {
-                mwoeSearchRoundSynchronizer.incrementProgressAndRunIfReady(message.getPhaseNumber(), mwoeLocalMinWork);
+                nodeIncrementableRoundSynchronizer.incrementProgressAndRunIfReady(message.getPhaseNumber(), mwoeLocalMinWork);
             }
         }
     }
@@ -125,75 +147,18 @@ public class SynchGhsController {
                 log.debug("<---received initiateMerge message in else {}", message);
             }
             Edge selectedMwoeEdge = message.getMwoeEdge();
-            //same component or not
-            if(message.getComponentId()==thisNodeInfo.getComponentId())
-            {
-                System.out.println("Inside initate Merge if");
-                //are we one of the sides of this edge
-                if(thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid() || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
-                {
-                    int otherComponentNode;
-                    //save the node on the edge that isn't us
-                    if(thisNodeInfo.getUid() == selectedMwoeEdge.getFirstUid()) {
-                        otherComponentNode = selectedMwoeEdge.getSecondUid();
-                    } else {
-                        otherComponentNode = selectedMwoeEdge.getFirstUid();
-                    }
-                    //add this edge to our tree edges if it's one of our neighbors
-                    List<NodeInfo> neighbors = thisNodeInfo.getNeighbors();
-                    for(NodeInfo neighbor: neighbors)
-                    {
-                       if(neighbor.getUid() == otherComponentNode)
-                           thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
-                    }
-                }
-                //if this message was from one of our tree edges tell the sender to merge
-                List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
-                synchronized(treeEdgeListSync) {
-                    for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext(); ) {
-                        Edge edge = itr.next();
-                        int targetUID;
-                        if (edge.firstUid != thisNodeInfo.getUid())
-                            targetUID = edge.firstUid;
-                        else
-                            targetUID = edge.secondUid;
-                        if (targetUID != message.getSourceUID())
-                            sendInitiateMerge(targetUID, selectedMwoeEdge);
-                    }
-                }
-
-            }
-            //are we one of the sides of the edge
-            else if(thisNodeInfo.getUid() == selectedMwoeEdge.getFirstUid()
-                    || thisNodeInfo.getUid() == selectedMwoeEdge.getSecondUid())
-            {
-                System.out.println("Inside else");
-                System.out.println("Nodes are in diff compoenent: IntiateMerge MEssage Processing");
-                //are both sides of the edge us
-                int targetUID = (thisNodeInfo.getUid()==selectedMwoeEdge.getFirstUid()) ?
-                        selectedMwoeEdge.getSecondUid() : selectedMwoeEdge.getFirstUid();
-                System.out.println("Message.getTarget ininite Merge" + message.getTarget());
-                if(thisNodeInfo.getUid() == message.getTarget())
-                {
-                    System.out.println("Initiate merge thisNodeInfo.getUid() == message.getTarget()");
-                    //add this edge to tree edges
-                    if(!thisNodeInfo.getTreeEdges().contains(selectedMwoeEdge)) {
-                        System.out.println("Tree Edge List size: " + thisNodeInfo.getTreeEdges().size());
-                        thisNodeInfo.getTreeEdges().add(selectedMwoeEdge);
-                    }
-
-                    else
-                    {
-                        System.out.println("Tree Edge List size: "+ thisNodeInfo.getTreeEdges().size());
-                        //the edge was a tree edge so we have a new leader
-                        int newLeader = Math.max(selectedMwoeEdge.getFirstUid(),selectedMwoeEdge.getSecondUid());
-                        System.out.println("New Leader is:" + newLeader);
-                        //TODO broadcast newLeader in the new merged component
-                    }
-
+            int targetUid = synchGhsService.checkThisEdgeBelongsToMe(thisNodeInfo, selectedMwoeEdge);
+            if (targetUid != -1) {
+                boolean alreadyExist = synchGhsService.addIfTreeEdgeDoesntExist(thisNodeInfo, selectedMwoeEdge);
+                if (!alreadyExist) {
+                    sendInitiateMerge(targetUid, selectedMwoeEdge);
+                } else {
+                    synchGhsService.triggerNewLeaderElectionAndSend(thisNodeInfo, selectedMwoeEdge);
                 }
             }
-
+            else if (message.getComponentId() == thisNodeInfo.getComponentId()) {
+                synchGhsService.relayLocalMinEdge(thisNodeInfo, selectedMwoeEdge, message.getSourceUID());
+            }
         }
 
     }
@@ -202,38 +167,57 @@ public class SynchGhsController {
     public void newLeader(NewLeaderMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  newLeader message {}", message);
+              //  log.trace("<---received  newLeader message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("<---received newLeader message {}", message);
             }
-
-            //update this nodes component id with new leaders UID
-
-            thisNodeInfo.setComponentId(message.getNewLeaderUID());
-
-            // then relay that message to all its tree edges
-            List<Edge> treeEdgeListSync = thisNodeInfo.getTreeEdges();
-            synchronized(treeEdgeListSync) {
-                for (Iterator<Edge> itr = treeEdgeListSync.iterator(); itr.hasNext();) {
-                    Edge edge = itr.next();
-                    int targetUID = edge.getFirstUid() != thisNodeInfo.getUid() ? edge.getFirstUid() : edge.getSecondUid();
-
-                    if (targetUID != message.getSourceUID())
-                        sendNewLeader(targetUID);
-                }
+            if(thisNodeInfo.getComponentId()!=message.newLeaderUID || synchGhsService.getPhaseNumber()!=message.getPhaseNumber()) {
+                //update this nodes component id with new leaders UID
+                synchGhsService.moveToNextPhase(message.getNewLeaderUID());
+                log.debug("Phase number updated to" + synchGhsService.getPhaseNumber());
+                // then relay that message to all its tree edges
+               synchGhsService.relayNewLeaderMessage(thisNodeInfo,message.getNewLeaderUID(),message.getSourceUID());
+               if(thisNodeInfo.getUid()==message.getNewLeaderUID())
+                    sendMwoeSearch(false);
             }
         }
     }
-    public void sendMwoeSearch() throws MessagingException {
+
+    public void processSearchesForThisPhase(Queue<MwoeSearchMessage> searchMessages) {
+        searchMessages.parallelStream().forEach((message) -> {
+            if(synchGhsService.isFromComponentNode(message.getComponentId())) {
+                //need to have barrier here to prevent race condition between reading and writing isSearched
+                // note that it is also written when phase is transitioned, but we should have guarantee that all mwoeSearch
+                // has been completed by then
+                synchronized(mwoeSearchBarrier) {
+                    if (synchGhsService.isSearched()) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("<---received another MwoeSearch message {}", message);
+                        }
+                        sendMwoeReject(message.getSourceUID());
+                    }
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("<---received MwoeSearch message {}", message);
+                }
+                synchGhsService.mwoeInterComponentSearch(message.getSourceUID());
+            }
+        });
+    }
+
+    public void sendMwoeSearch(boolean isNullMessage) throws MessagingException {
         MwoeSearchMessage message = new MwoeSearchMessage(
                 thisNodeInfo.getUid(),
                 synchGhsService.getPhaseNumber(),
-                thisNodeInfo.getComponentId()
+                mwoeSearchSynchronizer.getRoundNumber(),
+                thisNodeInfo.getComponentId(),
+                isNullMessage
                 );
         if(log.isDebugEnabled()){
-            log.debug("--->sending MwoeSearch message: {}", message);
+            log.debug("--->sending MwoeSearch message: {}", message + "component Id:" +thisNodeInfo.getComponentId());
         }
         template.convertAndSend("/topic/mwoeSearch", message);
         log.trace("MwoeSearch message sent");
@@ -247,7 +231,7 @@ public class SynchGhsController {
                 candidate
         );
         if(log.isDebugEnabled()){
-            log.debug("--->sending MwoeCandidate message: {}", message);
+            log.debug("--->sending MwoeCandidate message: {}", message + "component Id:" +thisNodeInfo.getComponentId());
         }
         template.convertAndSend("/topic/mwoeCandidate", message);
         log.trace("MwoeCandidate message sent");

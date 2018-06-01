@@ -10,6 +10,7 @@ public class NewLeaderMessage extends SimpleTargetableMessage {
     public NewLeaderMessage(int sourceId, int phaseNumber, int target, int newLeaderUID){
         super(sourceId, phaseNumber, target);
         this.newLeaderUID = newLeaderUID;
+
     }
 
     public int getNewLeaderUID() {
@@ -24,6 +25,7 @@ public class NewLeaderMessage extends SimpleTargetableMessage {
     public String toString() {
         return "NewLeaderMessage{" +
                 "newLeaderUID=" + newLeaderUID +
+                " ,Phase Number=" + getPhaseNumber()+
                 "} " + super.toString();
     }
 }
