@@ -1,5 +1,5 @@
-# Synchronous GHS
-a practice implementation using Spring WebSocket of GHS algorithm.
+# MAP Snapshot
+a practice implementation using Spring WebSocket of the MAP protocol and using Chandy and Lamport’s protocol for recording a consistent global snapshot to check the state.
 
 parameters are:
 
@@ -11,4 +11,4 @@ parameters are:
 
 
 References:
-R. G. Gallager, P. A. Humblet, and P. M. Spira. 1983. A Distributed Algorithm for Minimum-Weight Spanning Trees. ACM Trans. Program. Lang. Syst. 5, 1 (January 1983), 66-77. DOI=http://dx.doi.org/10.1145/357195.357200
+Leslie Lamport, K. Mani Chandy: Distributed Snapshots: Determining Global States of a Distributed System. In: ACM Transactions on Computer Systems 3. Nr. 1, February 1985.
