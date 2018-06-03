@@ -13,10 +13,10 @@ public class Application {
             log.trace("before running application");
         }
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        DoSynchGhs doSynchGhs = context.getBean(DoSynchGhs.class);
-        Thread thread = new Thread(doSynchGhs);
+        DoMapProtocol doMapProtocol = context.getBean(DoMapProtocol.class);
+        Thread thread = new Thread(doMapProtocol);
         if(log.isTraceEnabled()) {
-            log.trace("before running sendLeaderElection thread");
+            log.trace("before running doMapProtocol thread");
         }
         thread.start();
     }
