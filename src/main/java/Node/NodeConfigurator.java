@@ -74,11 +74,7 @@ public class NodeConfigurator {
     @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
     public List<String> getSubscriptionDestinations() {
         return Arrays.asList(
-            "/topic/mwoeSearch",
-            "/topic/mwoeCandidate",
-            "/topic/mwoeReject",
-            "/topic/initiateMerge",
-            "/topic/newLeader"
+            "/topic/mapMessage"
         );
     }
 
