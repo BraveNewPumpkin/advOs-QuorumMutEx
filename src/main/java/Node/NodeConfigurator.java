@@ -62,8 +62,8 @@ public class NodeConfigurator {
             int biggerUid = Math.max(thisUid, neighborUid);
             int smallerUid = Math.min(thisUid, neighborUid);
 
-            Edge edge = new Edge(biggerUid, smallerUid, edgeWeight);
-            thisNodeInfo.addEdge(edge, neighbor);
+//            Edge edge = new Edge(biggerUid, smallerUid, edgeWeight);
+//            thisNodeInfo.addEdge(edge, neighbor);
 
         });
 
@@ -85,22 +85,23 @@ public class NodeConfigurator {
     @Bean
     @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
     public CountDownLatch getConnectionTimeoutLatch() {
-        return new CountDownLatch(1);
+        return new CountDownLqatch(1);
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
         Resource resource = context.getResource(nodeConfigUri);
         Map<Integer, NodeInfo> nodes = new HashMap<>();
         List<Integer> neighbors = new ArrayList<>();
-        Map<NodeInfo, Integer> distancesToNeighbors = new HashMap<>();
         String line;
         int count = 0;
 
-        int thisNodeUid = 0;
+        boolean validLine1=false;
+        boolean nodeDetails=false;
+        boolean neighborDetails=false;
         boolean hasThisNodeUidBeenFound = false;
-        int numberOfNodes = 0;
-        boolean hasNumNodesBeenFound = false;
-        Pattern edgeNodesPattern = Pattern.compile("\\((?<firstUid>\\d+),(?<secondUid>\\d+)\\)");
+        int thisNodeUid=0;
+        int numOfNodes=0, minPerActive=0,maxPerActive=0, minSendDelay=0, snapshotDelay=0, maxNumber=0;
+
         try(
                 InputStream is = resource.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -113,13 +114,22 @@ public class NodeConfigurator {
                 if(words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
                     continue;
                 }
-                if(!hasNumNodesBeenFound && words.size() == 1) {
-                    hasNumNodesBeenFound = true;
-                    numberOfNodes = Integer.parseInt(words.remove());
-                    System.out.println(numberOfNodes);
 
-                } else if(count < numberOfNodes) {
-                    //parse nodes
+                if(words.peek().matches("\\D+")){
+                    continue;
+                }
+                if(!validLine1 && words.size()>=6){
+                    numOfNodes=Integer.parseInt(words.remove());
+                    minPerActive=Integer.parseInt(words.remove());
+                    maxPerActive=Integer.parseInt(words.remove());
+                    minSendDelay=Integer.parseInt(words.remove());
+                    snapshotDelay=Integer.parseInt(words.remove());
+                    maxNumber=Integer.parseInt(words.remove());
+                    validLine1=true;
+                }
+                else if(!nodeDetails && count<numOfNodes){
+                    //read node details
+
                     int uid = Integer.parseInt(words.remove());
                     String hostName = words.remove();
                     int port = Integer.parseInt(words.remove());
@@ -134,41 +144,42 @@ public class NodeConfigurator {
                     NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
                     nodes.put(uid, nodeInfo);
                     count++;
-                } else  {
-                    //parse neighbors
 
+                    if(count==numOfNodes) {
+                        nodeDetails = true;
+                        count=0; //reusing count variable for counting nodes while extracting neighbors
+                    }
+                }
+                else if(!neighborDetails && count<numOfNodes){
+                    //Read neighbors
                     if(!hasThisNodeUidBeenFound) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
-                    Matcher edgeNodesMatcher = edgeNodesPattern.matcher(words.remove());
-                    if(!edgeNodesMatcher.matches()) {
-                        throw new  ConfigurationException("could not match pattern for edges");
+                    if(count!=thisNodeUid) {
+                        count++;
+                        continue;
                     }
-                    int firstUid = Integer.parseInt(edgeNodesMatcher.group("firstUid"));
-                    int secondUid = Integer.parseInt(edgeNodesMatcher.group("secondUid"));
-                    int otherUid = 0;
-                    boolean isNeighbor = false;
-                    if(thisNodeUid == firstUid) {
-                        isNeighbor = true;
-                        otherUid = secondUid;
-                    } else if(thisNodeUid == secondUid){
-                        isNeighbor = true;
-                        otherUid = firstUid;
-                    }
-                    if(isNeighbor) {
-                        neighbors.add(otherUid);
-                        int distanceToNeighbor = Integer.parseInt(words.remove());
-                        NodeInfo neighbor = nodes.get(otherUid);
-                        distancesToNeighbors.put(neighbor, distanceToNeighbor);
+
+
+                    for(int i=0;i<words.size();i++){
+                        String str=words.remove();
+
+                        if(str.matches("\\d+")){
+                            neighbors.add(Integer.parseInt(str));
+                        }
+                        else {
+                            break;
+                        }
                     }
                     count++;
+                    if(count==numOfNodes)
+                        neighborDetails=true;
                 }
             }
         }catch(IOException e){
             log.error(e.getMessage());
         }
-        System.out.println("List" + thisNodeUid+" "+numberOfNodes+" "+ nodes+" "+ neighbors+" "+ distancesToNeighbors);
-        return new NodeConfig(thisNodeUid, numberOfNodes, nodes, neighbors, distancesToNeighbors);
+        return new NodeConfig(thisNodeUid, numOfNodes, nodes,minPerActive,maxPerActive,minSendDelay,snapshotDelay,maxNumber,neighbors);
     }
 
     private class NodeConfig {
@@ -176,19 +187,32 @@ public class NodeConfigurator {
         private int totalNumberOfNodes;
         private Map<Integer, NodeInfo> nodes;
         private List<Integer> neighbors;
-        private Map<NodeInfo, Integer> distancesToNeighbors;
+        private int minPerActive;
+        private int maxPerActive;
+        private int minSendDelay;
+        private int snapshotDelay;
+        private int maxNumber;
+
 
         public NodeConfig(int thisUid,
                           int totalNumberOfNodes,
                           Map<Integer, NodeInfo> nodes,
-                          List<Integer> neighbors,
-                          Map<NodeInfo, Integer> distancesToNeighbors
-                          ) {
+                          int minPerActive,
+                          int maxPerActive,
+                          int minSendDelay,
+                          int snapshotDelay,
+                          int maxNumber,
+                          List<Integer> neighbors
+        ) {
             this.thisUid = thisUid;
             this.totalNumberOfNodes = totalNumberOfNodes;
             this.nodes = nodes;
+            this.minPerActive=minPerActive;
+            this.maxPerActive=maxPerActive;
+            this.minSendDelay=minSendDelay;
+            this.snapshotDelay=snapshotDelay;
+            this.maxNumber=maxNumber;
             this.neighbors = neighbors;
-            this.distancesToNeighbors = distancesToNeighbors;
         }
     }
 }
