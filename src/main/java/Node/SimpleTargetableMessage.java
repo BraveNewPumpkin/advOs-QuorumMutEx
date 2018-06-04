@@ -23,7 +23,6 @@ public abstract class SimpleTargetableMessage extends NodeMessage implements Tar
     public String toString() {
         return "SimpleTargetableMessage{" +
                 "target=" + target +
-                " ,phase number=" + getPhaseNumber()+
                 "} " + super.toString();
     }
 }
