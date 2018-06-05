@@ -13,8 +13,8 @@ import java.util.Collections;
 
 @Service
 @Slf4j
-public class SynchGhsService {
-    private final SynchGhsController synchGhsController;
+public class MapService {
+    private final MapController mapController;
     private final ThisNodeInfo thisNodeInfo;
     private final NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer;
     private final MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer;
@@ -24,15 +24,15 @@ public class SynchGhsService {
     private int phaseNumber;
 
     @Autowired
-    public SynchGhsService(
-            @Lazy SynchGhsController synchGhsController,
+    public MapService(
+            @Lazy MapController mapController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
             NodeIncrementableRoundSynchronizer nodeIncrementableRoundSynchronizer,
             @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
             MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchSynchronizer
     ) {
-        this.synchGhsController = synchGhsController;
+        this.mapController = mapController;
         this.thisNodeInfo = thisNodeInfo;
         this.nodeIncrementableRoundSynchronizer = nodeIncrementableRoundSynchronizer;
         this.mwoeSearchSynchronizer = mwoeSearchSynchronizer;
@@ -49,7 +49,7 @@ public class SynchGhsService {
     public void mwoeIntraComponentSearch(int sourceUid) {
         parentUid = sourceUid;
         isSearched = true;
-        synchGhsController.sendMwoeSearch(false);
+        mapController.sendMwoeSearch(false);
     }
 
     public void mwoeInterComponentSearch(int sourceUid) {
@@ -67,7 +67,7 @@ public class SynchGhsService {
         }
         log.info("Nodeinfo node is " + node.getUid());
         Edge candidate = thisNodeInfo.getEdges().get(node);
-        synchGhsController.sendMwoeCandidate(sourceUid, candidate);
+        mapController.sendMwoeCandidate(sourceUid, candidate);
     }
 
     public void calcLocalMin(List<Edge> candidates) {
@@ -90,7 +90,7 @@ public class SynchGhsService {
             if(targetUID!=-1){
                 //This edge belongs to me, check if it is already in my tree edge list , if not, add it adn send merge request to target node
                 if(addIfTreeEdgeDoesntExist(thisNodeInfo, localMin))
-                    synchGhsController.sendInitiateMerge(targetUID, localMin);
+                    mapController.sendInitiateMerge(targetUID, localMin);
                 else
                 {
                     log.debug("New leader detection logic triggered");
@@ -104,7 +104,7 @@ public class SynchGhsService {
          }
          else {
              //If I am not the leader, convercast localMin to the parent node
-            synchGhsController.sendMwoeCandidate(parentUid, localMin);
+            mapController.sendMwoeCandidate(parentUid, localMin);
          }
     }
 
@@ -143,12 +143,12 @@ public class SynchGhsService {
                 Edge edge = itr.next();
                 int sendTo = edge.firstUid != thisNodeInfo.getUid() ?  edge.firstUid : edge.secondUid;
                 System.out.println("sending new leader message to " + sendTo);
-                synchGhsController.sendNewLeader(sendTo);
+                mapController.sendNewLeader(sendTo);
             }
         }
         if(node.getUid()==newLeader) {
             System.out.println("Intiating MWOE Search for next round in service");
-            synchGhsController.sendMwoeSearch(false);
+            mapController.sendMwoeSearch(false);
         }
     }
 
@@ -160,7 +160,7 @@ public class SynchGhsService {
                 int localTarget = (node.getUid() == e.getFirstUid()) ? e.getSecondUid() : e.getFirstUid();
                 System.out.println("LocalTarget:" + localTarget);
                 if(localTarget!=dontSendToThisUID)
-                    synchGhsController.sendInitiateMerge(localTarget, localMin);
+                    mapController.sendInitiateMerge(localTarget, localMin);
             }
         }
     }
@@ -171,7 +171,7 @@ public class SynchGhsService {
                 Edge edge = itr.next();
                 int targetUID = edge.getFirstUid() != node.getUid() ? edge.getFirstUid() : edge.getSecondUid();
                 if (targetUID != dontSendToThisUID)
-                    synchGhsController.sendNewLeader(targetUID);
+                    mapController.sendNewLeader(targetUID);
             }
         }
     }

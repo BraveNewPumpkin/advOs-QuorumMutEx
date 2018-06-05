@@ -13,20 +13,20 @@ import java.util.concurrent.CountDownLatch;
 @Component
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
-    private SynchGhsController synchGhsController;
+    private MapController mapController;
     private CountDownLatch connectionTimeoutLatch;
     private List<String> subscriptionsDestinations;
 
     @Autowired
     public NodeStompSessionHandler(
-            SynchGhsController synchGhsController,
+            MapController mapController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
             @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
             List<String> subscriptionsDestinations
     ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
-        this.synchGhsController = synchGhsController;
+        this.mapController = mapController;
         this.subscriptionsDestinations = subscriptionsDestinations;
     }
 
@@ -46,20 +46,8 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         log.trace("getting payload type");
         Type payloadType = Object.class;
         switch (stompHeaders.getDestination()) {
-            case "/topic/mwoeSearch":
-                payloadType = MwoeSearchMessage.class;
-                break;
-            case "/topic/mwoeCandidate":
-                payloadType = MwoeCandidateMessage.class;
-                break;
-            case "/topic/mwoeReject":
-                payloadType = MwoeRejectMessage.class;
-                break;
-            case "/topic/initiateMerge":
-                payloadType = InitiateMergeMessage.class;
-                break;
-            case "/topic/newLeader":
-                payloadType = NewLeaderMessage.class;
+            case "/topic/mapMessage":
+                payloadType = MapMessage.class;
                 break;
             default:
                 if (log.isErrorEnabled()) {
@@ -76,30 +64,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             log.debug("handling frame. Destination: {}", stompHeaders.getDestination());
         }
         switch (stompHeaders.getDestination()) {
-            case "/topic/mwoeSearch":
-                log.trace("calling SynchGhsController.mwoeSearch");
-                MwoeSearchMessage mwoeSearchMessage = (MwoeSearchMessage) message;
-                synchGhsController.mwoeSearch(mwoeSearchMessage);
-                break;
-            case "/topic/mwoeCandidate":
-                log.trace("calling SynchGhsController.mwoeCandidate");
-                MwoeCandidateMessage mwoeCandidateMessage = (MwoeCandidateMessage) message;
-                synchGhsController.mwoeCandidate(mwoeCandidateMessage);
-                break;
-            case "/topic/mwoeReject":
-                log.trace("calling SynchGhsController.mwoeReject");
-                MwoeRejectMessage mwoeRejectMessage = (MwoeRejectMessage) message;
-                synchGhsController.mwoeReject(mwoeRejectMessage);
-                break;
-            case "/topic/initiateMerge":
-                log.trace("calling SynchGhsController.initiateMerge");
-                InitiateMergeMessage initiateMergeMessage = (InitiateMergeMessage) message;
-                synchGhsController.initiateMerge(initiateMergeMessage);
-                break;
-            case "/topic/newLeader":
-                log.trace("calling SynchGhsController.newLeader");
-                NewLeaderMessage NewLeaderMessage = (NewLeaderMessage) message;
-                synchGhsController.newLeader(NewLeaderMessage);
+            case "/topic/mapMessage":
+                log.trace("calling mapController.mapMessage");
+                MapMessage mapMessage = (MapMessage) message;
+                mapController.mapMessage(mapMessage);
                 break;
         }
     }

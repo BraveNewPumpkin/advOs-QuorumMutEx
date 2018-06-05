@@ -4,7 +4,7 @@ public abstract class NodeMessage {
     private int sourceUID;
     public NodeMessage(){}
 
-    public NodeMessage(int sourceUID, int phaseNumber){
+    public NodeMessage(int sourceUID){
         this.setSourceUID(sourceUID);
     }
 

@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class SynchGhsConfig {
+public class MapConfig {
     private final ThisNodeInfo thisNodeInfo;
 
     @Autowired
-    public SynchGhsConfig(
+    public MapConfig(
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo
     ) {

@@ -2,7 +2,6 @@ package Node;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.stereotype.Component;
 
@@ -12,18 +11,18 @@ import java.util.List;
 @Slf4j
 public class DoMapProtocol implements Runnable{
     private final WebSocketConnector webSocketConnector;
-    private final SynchGhsController synchGhsController;
-    private final SynchGhsService synchGhsService;
+    private final MapController mapController;
+    private final MapService mapService;
 
     @Autowired
     public DoMapProtocol(
             WebSocketConnector webSocketConnector,
-            SynchGhsController synchGhsController,
-            SynchGhsService synchGhsService
+            MapController mapController,
+            MapService mapService
     ){
         this.webSocketConnector = webSocketConnector;
-        this.synchGhsController = synchGhsController;
-        this.synchGhsService = synchGhsService;
+        this.mapController = mapController;
+        this.mapService = mapService;
     }
 
     @Override
