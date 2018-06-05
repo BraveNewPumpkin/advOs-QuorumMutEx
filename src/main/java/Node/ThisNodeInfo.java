@@ -7,16 +7,33 @@ public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> neighbors;
     private final int totalNumberOfNodes;
     private int componentId;
+    private int minPerActive;
+    private int maxPerActive;
+    private int minSendDelay;
+    private int snapshotDelay;
+    private int maxNumber;
 
 
-    ThisNodeInfo(int uid, int totalNumberOfNodes, String hostName, int port) {
+    ThisNodeInfo(
+            int uid,
+            int totalNumberOfNodes,
+            String hostName,
+            int port,
+            int minPerActive,
+            int maxPerActive,
+            int minSendDelay,
+            int snapshotDelay,
+            int maxNumber
+            ) {
         super(uid, hostName, port);
-        this.totalNumberOfNodes = totalNumberOfNodes;
         neighbors = new ArrayList<>();
-        //initially we are the only node in our component so we own it
-        this.componentId = uid;
+        this.totalNumberOfNodes = totalNumberOfNodes;
+        this.minPerActive=minPerActive;
+        this.maxPerActive=maxPerActive;
+        this.minSendDelay=minSendDelay;
+        this.snapshotDelay=snapshotDelay;
+        this.maxNumber=maxNumber;
     }
-
     public boolean addNeighbor(NodeInfo neighbor){
         return neighbors.add(neighbor);
     }
@@ -29,11 +46,44 @@ public final class ThisNodeInfo extends NodeInfo{
         return totalNumberOfNodes;
     }
 
-    public int getComponentId() {
-        return componentId;
+    public int getMinPerActive() {
+        return minPerActive;
     }
 
-    public void setComponentId(int componentId) {
-        this.componentId = componentId;
+    public void setMinPerActive(int minPerActive) {
+        this.minPerActive = minPerActive;
     }
+
+    public int getMaxPerActive() {
+        return maxPerActive;
+    }
+
+    public void setMaxPerActive(int maxPerActive) {
+        this.maxPerActive = maxPerActive;
+    }
+
+    public int getMinSendDelay() {
+        return minSendDelay;
+    }
+
+    public void setMinSendDelay(int minSendDelay) {
+        this.minSendDelay = minSendDelay;
+    }
+
+    public int getSnapshotDelay() {
+        return snapshotDelay;
+    }
+
+    public void setSnapshotDelay(int snapshotDelay) {
+        this.snapshotDelay = snapshotDelay;
+    }
+
+    public int getMaxNumber() {
+        return maxNumber;
+    }
+
+    public void setMaxNumber(int maxNumber) {
+        this.maxNumber = maxNumber;
+    }
+
 }

@@ -51,8 +51,17 @@ public class NodeConfigurator {
         int thisUid = nodeConfig.thisUid;
         int totalNumberOfNodes = nodeConfig.totalNumberOfNodes;
         int thisPort = nodeConfig.nodes.get(thisUid).getPort();
-        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(thisUid, totalNumberOfNodes, thisHostName, thisPort);
-        thisNodeInfo.setComponentId(thisUid);
+        ThisNodeInfo thisNodeInfo = new ThisNodeInfo(
+                thisUid,
+                totalNumberOfNodes,
+                thisHostName,
+                thisPort,
+                nodeConfig.minPerActive,
+                nodeConfig.maxPerActive,
+                nodeConfig.minSendDelay,
+                nodeConfig.snapshotDelay,
+                nodeConfig.maxNumber
+        );
 
         nodeConfig.neighbors.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
@@ -182,15 +191,16 @@ public class NodeConfigurator {
         private int maxNumber;
 
 
-        public NodeConfig(int thisUid,
-                          int totalNumberOfNodes,
-                          Map<Integer, NodeInfo> nodes,
-                          int minPerActive,
-                          int maxPerActive,
-                          int minSendDelay,
-                          int snapshotDelay,
-                          int maxNumber,
-                          List<Integer> neighbors
+        public NodeConfig(
+                int thisUid,
+                int totalNumberOfNodes,
+                Map<Integer, NodeInfo> nodes,
+                int minPerActive,
+                int maxPerActive,
+                int minSendDelay,
+                int snapshotDelay,
+                int maxNumber,
+                List<Integer> neighbors
         ) {
             this.thisUid = thisUid;
             this.totalNumberOfNodes = totalNumberOfNodes;
