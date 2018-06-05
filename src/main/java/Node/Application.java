@@ -14,10 +14,16 @@ public class Application {
         }
         ApplicationContext context = SpringApplication.run(Application.class, args);
         DoMapProtocol doMapProtocol = context.getBean(DoMapProtocol.class);
-        Thread thread = new Thread(doMapProtocol);
+        Thread mapThread = new Thread(doMapProtocol);
         if(log.isTraceEnabled()) {
             log.trace("before running doMapProtocol thread");
         }
-        thread.start();
+        mapThread.start();
+        DoSnapshotProtocol doSnapshotProtocol = context.getBean(DoSnapshotProtocol.class);
+        Thread snapshotThread = new Thread(doSnapshotProtocol);
+        if(log.isTraceEnabled()) {
+            log.trace("before running doSnapshotProtocol thread");
+        }
+        snapshotThread.start();
     }
 }

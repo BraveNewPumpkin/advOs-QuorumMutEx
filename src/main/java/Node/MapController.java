@@ -14,6 +14,7 @@ public class MapController {
     private final MapService mapService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
+    private Object maxNumberSynchronizer;
 
     @Autowired
     public MapController(
@@ -38,8 +39,17 @@ public class MapController {
                 log.debug("<---received map message {}", message);
             }
         }
-        //TODO mark self and send map to neighbors
-        //TODO set parent
+        synchronized (maxNumberSynchronizer) {
+            //TODO
+            //check maxNumber
+            //set active
+            //pick random number of messages to send between minPerActive and maxPerActive
+            //loop send message(s)
+                //check max number
+                //increment current number sent
+                //wait minSendDelay
+            //set passive
+        }
     }
 
     public void sendMapMessage(int targetUid) throws MessagingException {

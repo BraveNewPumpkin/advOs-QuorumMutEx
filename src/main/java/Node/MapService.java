@@ -34,6 +34,12 @@ public class MapService {
 
     }
 
+    public NodeInfo chooseRandomNeighbor(){
+        //TODO implement
+        NodeInfo chosenNeighbor;
+        return chosenNeighbor;
+    }
+
 //    public void mwoeIntraComponentSearch(int sourceUid) {
 //        parentUid = sourceUid;
 //        isSearched = true;

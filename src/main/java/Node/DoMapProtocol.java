@@ -2,10 +2,12 @@ package Node;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
 
 @Component
 @Slf4j
@@ -13,16 +15,20 @@ public class DoMapProtocol implements Runnable{
     private final WebSocketConnector webSocketConnector;
     private final MapController mapController;
     private final MapService mapService;
+    private Semaphore connectingSynchronizer;
 
     @Autowired
     public DoMapProtocol(
             WebSocketConnector webSocketConnector,
             MapController mapController,
-            MapService mapService
+            MapService mapService,
+            @Qualifier("Node/MapConfig/connectingSynchronizer")
+            Semaphore connectingSynchronizer
     ){
         this.webSocketConnector = webSocketConnector;
         this.mapController = mapController;
         this.mapService = mapService;
+        this.connectingSynchronizer = connectingSynchronizer;
     }
 
     @Override
@@ -42,6 +48,10 @@ public class DoMapProtocol implements Runnable{
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
+        connectingSynchronizer.release();
         //TODO start the MAP algorithm
+        NodeInfo chosenNeighbor = mapService.chooseRandomNeighbor();
+        mapController.sendMapMessage(chosenNeighbor.getUid());
     }
+
 }

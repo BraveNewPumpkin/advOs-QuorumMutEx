@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.concurrent.Semaphore;
+
 @Configuration
 public class MapConfig {
     private final ThisNodeInfo thisNodeInfo;
@@ -37,5 +39,17 @@ public class MapConfig {
     public GateLock mwoeSearchGate() {
         GateLock mwoeSearchGate = new GateLock();
         return mwoeSearchGate;
+    }
+
+    @Bean
+    @Qualifier("Node/MapConfig/connectingSynchronizer")
+    public Semaphore getConnectingSynchronizer() {
+         Semaphore connectingSynchronizer = new Semaphore(1);
+         try {
+             connectingSynchronizer.acquire();
+         }catch (java.lang.InterruptedException e){
+             //ignore
+         }
+         return connectingSynchronizer;
     }
 }
