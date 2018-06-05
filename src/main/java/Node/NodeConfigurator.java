@@ -57,14 +57,6 @@ public class NodeConfigurator {
         nodeConfig.neighbors.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
-            int edgeWeight = nodeConfig.distancesToNeighbors.get(neighbor);
-
-            int biggerUid = Math.max(thisUid, neighborUid);
-            int smallerUid = Math.min(thisUid, neighborUid);
-
-//            Edge edge = new Edge(biggerUid, smallerUid, edgeWeight);
-//            thisNodeInfo.addEdge(edge, neighbor);
-
         });
 
         return thisNodeInfo;
@@ -81,7 +73,7 @@ public class NodeConfigurator {
     @Bean
     @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
     public CountDownLatch getConnectionTimeoutLatch() {
-        return new CountDownLqatch(1);
+        return new CountDownLatch(1);
     }
 
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {

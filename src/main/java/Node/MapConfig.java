@@ -38,18 +38,4 @@ public class MapConfig {
         GateLock mwoeSearchGate = new GateLock();
         return mwoeSearchGate;
     }
-
-    @Bean
-    @Qualifier("Node/LeaderElectionConfig/mwoeSearchResponseRoundSynchronizer")
-    public NodeIncrementableRoundSynchronizer mwoeSearchResponseRoundSynchronizer(){
-        return new NodeIncrementableRoundSynchronizer(thisNodeInfo.getNeighbors().size());
-    }
-
-    @Bean
-    @Qualifier("Node/LeaderElectionConfig/mwoeSearchSynchronizer")
-    public MwoeSearchSynchronizer<MwoeSearchMessage> mwoeSearchRoundSynchronizer(){
-        int roundSize = thisNodeInfo.getNeighbors().size();
-        int numRoundsInPhase = thisNodeInfo.getTotalNumberOfNodes() * 3;
-        return new MwoeSearchSynchronizer<>(roundSize, numRoundsInPhase);
-    }
 }
