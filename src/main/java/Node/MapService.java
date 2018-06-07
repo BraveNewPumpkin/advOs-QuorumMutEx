@@ -6,19 +6,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Collections;
-
-
 @Service
 @Slf4j
 public class MapService {
     private final MapController mapController;
     private final ThisNodeInfo thisNodeInfo;
 
-    private boolean isSearched;
     private Object maxNumberSynchronizer;
+    private MapInfo mapInfo;
 
     @Autowired
     public MapService(
@@ -28,21 +23,24 @@ public class MapService {
         this.mapController = mapController;
         this.thisNodeInfo = thisNodeInfo;
 
-        isSearched = false;
         maxNumberSynchronizer = new Object();
+        mapInfo = new MapInfo();
     }
 
     public void doActiveThings(){
         synchronized (maxNumberSynchronizer) {
-            //TODO
-            //check maxNumber
-            //set active
-            //pick random number of messages to send between minPerActive and maxPerActive
-            //loop send message(s)
-                //check max number
-                //increment current number sent
-                //wait minSendDelay
-            //set passive
+            if(mapInfo.getMessagesSent() < thisNodeInfo.getMaxNumber()) {
+                mapInfo.setActive(true);
+                //TODO
+                //pick random number of messages to send between minPerActive and maxPerActive
+                //loop send message(s)
+                    //check max number
+                    //increment current number sent
+                    //wait minSendDelay
+
+                //set passive
+                mapInfo.setActive(false);
+            }
         }
     }
 
