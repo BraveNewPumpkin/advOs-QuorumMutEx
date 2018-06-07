@@ -17,9 +17,8 @@ public class MapService {
     private final MapController mapController;
     private final ThisNodeInfo thisNodeInfo;
 
-    private int parentUid;
     private boolean isSearched;
-    private int phaseNumber;
+    private Object maxNumberSynchronizer;
 
     @Autowired
     public MapService(
@@ -30,8 +29,21 @@ public class MapService {
         this.thisNodeInfo = thisNodeInfo;
 
         isSearched = false;
-        this.phaseNumber =0;
+        maxNumberSynchronizer = new Object();
+    }
 
+    public void doActiveThings(){
+        synchronized (maxNumberSynchronizer) {
+            //TODO
+            //check maxNumber
+            //set active
+            //pick random number of messages to send between minPerActive and maxPerActive
+            //loop send message(s)
+                //check max number
+                //increment current number sent
+                //wait minSendDelay
+            //set passive
+        }
     }
 
     public NodeInfo chooseRandomNeighbor(){
