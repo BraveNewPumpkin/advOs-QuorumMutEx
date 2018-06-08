@@ -77,21 +77,4 @@ public class MapService {
 //        isSearched = true;
 //        mapController.sendMwoeSearch(false);
 //    }
-
-    public void markAsSearched() {
-        isSearched = true;
-    }
-
-    public void markAsUnSearched() {
-        isSearched = false;
-    }
-
-    public boolean isSearched() {
-        return isSearched;
-    }
-
-    public int getParentUid() {
-        return parentUid;
-    }
-
 }
