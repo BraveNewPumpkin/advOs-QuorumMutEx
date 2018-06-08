@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -68,7 +70,9 @@ public class MapService {
 
     public NodeInfo chooseRandomNeighbor(){
         //TODO implement
-        NodeInfo chosenNeighbor;
+        List<NodeInfo> neighbors=thisNodeInfo.getNeighbors();
+        Random rand= new Random();
+        NodeInfo chosenNeighbor=neighbors.get(rand.nextInt(neighbors.size()));
         return chosenNeighbor;
     }
 
