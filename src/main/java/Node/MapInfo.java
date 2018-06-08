@@ -9,6 +9,10 @@ public class MapInfo {
         isActive = false;
     }
 
+    public void incrementMessagesSent() {
+        setMessagesSent(getMessagesSent() + 1);
+    }
+
     public int getMessagesSent() {
         return messagesSent;
     }

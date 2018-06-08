@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 @Slf4j
 public class MapService {
@@ -31,17 +33,37 @@ public class MapService {
         synchronized (maxNumberSynchronizer) {
             if(mapInfo.getMessagesSent() < thisNodeInfo.getMaxNumber()) {
                 mapInfo.setActive(true);
-                //TODO
-                //pick random number of messages to send between minPerActive and maxPerActive
+                int numMessagesToSend = genNumMessagesToSend();
                 //loop send message(s)
-                    //check max number
-                    //increment current number sent
-                    //wait minSendDelay
-
+                for(int i = 0; i < numMessagesToSend; i++) {
+                    sendToRandomNeighbor();
+                    waitMinSendDelay();
+                }
                 //set passive
                 mapInfo.setActive(false);
             }
         }
+    }
+
+    public void sendToRandomNeighbor() {
+        NodeInfo targetNeighbor = chooseRandomNeighbor();
+        mapController.sendMapMessage(targetNeighbor.getUid());
+        mapInfo.incrementMessagesSent();
+    }
+
+    public void waitMinSendDelay() {
+        int minSendDelay = thisNodeInfo.getMinSendDelay();
+        try {
+            TimeUnit.SECONDS.sleep(minSendDelay);
+        } catch(java.lang.InterruptedException e) {
+            //ignore
+        }
+    }
+
+    public int genNumMessagesToSend() {
+        //pick random number of messages to send between minPerActive and min(maxPerActive, maxNumber - messagesSent)
+        //TODO
+        return 1;
     }
 
     public NodeInfo chooseRandomNeighbor(){
