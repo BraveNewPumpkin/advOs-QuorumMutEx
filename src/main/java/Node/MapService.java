@@ -65,7 +65,15 @@ public class MapService {
     public int genNumMessagesToSend() {
         //pick random number of messages to send between minPerActive and min(maxPerActive, maxNumber - messagesSent)
         //TODO
-        return 1;
+        int maxNum=Math.min(thisNodeInfo.getMaxPerActive(),thisNodeInfo.getMaxNumber()-mapInfo.getMessagesSent());
+
+        //the check is so that in case the number of messages that can be sent is > 0 but < maxPerActive
+        if(maxNum<thisNodeInfo.getMinPerActive())
+            return maxNum;
+
+        Random rand= new Random();
+        int numOfMessages=rand.nextInt((maxNum-thisNodeInfo.getMinPerActive()+1))+thisNodeInfo.getMinPerActive();
+        return numOfMessages;
     }
 
     public NodeInfo chooseRandomNeighbor(){
