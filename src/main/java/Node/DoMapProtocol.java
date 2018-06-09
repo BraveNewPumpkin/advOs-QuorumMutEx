@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -35,7 +36,7 @@ public class DoMapProtocol implements Runnable{
     public void run(){
         log.info("sleeping to allow other instances to spin up");
         try {
-            Thread.sleep(10 * 1000);
+            TimeUnit.SECONDS.sleep(15);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
@@ -44,14 +45,12 @@ public class DoMapProtocol implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            Thread.sleep(5 * 1000);
+            TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
         connectingSynchronizer.release();
-        //TODO start the MAP algorithm
-        NodeInfo chosenNeighbor = mapService.chooseRandomNeighbor();
-        mapController.sendMapMessage(chosenNeighbor.getUid());
+        mapService.doActiveThings();
     }
 
 }
