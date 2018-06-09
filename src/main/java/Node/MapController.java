@@ -14,17 +14,21 @@ public class MapController {
     private final MapService mapService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
+    private SnapshotInfo snapshotInfo;
 
     @Autowired
     public MapController(
             MapService mapService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-            ThisNodeInfo thisNodeInfo
+            ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/NodeConfigurator/snapshotInfo")
+            SnapshotInfo snapshotInfo
             ){
         this.mapService = mapService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
+        this.snapshotInfo = snapshotInfo;
     }
 
     @MessageMapping("/mapMessage")
@@ -50,6 +54,7 @@ public class MapController {
             log.debug("--->sending map message: {}", message);
         }
         template.convertAndSend("/topic/mapMessage", message);
+        snapshotInfo.incrementSentMessages();
         log.trace("MapMessage message sent");
     }
 }

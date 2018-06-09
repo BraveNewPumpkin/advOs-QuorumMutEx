@@ -17,17 +17,22 @@ public class MapService {
     private final ThisNodeInfo thisNodeInfo;
 
     private Object maxNumberSynchronizer;
+    private SnapshotInfo snapshotInfo;
+
     private MapInfo mapInfo;
 
     @Autowired
     public MapService(
             @Lazy MapController mapController,
-            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer") Object maxNumberSynchronizer,
+            @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo
     ) {
         this.mapController = mapController;
         this.thisNodeInfo = thisNodeInfo;
+        this.maxNumberSynchronizer = maxNumberSynchronizer;
+        this.snapshotInfo = snapshotInfo;
 
-        maxNumberSynchronizer = new Object();
         mapInfo = new MapInfo();
     }
 
@@ -44,6 +49,7 @@ public class MapService {
                 //set passive
                 mapInfo.setActive(false);
             }
+            snapshotInfo.incrementProcessedMessages();
         }
     }
 

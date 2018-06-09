@@ -83,6 +83,19 @@ public class NodeConfigurator {
         return new CountDownLatch(1);
     }
 
+    @Bean
+    @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer")
+    public Object getMaxNumberSynchronizer() {
+        return new Object();
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/snapshotInfo")
+    public SnapshotInfo getSnapshotInfo() {
+        return new SnapshotInfo();
+    }
+
+
     private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
         Resource resource = context.getResource(nodeConfigUri);
         Map<Integer, NodeInfo> nodes = new HashMap<>();
