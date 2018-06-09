@@ -37,8 +37,8 @@ public class MapController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received map message {}", message);
             }
+            mapService.doActiveThings();
         }
-        mapService.doActiveThings();
     }
 
     public void sendMapMessage(int targetUid) throws MessagingException {
