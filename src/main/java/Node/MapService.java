@@ -56,7 +56,7 @@ public class MapService {
     public void waitMinSendDelay() {
         int minSendDelay = thisNodeInfo.getMinSendDelay();
         try {
-            TimeUnit.SECONDS.sleep(minSendDelay);
+            TimeUnit.MILLISECONDS.sleep(minSendDelay);
         } catch(java.lang.InterruptedException e) {
             //ignore
         }
@@ -64,7 +64,6 @@ public class MapService {
 
     public int genNumMessagesToSend() {
         //pick random number of messages to send between minPerActive and min(maxPerActive, maxNumber - messagesSent)
-        //TODO
         int maxNum = Math.min(thisNodeInfo.getMaxPerActive(), thisNodeInfo.getMaxNumber() - mapInfo.getMessagesSent());
 
         //the check is so that in case the number of messages that can be sent is > 0 but < maxPerActive
