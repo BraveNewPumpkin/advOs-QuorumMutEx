@@ -14,12 +14,14 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     private MapController mapController;
+    private SnapshotController snapshotController;
     private CountDownLatch connectionTimeoutLatch;
     private List<String> subscriptionsDestinations;
 
     @Autowired
     public NodeStompSessionHandler(
             MapController mapController,
+            SnapshotController snapshotController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
             @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
@@ -27,6 +29,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
         this.mapController = mapController;
+        this.snapshotController = snapshotController;
         this.subscriptionsDestinations = subscriptionsDestinations;
     }
 
@@ -49,6 +52,15 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/mapMessage":
                 payloadType = MapMessage.class;
                 break;
+            case "/topic/buildTreeQueryMessage":
+                payloadType = BuildTreeQueryMessage.class;
+                break;
+            case "/topic/buildTreeAckMessage":
+                payloadType = BuildTreeAckMessage.class;
+                break;
+            case "/topic/buildTreeNackMessage":
+                payloadType = BuildTreeNackMessage.class;
+                break;
             default:
                 if (log.isErrorEnabled()) {
                     log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -68,6 +80,21 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 log.trace("calling mapController.mapMessage");
                 MapMessage mapMessage = (MapMessage) message;
                 mapController.mapMessage(mapMessage);
+                break;
+            case "/topic/buildTreeQueryMessage":
+                log.trace("calling snapshotController.buildTreeQueryMessage");
+                BuildTreeQueryMessage buildTreeQueryMessage = (BuildTreeQueryMessage) message;
+                snapshotController.receiveBuildTreeQueryMessage(buildTreeQueryMessage);
+                break;
+            case "/topic/buildTreeAckMessage":
+                log.trace("calling snapshotController.buildTreeAckMessage");
+                BuildTreeAckMessage buildTreeAckMessage = (BuildTreeAckMessage) message;
+                snapshotController.receiveBuildTreeAckMessage(buildTreeAckMessage);
+                break;
+            case "/topic/buildTreeNackMessage":
+                log.trace("calling snapshotController.buildTreeNackMessage");
+                BuildTreeNackMessage buildTreeNackMessage = (BuildTreeNackMessage) message;
+                snapshotController.receiveBuildTreeNackMessage(buildTreeNackMessage);
                 break;
         }
     }

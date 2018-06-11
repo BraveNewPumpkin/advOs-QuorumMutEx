@@ -15,6 +15,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @Slf4j
 public class DoSnapshotProtocol implements Runnable {
     private Semaphore connectingSynchronizer;
+    private SnapshotController snapshotController;
+    private SnapshotService snapshotService;
     private final ThisNodeInfo thisNodeInfo;
 
     private final ScheduledExecutorService scheduler;
@@ -22,6 +24,8 @@ public class DoSnapshotProtocol implements Runnable {
 
     @Autowired
     public DoSnapshotProtocol(
+            SnapshotController snapshotController,
+            SnapshotService snapshotService,
             @Qualifier("Node/MapConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
@@ -30,20 +34,29 @@ public class DoSnapshotProtocol implements Runnable {
             ScheduledExecutorService scheduler
     ){
         this.connectingSynchronizer = connectingSynchronizer;
+        this.snapshotController = snapshotController;
+        this.snapshotService = snapshotService;
         this.thisNodeInfo = thisNodeInfo;
 
         this.scheduler = scheduler;
         doSnapshot = ()->{
-            //TODO
+            //TODO send marker message
         };
     }
 
     @Override
     public void run(){
         try {
+            log.trace("doing snapshot protocol");
             connectingSynchronizer.acquire();
-            //TODO do the snapshot stuff
-            final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doSnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
+            //ONLY SCHEDULE IF NODE ZERO
+            if(thisNodeInfo.getUid() == 0) {
+                snapshotService.setParent(0);
+                log.trace("we are root so sending initial buildTreeQueryMessage");
+                snapshotController.sendBuildTreeQueryMessage();
+                log.trace("after sending build tree query message");
+                final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doSnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
+            }
         }catch (java.lang.InterruptedException e){
             //ignore
         }

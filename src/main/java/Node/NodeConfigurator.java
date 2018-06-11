@@ -73,7 +73,10 @@ public class NodeConfigurator {
     @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
     public List<String> getSubscriptionDestinations() {
         return Arrays.asList(
-            "/topic/mapMessage"
+            "/topic/mapMessage",
+            "/topic/buildTreeQueryMessage",
+            "/topic/buildTreeAckMessage",
+            "/topic/buildTreeNackMessage"
         );
     }
 
