@@ -21,9 +21,9 @@ public class SnapshotController {
             SnapshotService snapshotService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-                    ThisNodeInfo thisNodeInfo,
+            ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/snapshotInfo")
-                    SnapshotInfo snapshotInfo
+            SnapshotInfo snapshotInfo
     ){
         this.snapshotService = snapshotService;
         this.template = template;
@@ -31,8 +31,8 @@ public class SnapshotController {
         this.snapshotInfo = snapshotInfo;
     }
 
-    @MessageMapping("/buildTreeAckMessage")
-    public void receiveBuildTreeAckMessage(BuildTreeAckMessage message) {
+    @MessageMapping("/markMessage")
+    public void receiveMarkMessage(BuildTreeAckMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
                 log.trace("<---received buildTreeAckMessage message {}", message);
@@ -45,7 +45,7 @@ public class SnapshotController {
         }
     }
 
-    public void sendBuildTreeQueryMessage() throws MessagingException {
+    public void sendMarkMessage() throws MessagingException {
         BuildTreeQueryMessage message = new BuildTreeQueryMessage(
                 thisNodeInfo.getUid()
         );
