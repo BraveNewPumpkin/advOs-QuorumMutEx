@@ -14,14 +14,14 @@ import java.util.concurrent.CountDownLatch;
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     private MapController mapController;
-    private SnapshotController snapshotController;
+    private BuildTreeController buildTreeController;
     private CountDownLatch connectionTimeoutLatch;
     private List<String> subscriptionsDestinations;
 
     @Autowired
     public NodeStompSessionHandler(
             MapController mapController,
-            SnapshotController snapshotController,
+            BuildTreeController buildTreeController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
             @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
@@ -29,7 +29,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     ) {
         this.connectionTimeoutLatch = connectionTimeoutLatch;
         this.mapController = mapController;
-        this.snapshotController = snapshotController;
+        this.buildTreeController = buildTreeController;
         this.subscriptionsDestinations = subscriptionsDestinations;
     }
 
@@ -84,17 +84,17 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/buildTreeQueryMessage":
                 log.trace("calling snapshotController.buildTreeQueryMessage");
                 BuildTreeQueryMessage buildTreeQueryMessage = (BuildTreeQueryMessage) message;
-                snapshotController.receiveBuildTreeQueryMessage(buildTreeQueryMessage);
+                buildTreeController.receiveBuildTreeQueryMessage(buildTreeQueryMessage);
                 break;
             case "/topic/buildTreeAckMessage":
                 log.trace("calling snapshotController.buildTreeAckMessage");
                 BuildTreeAckMessage buildTreeAckMessage = (BuildTreeAckMessage) message;
-                snapshotController.receiveBuildTreeAckMessage(buildTreeAckMessage);
+                buildTreeController.receiveBuildTreeAckMessage(buildTreeAckMessage);
                 break;
             case "/topic/buildTreeNackMessage":
                 log.trace("calling snapshotController.buildTreeNackMessage");
                 BuildTreeNackMessage buildTreeNackMessage = (BuildTreeNackMessage) message;
-                snapshotController.receiveBuildTreeNackMessage(buildTreeNackMessage);
+                buildTreeController.receiveBuildTreeNackMessage(buildTreeNackMessage);
                 break;
         }
     }

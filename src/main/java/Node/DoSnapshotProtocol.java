@@ -15,8 +15,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @Slf4j
 public class DoSnapshotProtocol implements Runnable {
     private Semaphore connectingSynchronizer;
-    private SnapshotController snapshotController;
-    private SnapshotService snapshotService;
+    private BuildTreeController buildTreeController;
+    private BuildTreeService buildTreeService;
     private final ThisNodeInfo thisNodeInfo;
 
     private final ScheduledExecutorService scheduler;
@@ -24,8 +24,8 @@ public class DoSnapshotProtocol implements Runnable {
 
     @Autowired
     public DoSnapshotProtocol(
-            SnapshotController snapshotController,
-            SnapshotService snapshotService,
+            BuildTreeController buildTreeController,
+            BuildTreeService buildTreeService,
             @Qualifier("Node/MapConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
@@ -34,8 +34,8 @@ public class DoSnapshotProtocol implements Runnable {
             ScheduledExecutorService scheduler
     ){
         this.connectingSynchronizer = connectingSynchronizer;
-        this.snapshotController = snapshotController;
-        this.snapshotService = snapshotService;
+        this.buildTreeController = buildTreeController;
+        this.buildTreeService = buildTreeService;
         this.thisNodeInfo = thisNodeInfo;
 
         this.scheduler = scheduler;
@@ -51,9 +51,9 @@ public class DoSnapshotProtocol implements Runnable {
             connectingSynchronizer.acquire();
             //ONLY SCHEDULE IF NODE ZERO
             if(thisNodeInfo.getUid() == 0) {
-                snapshotService.setParent(0);
+                buildTreeService.setParent(0);
                 log.trace("we are root so sending initial buildTreeQueryMessage");
-                snapshotController.sendBuildTreeQueryMessage();
+                buildTreeController.sendBuildTreeQueryMessage();
                 log.trace("after sending build tree query message");
                 final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doSnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
             }

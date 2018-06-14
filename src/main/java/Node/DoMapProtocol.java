@@ -45,7 +45,7 @@ public class DoMapProtocol implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            TimeUnit.SECONDS.sleep(10);
+            TimeUnit.SECONDS.sleep(15);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
