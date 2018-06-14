@@ -64,6 +64,7 @@ public class SnapshotService {
         //have we recieved all messages from all children?
         if(hasResponseFromAllNeighbors()) {
             if(thisNodeInfo.getUid() == 0) {
+                tree=genTree();
                 printTree();
             } else {
                 snapshotController.sendBuildTreeAckMessage(treeInfo.getParentId());

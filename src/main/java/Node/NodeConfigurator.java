@@ -171,8 +171,8 @@ public class NodeConfigurator {
                         continue;
                     }
 
-
-                    for(int i=0;i<words.size();i++){
+                    int size=words.size();
+                    for(int i=0;i<size;i++){
                         String str=words.remove();
 
                         if(str.matches("\\d+")){

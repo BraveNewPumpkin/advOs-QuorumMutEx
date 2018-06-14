@@ -3,6 +3,7 @@ package Node;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class Tree<T> {
     private Node<T> root;
 
@@ -11,7 +12,6 @@ public class Tree<T> {
     public Tree(T rootData) {
         root = new Node<>();
         root.data = rootData;
-        root.children = new ArrayList<>();
     }
 
     public void addChildren(List<Tree<T>> childTrees) {
@@ -32,6 +32,7 @@ public class Tree<T> {
         private List<Node<T>> children;
 
         public Node() {
+            children=new ArrayList<>();
         }
 
         @Override
