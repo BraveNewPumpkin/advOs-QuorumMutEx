@@ -41,7 +41,24 @@ public class SnapshotService {
     public void doMarkingThings() {
         isMarked = true;
         snapshotController.sendMarkMessage();
-        //TODO finish implementing
         //if we are leaf, send state to parent
+        if(isLeaf()){
+            snapshotController.sendStateMessage();
+        }
+    }
+
+    public synchronized void doStateThings(){
+        //TODO implement
+        //save state in matrix
+        //if we have state from all children this round
+            //send all states including own to parent
+    }
+
+    private boolean isLeaf() {
+        if(tree.getRoot().getChildren().isEmpty()) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

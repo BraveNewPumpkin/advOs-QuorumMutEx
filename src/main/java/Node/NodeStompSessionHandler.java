@@ -67,6 +67,9 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/markMessage":
                 payloadType = MarkMessage.class;
                 break;
+            case "/topic/stateMessage":
+                payloadType = StateMessage.class;
+                break;
             default:
                 if (log.isErrorEnabled()) {
                     log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -106,6 +109,11 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 log.trace("calling snapshotController.receiveMarkMessage");
                 MarkMessage markMessage = (MarkMessage) message;
                 snapshotController.receiveMarkMessage(markMessage);
+                break;
+            case "/topic/stateMessage":
+                log.trace("calling snapshotController.receiveStateMessage");
+                StateMessage stateMessage = (StateMessage) message;
+                snapshotController.receiveStateMessage(stateMessage);
                 break;
         }
     }

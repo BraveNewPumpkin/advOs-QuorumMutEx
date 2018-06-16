@@ -77,7 +77,8 @@ public class NodeConfigurator {
             "/topic/buildTreeQueryMessage",
             "/topic/buildTreeAckMessage",
             "/topic/buildTreeNackMessage",
-            "/topic/markMessage"
+            "/topic/markMessage",
+            "/topic/stateMessage"
         );
     }
 
