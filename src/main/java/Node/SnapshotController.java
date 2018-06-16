@@ -32,6 +32,8 @@ public class SnapshotController {
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
+
+        markedSynchronizer = new Object();
     }
 
     @MessageMapping("/markMessage")

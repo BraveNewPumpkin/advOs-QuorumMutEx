@@ -50,8 +50,8 @@ public class DoSnapshotProtocol implements Runnable {
     @Override
     public void run(){
         try {
-            log.trace("doing snapshot protocol");
             connectingSynchronizer.acquire();
+            log.trace("doing snapshot protocol");
             //ONLY SCHEDULE IF NODE ZERO
             if(thisNodeInfo.getUid() == 0) {
                 buildTreeService.setParent(0);
