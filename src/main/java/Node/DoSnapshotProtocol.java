@@ -17,6 +17,7 @@ public class DoSnapshotProtocol implements Runnable {
     private Semaphore connectingSynchronizer;
     private BuildTreeController buildTreeController;
     private BuildTreeService buildTreeService;
+    private SnapshotController snapshotController;
     private final ThisNodeInfo thisNodeInfo;
 
     private final ScheduledExecutorService scheduler;
@@ -26,6 +27,7 @@ public class DoSnapshotProtocol implements Runnable {
     public DoSnapshotProtocol(
             BuildTreeController buildTreeController,
             BuildTreeService buildTreeService,
+            SnapshotController snapshotController,
             @Qualifier("Node/MapConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
@@ -36,11 +38,12 @@ public class DoSnapshotProtocol implements Runnable {
         this.connectingSynchronizer = connectingSynchronizer;
         this.buildTreeController = buildTreeController;
         this.buildTreeService = buildTreeService;
+        this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
-
         this.scheduler = scheduler;
+
         doSnapshot = ()->{
-            //TODO send marker message
+            this.snapshotController.sendMarkMessage();
         };
     }
 

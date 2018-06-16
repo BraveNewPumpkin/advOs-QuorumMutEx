@@ -15,6 +15,8 @@ public class SnapshotService {
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
 
+    private boolean isMarked;
+
     @Autowired
     public SnapshotService(
         @Lazy SnapshotController snapshotController,
@@ -28,6 +30,18 @@ public class SnapshotService {
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
         this.tree = tree;
+
+        isMarked = false;
     }
 
+    public boolean isMarked() {
+        return isMarked;
+    }
+
+    public void doMarkingThings() {
+        isMarked = true;
+        snapshotController.sendMarkMessage();
+        //TODO finish implementing
+        //if we are leaf, send state to parent
+    }
 }

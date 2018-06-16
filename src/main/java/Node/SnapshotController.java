@@ -16,6 +16,9 @@ public class SnapshotController {
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
 
+    //used to prevent race conditions with checking if marked
+    private Object markedSynchronizer;
+
     @Autowired
     public SnapshotController(
             SnapshotService snapshotService,
@@ -32,28 +35,29 @@ public class SnapshotController {
     }
 
     @MessageMapping("/markMessage")
-    public void receiveMarkMessage(BuildTreeAckMessage message) {
-        if(thisNodeInfo.getUid() != message.getTarget()) {
-            if (log.isTraceEnabled()) {
-                log.trace("<---received buildTreeAckMessage message {}", message);
+    public void receiveMarkMessage(MarkMessage message) {
+        synchronized (markedSynchronizer) {
+            if (snapshotService.isMarked()) {
+                if (log.isTraceEnabled()) {
+                    log.trace("<---received MarkMessage {}", message);
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("<---received MarkMessage {}", message);
+                }
+                snapshotService.doMarkingThings();
             }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received buildTreeAckMessage message {}", message);
-            }
-
         }
     }
 
     public void sendMarkMessage() throws MessagingException {
-        BuildTreeQueryMessage message = new BuildTreeQueryMessage(
+        MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid()
         );
         if(log.isDebugEnabled()){
-            log.debug("--->sending build tree query message: {}", message);
+            log.debug("--->sending MarkMessage: {}", message);
         }
-        template.convertAndSend("/topic/buildTreeQueryMessage", message);
-        snapshotInfo.incrementSentMessages();
-        log.trace("BuildTreeQueryMessage message sent");
+        template.convertAndSend("/topic/markMessage", message);
+        log.trace("MarkMessage message sent");
     }
 }
