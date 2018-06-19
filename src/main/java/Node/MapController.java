@@ -38,17 +38,20 @@ public class MapController {
                log.trace("<---received  map message {}", message);
             }
         } else {
+            thisNodeInfo.mergeVectorClock(message.getVectorClock());
             if (log.isDebugEnabled()) {
-                log.debug("<---received map message {}", message);
+                log.debug("<---received map message {}  current Vector Clock {}", message, thisNodeInfo.getVectorClock());
             }
             mapService.doActiveThings();
         }
     }
 
     public void sendMapMessage(int targetUid) throws MessagingException {
+        thisNodeInfo.incrementVectorClock();
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),
-                targetUid
+                targetUid,
+                thisNodeInfo.getVectorClock()
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending map message: {}", message);

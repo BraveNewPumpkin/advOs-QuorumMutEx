@@ -58,7 +58,8 @@ public class NodeConfigurator {
                 nodeConfig.maxPerActive,
                 nodeConfig.minSendDelay,
                 nodeConfig.snapshotDelay,
-                nodeConfig.maxNumber
+                nodeConfig.maxNumber,
+                nodeConfig.VectorClock
         );
 
         nodeConfig.neighbors.forEach(neighborUid -> {
@@ -189,10 +190,14 @@ public class NodeConfigurator {
                         neighborDetails=true;
                 }
             }
-        }catch(IOException e){
+        }
+        catch(IOException e){
             log.error(e.getMessage());
         }
-        return new NodeConfig(thisNodeUid, numOfNodes, nodes,minPerActive,maxPerActive,minSendDelay,snapshotDelay,maxNumber,neighbors);
+        int[] VectorClock = new int[numOfNodes];
+        Arrays.fill(VectorClock,0);
+
+        return new NodeConfig(thisNodeUid, numOfNodes, nodes,minPerActive,maxPerActive,minSendDelay,snapshotDelay,maxNumber,neighbors,VectorClock);
     }
 
     private class NodeConfig {
@@ -205,6 +210,8 @@ public class NodeConfigurator {
         private int minSendDelay;
         private int snapshotDelay;
         private int maxNumber;
+        private int[] VectorClock;
+
 
 
         public NodeConfig(
@@ -216,7 +223,8 @@ public class NodeConfigurator {
                 int minSendDelay,
                 int snapshotDelay,
                 int maxNumber,
-                List<Integer> neighbors
+                List<Integer> neighbors,
+                int[] VectorClock
         ) {
             this.thisUid = thisUid;
             this.totalNumberOfNodes = totalNumberOfNodes;
@@ -227,6 +235,7 @@ public class NodeConfigurator {
             this.snapshotDelay=snapshotDelay;
             this.maxNumber=maxNumber;
             this.neighbors = neighbors;
+            this.VectorClock = VectorClock;
         }
     }
 }
