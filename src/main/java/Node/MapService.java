@@ -87,10 +87,4 @@ public class MapService {
         NodeInfo chosenNeighbor = neighbors.get(rand.nextInt(neighbors.size()));
         return chosenNeighbor;
     }
-
-//    public void mwoeIntraComponentSearch(int sourceUid) {
-//        parentUid = sourceUid;
-//        isSearched = true;
-//        mapController.sendMwoeSearch(false);
-//    }
 }
