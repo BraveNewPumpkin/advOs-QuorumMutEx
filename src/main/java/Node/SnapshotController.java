@@ -43,6 +43,7 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
         synchronized (markedSynchronizer) {
+            //TODO if mark is for future snapshot, buffer it
             if (snapshotService.isMarked()) {
                 if (log.isTraceEnabled()) {
                     log.trace("<---received MarkMessage {}", message);
@@ -72,7 +73,8 @@ public class SnapshotController {
 
     public void sendMarkMessage() throws MessagingException {
         MarkMessage message = new MarkMessage(
-                thisNodeInfo.getUid()
+                thisNodeInfo.getUid(),
+                snapshotInfo.getSnapshotNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MarkMessage: {}", message);
