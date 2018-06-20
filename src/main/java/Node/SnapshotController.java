@@ -44,6 +44,8 @@ public class SnapshotController {
     public void receiveMarkMessage(MarkMessage message) {
         synchronized (markedSynchronizer) {
             //TODO if mark is for future snapshot, buffer it
+            //TODO make isMarked a list to cover the different snapshot rounds
+            //TODO always save state if receiving a marker message
             if (snapshotService.isMarked()) {
                 if (log.isTraceEnabled()) {
                     log.trace("<---received MarkMessage {}", message);
