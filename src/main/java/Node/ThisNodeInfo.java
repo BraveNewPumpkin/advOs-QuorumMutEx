@@ -7,7 +7,6 @@ import static java.lang.Math.max;
 public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> neighbors;
     private final int totalNumberOfNodes;
-   // private int componentId;
     private int minPerActive;
     private int maxPerActive;
     private int minSendDelay;
@@ -95,16 +94,14 @@ public final class ThisNodeInfo extends NodeInfo{
 
     public void incrementVectorClock () {
         this.VectorClock[this.getUid()]++;
-
     }
 
     public void mergeVectorClock(int[] mapVectorClock) {
-        for (int i=0;i<this.getTotalNumberOfNodes();i++)
+        for (int i = 0; i < this.getTotalNumberOfNodes(); i++)
         {
-            this.VectorClock[i]=max(this.VectorClock[i],mapVectorClock[i]);
+            this.VectorClock[i] = max(this.VectorClock[i], mapVectorClock[i]);
         }
         this.VectorClock[this.getUid()]++;
-
     }
 
 }
