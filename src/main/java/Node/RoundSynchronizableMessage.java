@@ -1,20 +1,20 @@
 package Node;
 
-public class NodeRoundSynchronizableMessage extends NodeMessage implements RoundSynchronizable {
+public class RoundSynchronizableMessage extends NodeMessage implements RoundSynchronizable {
     private int roundNumber;
 
-    public NodeRoundSynchronizableMessage() {
+    public RoundSynchronizableMessage() {
         super();
     }
 
-    public NodeRoundSynchronizableMessage(int sourceUID, int roundNumber) {
+    public RoundSynchronizableMessage(int sourceUID, int roundNumber) {
         super(sourceUID);
         this.roundNumber = roundNumber;
     }
 
     @Override
     public String toString() {
-        return "NodeRoundSynchronizableMessage{" +
+        return "RoundSynchronizableMessage{" +
                 "roundNumber=" + roundNumber +
                 "} " + super.toString();
     }

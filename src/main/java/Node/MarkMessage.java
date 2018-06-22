@@ -1,14 +1,12 @@
 package Node;
 
-public class MarkMessage extends NodeMessage {
-    private int snapshotNumber;
+public class MarkMessage extends RoundSynchronizableMessage {
 
     public MarkMessage() {
     }
 
     public MarkMessage(int sourceUID, int snapshotNumber) {
-        super(sourceUID);
-        this.snapshotNumber = snapshotNumber;
+        super(sourceUID, snapshotNumber);
     }
 
     @Override
