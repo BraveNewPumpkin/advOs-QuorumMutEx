@@ -52,7 +52,7 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public void runIfReady(Runnable work) {
         int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
         if(log.isTraceEnabled()) {
-            log.trace(" numberOfMessagesSoFarThisRound {} roundSize {}", numberOfMessagesSoFarThisRound, roundSize);
+            log.trace(" numberOfMessagesSoFarThisRound: {} roundNumber: {}", numberOfMessagesSoFarThisRound, roundNumber);
         }
         if (numberOfMessagesSoFarThisRound == roundSize) {
             work.run();

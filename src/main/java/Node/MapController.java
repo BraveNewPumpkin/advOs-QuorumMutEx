@@ -42,7 +42,9 @@ public class MapController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received map message {}  current Vector Clock {}", message, thisNodeInfo.getVectorClock());
             }
-            mapService.doActiveThings();
+            //spawn in separate thread to allow the message processing thread to return to threadpool
+            Thread activeThingsThread = new Thread(mapService::doActiveThings);
+            activeThingsThread.start();
         }
     }
 

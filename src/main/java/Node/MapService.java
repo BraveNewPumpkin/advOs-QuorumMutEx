@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class MapService {
     private final MapController mapController;
     private final ThisNodeInfo thisNodeInfo;
+    private GateLock buildingTreeSynchronizer;
 
     private Object maxNumberSynchronizer;
     private SnapshotInfo snapshotInfo;
@@ -26,17 +27,21 @@ public class MapService {
             @Lazy MapController mapController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer") Object maxNumberSynchronizer,
+            @Qualifier("Node/MapConfig/buildingTreeSynchronizer")
+            GateLock buildingTreeSynchronizer,
             @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo
     ) {
         this.mapController = mapController;
         this.thisNodeInfo = thisNodeInfo;
         this.maxNumberSynchronizer = maxNumberSynchronizer;
+        this.buildingTreeSynchronizer = buildingTreeSynchronizer;
         this.snapshotInfo = snapshotInfo;
 
         mapInfo = new MapInfo();
     }
 
     public void doActiveThings(){
+        buildingTreeSynchronizer.enter();
         synchronized (maxNumberSynchronizer) {
             if(mapInfo.getMessagesSent() < thisNodeInfo.getMaxNumber()) {
                 mapInfo.setActive(true);

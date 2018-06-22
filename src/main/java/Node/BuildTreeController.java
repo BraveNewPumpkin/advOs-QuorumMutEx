@@ -38,12 +38,12 @@ public class BuildTreeController {
         synchronized (parentIdMutex) {
             if (buildTreeService.hasParent()) {
                 if (log.isTraceEnabled()) {
-                    log.trace("<---received  map message {}", message);
+                    log.trace("<---received BuildTreeQueryMessage message {}", message);
                 }
                 sendBuildTreeNackMessage(message.getSourceUID());
             } else {
                 if (log.isDebugEnabled()) {
-                    log.debug("<---received map message {}", message);
+                    log.debug("<---received BuildTreeQueryMessage message {}", message);
                 }
                 buildTreeService.setParent(message.getSourceUID());
                 //send query to all neighbors

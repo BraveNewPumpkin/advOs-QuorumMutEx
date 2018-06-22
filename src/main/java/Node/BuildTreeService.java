@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.Semaphore;
+
 @Service
 @Slf4j
 public class BuildTreeService {
@@ -13,6 +15,7 @@ public class BuildTreeService {
     private final ThisNodeInfo thisNodeInfo;
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
+    private GateLock buildingTreeSynchronizer;
 
     private Object maxNumberSynchronizer; //used for marker messages
 
@@ -22,13 +25,16 @@ public class BuildTreeService {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer") Object maxNumberSynchronizer,
             @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
-            @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree
+            @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
+            @Qualifier("Node/MapConfig/buildingTreeSynchronizer")
+            GateLock buildingTreeSynchronizer
     ) {
         this.buildTreeController = buildTreeController;
         this.thisNodeInfo = thisNodeInfo;
         this.maxNumberSynchronizer = maxNumberSynchronizer;
         this.treeInfo = treeInfo;
         this.tree = tree;
+        this.buildingTreeSynchronizer = buildingTreeSynchronizer;
     }
 
     public void setParent(int parentId) {
@@ -61,6 +67,7 @@ public class BuildTreeService {
         treeInfo.incrementBuildTreeResponsesReceived();
         //have we received all messages from all children?
         if(hasResponseFromAllNeighbors()) {
+            buildingTreeSynchronizer.open();
             if(thisNodeInfo.getUid() == 0) {
                 tree=genTree();
                 printTree();
