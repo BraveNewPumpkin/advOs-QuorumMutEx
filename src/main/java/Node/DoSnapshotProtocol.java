@@ -22,7 +22,6 @@ public class DoSnapshotProtocol implements Runnable {
     private SnapshotInfo snapshotInfo;
 
     private final ScheduledExecutorService scheduler;
-    private final Runnable doSnapshot;
 
     @Autowired
     public DoSnapshotProtocol(
@@ -45,12 +44,6 @@ public class DoSnapshotProtocol implements Runnable {
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.scheduler = scheduler;
-
-        doSnapshot = ()->{
-            this.snapshotController.sendMarkMessage();
-            this.snapshotInfo.incrementSnapshotNumber();
-            //TODO trigger processing buffered snapshots for this new number
-        };
     }
 
     @Override
@@ -63,8 +56,9 @@ public class DoSnapshotProtocol implements Runnable {
                 buildTreeService.setParent(0);
                 log.trace("we are root so sending initial buildTreeQueryMessage");
                 buildTreeController.sendBuildTreeQueryMessage();
-                log.trace("after sending build tree query message");
-                final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doSnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
+                log.trace("waiting for tree to be built to start snapshots");
+
+                final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(snapshotController::sendMarkMessage, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
             }
         }catch (java.lang.InterruptedException e){
             //ignore

@@ -14,6 +14,7 @@ public class SnapshotService {
     private SnapshotInfo snapshotInfo;
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
+    private NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer;
 
     private boolean isMarked;
 
@@ -23,13 +24,16 @@ public class SnapshotService {
         @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
         @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo,
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
-        @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree
+        @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
+        @Qualifier("Node/SnapshotConfig/snaphshotSynchronizer")
+        NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
         this.tree = tree;
+        this.snapshotSynchronizer = snapshotSynchronizer;
 
         isMarked = false;
     }
@@ -45,6 +49,7 @@ public class SnapshotService {
         if(isLeaf()){
             snapshotController.sendStateMessage();
         }
+        snapshotSynchronizer.incrementRoundNumber();
     }
 
     public synchronized void doStateThings(){

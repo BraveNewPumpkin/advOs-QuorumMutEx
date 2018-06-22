@@ -16,6 +16,7 @@ public class SnapshotController {
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
+    private NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -29,34 +30,26 @@ public class SnapshotController {
             @Qualifier("Node/NodeConfigurator/snapshotInfo")
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/BuildTreeConfig/treeInfo")
-            TreeInfo treeInfo
+            TreeInfo treeInfo,
+            @Qualifier("Node/SnapshotConfig/snaphshotSynchronizer")
+            NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer
     ){
         this.snapshotService = snapshotService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
+        this.snapshotSynchronizer = snapshotSynchronizer;
 
         markedSynchronizer = new Object();
     }
 
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
-        synchronized (markedSynchronizer) {
-            //TODO if mark is for future snapshot, buffer it
-            //TODO make isMarked a list to cover the different snapshot rounds
-            //TODO always save state if receiving a marker message
-            if (snapshotService.isMarked()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("<---received MarkMessage {}", message);
-                }
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("<---received MarkMessage {}", message);
-                }
-                snapshotService.doMarkingThings();
+            if (log.isDebugEnabled()) {
+                log.debug("<---received MarkMessage {}", message);
             }
-        }
+            snapshotSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
     }
 
     @MessageMapping("/stateMessage")
@@ -76,7 +69,7 @@ public class SnapshotController {
     public void sendMarkMessage() throws MessagingException {
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),
-                snapshotInfo.getSnapshotNumber()
+                snapshotSynchronizer.getRoundNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MarkMessage: {}", message);
@@ -89,7 +82,8 @@ public class SnapshotController {
         StateMessage message = new StateMessage(
                 thisNodeInfo.getUid(),
                 treeInfo.getParentId(),
-                snapshotInfo
+                snapshotInfo,
+                snapshotSynchronizer.getRoundNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending StateMessage: {}", message);

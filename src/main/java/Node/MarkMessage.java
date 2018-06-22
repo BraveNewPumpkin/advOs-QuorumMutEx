@@ -12,7 +12,6 @@ public class MarkMessage extends RoundSynchronizableMessage {
     @Override
     public String toString() {
         return "MarkMessage{" +
-                "snapshotNumber=" + snapshotNumber +
                 "} " + super.toString();
     }
 }
