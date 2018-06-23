@@ -45,20 +45,20 @@ public class SnapshotService {
         isMarked = new ArrayList<>();
     }
 
+
     public boolean isMarked(int messageRoundNumber) { return isMarked.get(messageRoundNumber); }
 
-    public void setIsMarked(int messageRoundNumber, boolean isMarked){
-        this.isMarked.set(messageRoundNumber,isMarked);
-    }
-
-    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
-        int isMarkedCounter= isMarked.size()-1;
+    public void setIsMarked(int messageRoundNumber, boolean isMarkedVal){
+        int isMarkedCounter= this.isMarked.size()-1;
         if( isMarkedCounter < messageRoundNumber){
             for(int i=isMarkedCounter;i<messageRoundNumber;i++){
                 isMarked.add(false);
             }
         }
+         this.isMarked.set(messageRoundNumber, isMarkedVal);
+    }
 
+    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
         if(!isMarked(messageRoundNumber)){
             setIsMarked(messageRoundNumber,true);
             snapshotController.sendMarkMessage(messageRoundNumber);
