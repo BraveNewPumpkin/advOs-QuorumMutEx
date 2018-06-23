@@ -58,6 +58,9 @@ public class SnapshotController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getMessagesThisRound().size() + 1, snapshotMarkerSynchronizer.getRoundSize());
             }
+
+            snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
+
             snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
     }
 
@@ -83,10 +86,10 @@ public class SnapshotController {
         }
     }
 
-    public void sendMarkMessage() throws MessagingException {
+    public void sendMarkMessage(int roundNumber) throws MessagingException {
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),
-                snapshotMarkerSynchronizer.getRoundNumber()
+                roundNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MarkMessage: {}", message);

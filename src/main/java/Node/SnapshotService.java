@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -23,7 +21,7 @@ public class SnapshotService {
     @Lazy @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
-    private boolean isMarked;
+    private List<Boolean> isMarked;
 
     @Autowired
     public SnapshotService(
@@ -44,31 +42,42 @@ public class SnapshotService {
         this.tree = tree;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
 
-        isMarked = false;
+        isMarked = new ArrayList<>();
     }
 
-    public boolean isMarked() {
-        return isMarked;
+    public boolean isMarked(int messageRoundNumber) { return isMarked.get(messageRoundNumber); }
+
+    public void setIsMarked(int messageRoundNumber, boolean isMarked){
+        this.isMarked.set(messageRoundNumber,isMarked);
     }
 
-    public void setIsMarked(boolean isMarked){
-        this.isMarked = isMarked;
+    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
+        int isMarkedCounter= isMarked.size()-1;
+        if( isMarkedCounter < messageRoundNumber){
+            for(int i=isMarkedCounter;i<messageRoundNumber;i++){
+                isMarked.add(false);
+            }
+        }
+
+        if(!isMarked(messageRoundNumber)){
+            setIsMarked(messageRoundNumber,true);
+            snapshotController.sendMarkMessage(messageRoundNumber);
+        }
     }
 
     public void doMarkingThings() {
+        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
+        snapshotInfo.setActive(mapInfo.isActive());
+
         if(thisNodeInfo.getUid() != 0) {
-            isMarked = true;
-            snapshotController.sendMarkMessage();
             //if we are leaf, send state to parent
             if (isLeaf()) {
                 Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
                 snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
                 snapshotController.sendStateMessage(snapshotInfos);
             }
+            snapshotMarkerSynchronizer.incrementRoundNumber();
         }
-        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
-        snapshotInfo.setActive(mapInfo.isActive());
-        snapshotMarkerSynchronizer.incrementRoundNumber();
     }
 
     public synchronized void doStateThings(Map<Integer, SnapshotInfo> snapshotInfos, int snapshotNumber){
