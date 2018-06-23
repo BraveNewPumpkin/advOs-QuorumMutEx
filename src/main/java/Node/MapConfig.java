@@ -32,4 +32,10 @@ public class MapConfig {
          }
          return connectingSynchronizer;
     }
+
+    @Bean
+    @Qualifier("Node/MapConfig/mapInfo")
+    public MapInfo getMapInfo(){
+        return new MapInfo();
+    }
 }

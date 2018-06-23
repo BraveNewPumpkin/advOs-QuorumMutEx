@@ -11,13 +11,17 @@ import java.util.concurrent.ScheduledExecutorService;
 @Configuration
 public class SnapshotConfig {
     private final ThisNodeInfo thisNodeInfo;
+    private final TreeInfo treeInfo;
 
     @Autowired
     public SnapshotConfig(
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-            ThisNodeInfo thisNodeInfo
+            ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/BuildTreeConfig/treeInfo")
+            TreeInfo treeInfo
     ) {
         this.thisNodeInfo = thisNodeInfo;
+        this.treeInfo = treeInfo;
     }
 
     @Bean
@@ -27,9 +31,16 @@ public class SnapshotConfig {
     }
 
     @Bean
-    @Qualifier("Node/SnapshotConfig/snaphshotSynchronizer")
-    public NodeMessageRoundSynchronizer<MarkMessage> getSnapshotSynchronizer() {
+    @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
+    public NodeMessageRoundSynchronizer<MarkMessage> getSnapshotMarkerSynchronizer() {
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
         return new NodeMessageRoundSynchronizer<>(numberOfNeighbors);
+    }
+
+    @Bean
+    @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+    public NodeMessageRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
+        int numberOfChildren = treeInfo.getNumChildren();
+        return new NodeMessageRoundSynchronizer<>(numberOfChildren);
     }
 }

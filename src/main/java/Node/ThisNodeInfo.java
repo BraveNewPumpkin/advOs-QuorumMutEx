@@ -7,12 +7,12 @@ import static java.lang.Math.max;
 public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> neighbors;
     private final int totalNumberOfNodes;
-    private int minPerActive;
-    private int maxPerActive;
-    private int minSendDelay;
-    private int snapshotDelay;
-    private int maxNumber;
-    private int[] VectorClock;
+    private final int minPerActive;
+    private final int maxPerActive;
+    private final int minSendDelay;
+    private final int snapshotDelay;
+    private final int maxNumber;
+    private List<Integer> vectorClock;
 
 
     ThisNodeInfo(
@@ -24,7 +24,7 @@ public final class ThisNodeInfo extends NodeInfo{
             int maxPerActive,
             int minSendDelay,
             int snapshotDelay,
-            int maxNumber, int[] VectorClock
+            int maxNumber
             ) {
         super(uid, hostName, port);
         neighbors = new ArrayList<>();
@@ -34,8 +34,9 @@ public final class ThisNodeInfo extends NodeInfo{
         this.minSendDelay=minSendDelay;
         this.snapshotDelay=snapshotDelay;
         this.maxNumber=maxNumber;
-        this.VectorClock = new int[totalNumberOfNodes];
+        this.vectorClock = new ArrayList<>();
     }
+
     public boolean addNeighbor(NodeInfo neighbor){
         return neighbors.add(neighbor);
     }
@@ -52,56 +53,43 @@ public final class ThisNodeInfo extends NodeInfo{
         return minPerActive;
     }
 
-    public void setMinPerActive(int minPerActive) {
-        this.minPerActive = minPerActive;
-    }
-
     public int getMaxPerActive() {
         return maxPerActive;
-    }
-
-    public void setMaxPerActive(int maxPerActive) {
-        this.maxPerActive = maxPerActive;
     }
 
     public int getMinSendDelay() {
         return minSendDelay;
     }
 
-    public void setMinSendDelay(int minSendDelay) {
-        this.minSendDelay = minSendDelay;
-    }
-
     public int getSnapshotDelay() {
         return snapshotDelay;
-    }
-
-    public void setSnapshotDelay(int snapshotDelay) {
-        this.snapshotDelay = snapshotDelay;
     }
 
     public int getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(int maxNumber) {
-        this.maxNumber = maxNumber;
-    }
 
-    public int[]  getVectorClock() {return VectorClock;}
+    public List<Integer>  getVectorClock() {return vectorClock;}
 
-    public void setVectorClock(int[] VectorClock) {this.VectorClock = VectorClock;}
+    public void setVectorClock(List<Integer> vectorClock) {this.vectorClock = vectorClock;}
 
     public void incrementVectorClock () {
-        this.VectorClock[this.getUid()]++;
+        int incrementedValue = vectorClock.get(this.getUid()) + 1;
+        vectorClock.set(this.getUid(), incrementedValue);
     }
 
-    public void mergeVectorClock(int[] mapVectorClock) {
-        for (int i = 0; i < this.getTotalNumberOfNodes(); i++)
+    public void mergeVectorClock(List<Integer> mapVectorClock) {
+        ListIterator vectorIterator = vectorClock.listIterator();
+        Iterator mapVectorIterator = mapVectorClock.iterator();
+        while (vectorIterator.hasNext() && mapVectorIterator.hasNext())
         {
-            this.VectorClock[i] = max(this.VectorClock[i], mapVectorClock[i]);
+            int vectorClockValue = (Integer)vectorIterator.next();
+            int mapVectorClockValue = (Integer)mapVectorIterator.next();
+            int maxValue = max(vectorClockValue, mapVectorClockValue);
+            vectorIterator.set(maxValue);
         }
-        this.VectorClock[this.getUid()]++;
+        incrementVectorClock();
     }
 
 }

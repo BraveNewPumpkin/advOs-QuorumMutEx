@@ -6,15 +6,20 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @Slf4j
 public class SnapshotService {
     private final SnapshotController snapshotController;
     private final ThisNodeInfo thisNodeInfo;
+    private final MapInfo mapInfo;
     private SnapshotInfo snapshotInfo;
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
-    private NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer;
+    private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
     private boolean isMarked;
 
@@ -22,18 +27,23 @@ public class SnapshotService {
     public SnapshotService(
         @Lazy SnapshotController snapshotController,
         @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
+        @Qualifier("Node/MapConfig/mapInfo") MapInfo mapInfo,
         @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo,
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
         @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
-        @Qualifier("Node/SnapshotConfig/snaphshotSynchronizer")
-        NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer
+        @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
+        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+        @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
+        this.mapInfo = mapInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
         this.tree = tree;
-        this.snapshotSynchronizer = snapshotSynchronizer;
+        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
+        this.snapshotStateSynchronizer = snapshotStateSynchronizer;
 
         isMarked = false;
     }
@@ -47,16 +57,22 @@ public class SnapshotService {
         snapshotController.sendMarkMessage();
         //if we are leaf, send state to parent
         if(isLeaf()){
-            snapshotController.sendStateMessage();
+            Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
+            snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
+            snapshotController.sendStateMessage(snapshotInfos);
         }
-        snapshotSynchronizer.incrementRoundNumber();
+        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
+        snapshotInfo.setActive(mapInfo.isActive());
+        snapshotMarkerSynchronizer.incrementRoundNumber();
     }
 
-    public synchronized void doStateThings(){
-        //TODO implement
-        //save state in matrix
-        //if we have state from all children this round
-            //send all states including own to parent
+    public synchronized void doStateThings(Map<Integer, SnapshotInfo> snapshotInfos, int snapshotNumber){
+        if(thisNodeInfo.getUid() == 0) {
+            printStates(snapshotInfos, snapshotNumber);
+        } else {
+            snapshotController.sendStateMessage(snapshotInfos);
+        }
+        snapshotStateSynchronizer.incrementRoundNumber();
     }
 
     private boolean isLeaf() {
@@ -65,5 +81,9 @@ public class SnapshotService {
         } else {
             return false;
         }
+    }
+
+    public void printStates(Map<Integer, SnapshotInfo> snapshotInfos, int snapshotNumber) {
+
     }
 }

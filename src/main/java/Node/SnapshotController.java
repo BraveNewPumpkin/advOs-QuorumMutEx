@@ -8,6 +8,11 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+
 @Controller
 @Slf4j
 public class SnapshotController {
@@ -16,7 +21,8 @@ public class SnapshotController {
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer;
+    private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -31,15 +37,18 @@ public class SnapshotController {
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
-            @Qualifier("Node/SnapshotConfig/snaphshotSynchronizer")
-            NodeMessageRoundSynchronizer<MarkMessage> snapshotSynchronizer
+            @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
+            NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+            @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
     ){
         this.snapshotService = snapshotService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
-        this.snapshotSynchronizer = snapshotSynchronizer;
+        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
+        this.snapshotStateSynchronizer = snapshotStateSynchronizer;
 
         markedSynchronizer = new Object();
     }
@@ -49,7 +58,7 @@ public class SnapshotController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received MarkMessage {}", message);
             }
-            snapshotSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
+            snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
     }
 
     @MessageMapping("/stateMessage")
@@ -62,14 +71,22 @@ public class SnapshotController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received StateMessage {}", message);
             }
-            snapshotService.doStateThings();
+            Runnable doStateThings = () -> {
+                Map<Integer, SnapshotInfo> snapshotInfoMap = new HashMap<>();
+                Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesThisRound();
+                messages.forEach((StateMessage stateMessage) -> {
+                    snapshotInfoMap.putAll(stateMessage.getSnapshotInfos());
+                });
+                snapshotService.doStateThings(snapshotInfoMap, message.getSnapshotNumber());
+            };
+            snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThings);
         }
     }
 
     public void sendMarkMessage() throws MessagingException {
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),
-                snapshotSynchronizer.getRoundNumber()
+                snapshotMarkerSynchronizer.getRoundNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MarkMessage: {}", message);
@@ -78,12 +95,12 @@ public class SnapshotController {
         log.trace("MarkMessage message sent");
     }
 
-    public void sendStateMessage() throws MessagingException {
+    public void sendStateMessage(Map<Integer, SnapshotInfo> snapshotInfos) throws MessagingException {
         StateMessage message = new StateMessage(
                 thisNodeInfo.getUid(),
                 treeInfo.getParentId(),
-                snapshotInfo,
-                snapshotSynchronizer.getRoundNumber()
+                snapshotInfos,
+                snapshotStateSynchronizer.getRoundNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending StateMessage: {}", message);

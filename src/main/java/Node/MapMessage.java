@@ -1,29 +1,30 @@
 package Node;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class MapMessage extends SimpleTargetableMessage {
-    int[] VectorClock;
+    List<Integer> VectorClock;
     public MapMessage() {
     }
 
-    public MapMessage(int sourceUID, int target, int[] VectorClock) {
+    public MapMessage(int sourceUID, int target, List<Integer> VectorClock) {
 
         super(sourceUID, target);
-        this.VectorClock =VectorClock;
+        this.VectorClock = VectorClock;
     }
 
-    public int[] getVectorClock() {
+    public List<Integer> getVectorClock() {
         return VectorClock;
     }
 
-    public void setVectorClock(int[] vectorClock) {
+    public void setVectorClock(List<Integer> vectorClock) {
         VectorClock = vectorClock;
     }
 
     @Override
     public String toString() {
-        return "MapMessage{" + "VectorCLock" + Arrays.toString(VectorClock) +
+        return "MapMessage{" + "VectorCLock" + VectorClock +
         "} " + super.toString();
     }
 }
