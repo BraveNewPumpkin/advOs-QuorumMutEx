@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ public class SnapshotService {
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
     private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    @Lazy @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
     private boolean isMarked;
@@ -32,9 +34,7 @@ public class SnapshotService {
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
         @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
         @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
-        @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
+        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
@@ -43,7 +43,6 @@ public class SnapshotService {
         this.treeInfo = treeInfo;
         this.tree = tree;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
-        this.snapshotStateSynchronizer = snapshotStateSynchronizer;
 
         isMarked = false;
     }
@@ -52,14 +51,20 @@ public class SnapshotService {
         return isMarked;
     }
 
+    public void setIsMarked(boolean isMarked){
+        this.isMarked = isMarked;
+    }
+
     public void doMarkingThings() {
-        isMarked = true;
-        snapshotController.sendMarkMessage();
-        //if we are leaf, send state to parent
-        if(isLeaf()){
-            Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
-            snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
-            snapshotController.sendStateMessage(snapshotInfos);
+        if(thisNodeInfo.getUid() != 0) {
+            isMarked = true;
+            snapshotController.sendMarkMessage();
+            //if we are leaf, send state to parent
+            if (isLeaf()) {
+                Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
+                snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
+                snapshotController.sendStateMessage(snapshotInfos);
+            }
         }
         snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
         snapshotInfo.setActive(mapInfo.isActive());
@@ -76,6 +81,9 @@ public class SnapshotService {
     }
 
     private boolean isLeaf() {
+        log.warn("tree.getRoot().getChildren(): {}", tree.getRoot().getChildren());
+        log.warn("tree.getRoot().getChildren().isEmpty(): {}", tree.getRoot().getChildren().isEmpty());
+        log.warn("tree.getRoot().getChildren().size(): {}", tree.getRoot().getChildren().size());
         if(tree.getRoot().getChildren().isEmpty()) {
             return true;
         } else {
@@ -84,6 +92,8 @@ public class SnapshotService {
     }
 
     public void printStates(Map<Integer, SnapshotInfo> snapshotInfos, int snapshotNumber) {
-
+        if(log.isInfoEnabled()) {
+            log.info("snapshot {}: {}", snapshotNumber, Arrays.toString(snapshotInfos.entrySet().toArray()));
+        }
     }
 }

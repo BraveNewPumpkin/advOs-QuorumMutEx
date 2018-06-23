@@ -36,7 +36,7 @@ public class DoMapProtocol implements Runnable{
     public void run(){
         log.info("sleeping to allow other instances to spin up");
         try {
-            TimeUnit.SECONDS.sleep(15);
+            TimeUnit.SECONDS.sleep(20);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }

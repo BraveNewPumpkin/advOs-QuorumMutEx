@@ -3,13 +3,13 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -39,7 +39,7 @@ public class SnapshotController {
             TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
             NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
-            @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+            @Lazy @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
             NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
     ){
         this.snapshotService = snapshotService;
@@ -56,7 +56,7 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
             if (log.isDebugEnabled()) {
-                log.debug("<---received MarkMessage {}", message);
+                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getMessagesThisRound().size() + 1, snapshotMarkerSynchronizer.getRoundSize());
             }
             snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
     }

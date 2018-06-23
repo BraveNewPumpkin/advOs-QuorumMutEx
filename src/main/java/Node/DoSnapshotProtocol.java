@@ -18,7 +18,8 @@ public class DoSnapshotProtocol implements Runnable {
     private GateLock buildingTreeSynchronizer;
     private BuildTreeController buildTreeController;
     private BuildTreeService buildTreeService;
-    private SnapshotController snapshotController;
+    private final SnapshotController snapshotController;
+    private final SnapshotService snapshotService;
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
 
@@ -29,6 +30,7 @@ public class DoSnapshotProtocol implements Runnable {
             BuildTreeController buildTreeController,
             BuildTreeService buildTreeService,
             SnapshotController snapshotController,
+            SnapshotService snapshotService,
             @Qualifier("Node/MapConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/MapConfig/buildingTreeSynchronizer")
@@ -45,6 +47,7 @@ public class DoSnapshotProtocol implements Runnable {
         this.buildTreeController = buildTreeController;
         this.buildTreeService = buildTreeService;
         this.snapshotController = snapshotController;
+        this.snapshotService = snapshotService;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.scheduler = scheduler;
@@ -54,14 +57,15 @@ public class DoSnapshotProtocol implements Runnable {
     public void run(){
         try {
             connectingSynchronizer.acquire();
-            log.trace("building tree then starting snapshot protocol");
             //ONLY SCHEDULE IF NODE ZERO
             if(thisNodeInfo.getUid() == 0) {
+                log.trace("building tree then starting snapshot protocol");
                 buildTreeService.setParent(0);
                 log.trace("we are root so sending initial buildTreeQueryMessage");
                 buildTreeController.sendBuildTreeQueryMessage();
                 log.trace("waiting for tree to be built to start snapshots");
                 buildingTreeSynchronizer.enter();
+                snapshotService.setIsMarked(true);
                 final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(snapshotController::sendMarkMessage, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
             }
         }catch (java.lang.InterruptedException e){

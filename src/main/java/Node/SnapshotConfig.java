@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,6 +39,7 @@ public class SnapshotConfig {
     }
 
     @Bean
+    @Lazy
     @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     public NodeMessageRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
         int numberOfChildren = treeInfo.getNumChildren();

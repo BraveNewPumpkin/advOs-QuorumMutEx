@@ -72,6 +72,7 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
             log.trace("moving from round {} to round {}", roundNumber, roundNumber + 1);
         }
         roundNumber++;
+        ensureQueueForRoundIsInitialized(roundNumber);
     }
 
     public int getRoundSize() {
