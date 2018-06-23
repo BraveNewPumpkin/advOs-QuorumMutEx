@@ -34,7 +34,7 @@ public final class ThisNodeInfo extends NodeInfo{
         this.minSendDelay=minSendDelay;
         this.snapshotDelay=snapshotDelay;
         this.maxNumber=maxNumber;
-        this.vectorClock = new ArrayList<>();
+        this.vectorClock = new ArrayList<>(Collections.nCopies(totalNumberOfNodes, 0));
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
