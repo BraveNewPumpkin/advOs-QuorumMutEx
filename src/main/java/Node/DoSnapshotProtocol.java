@@ -14,16 +14,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @Component
 @Slf4j
 public class DoSnapshotProtocol implements Runnable {
-    private Semaphore connectingSynchronizer;
-    private GateLock buildingTreeSynchronizer;
-    private BuildTreeController buildTreeController;
-    private BuildTreeService buildTreeService;
+    private final Semaphore connectingSynchronizer;
+    private final GateLock buildingTreeSynchronizer;
+    private final BuildTreeController buildTreeController;
+    private final BuildTreeService buildTreeService;
     private final SnapshotController snapshotController;
     private final SnapshotService snapshotService;
     private final ThisNodeInfo thisNodeInfo;
-    private SnapshotInfo snapshotInfo;
-
+    private final SnapshotInfo snapshotInfo;
+    private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private final ScheduledExecutorService scheduler;
+
+    private final Runnable doStartASnapshot;
 
     @Autowired
     public DoSnapshotProtocol(
@@ -39,6 +41,8 @@ public class DoSnapshotProtocol implements Runnable {
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/snapshotInfo")
             SnapshotInfo snapshotInfo,
+            @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
+            NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/scheduler")
             ScheduledExecutorService scheduler
     ){
@@ -50,7 +54,14 @@ public class DoSnapshotProtocol implements Runnable {
         this.snapshotService = snapshotService;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
+        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.scheduler = scheduler;
+
+        doStartASnapshot = () -> {
+            snapshotController.sendMarkMessage();
+            snapshotService.setMarkedCurrentRound();
+            snapshotMarkerSynchronizer.incrementRoundNumber();
+        };
     }
 
     @Override
@@ -65,8 +76,7 @@ public class DoSnapshotProtocol implements Runnable {
                 buildTreeController.sendBuildTreeQueryMessage();
                 log.trace("waiting for tree to be built to start snapshots");
                 buildingTreeSynchronizer.enter();
-                snapshotService.setIsMarked(true);
-                final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(snapshotController::sendMarkMessage, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
+                final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doStartASnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
             }
         }catch (java.lang.InterruptedException e){
             //ignore
