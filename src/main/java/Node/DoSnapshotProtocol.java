@@ -58,8 +58,8 @@ public class DoSnapshotProtocol implements Runnable {
         this.scheduler = scheduler;
 
         doStartASnapshot = () -> {
-            snapshotController.sendMarkMessage();
-            snapshotService.setMarkedCurrentRound();
+            snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundNumber());
+            snapshotService.setIsMarked(snapshotMarkerSynchronizer.getRoundNumber(), true);
             snapshotMarkerSynchronizer.incrementRoundNumber();
         };
     }
