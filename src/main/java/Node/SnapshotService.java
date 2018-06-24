@@ -28,7 +28,7 @@ public class SnapshotService {
     private List<Boolean> isMarkedList;
     //used to save and defer sending state to parent if we have not yet received all marked messages this round
     private List<Boolean> isStateReadyToSend;
-    private List<Map<Integer, SnapshotInfo>> childrenStatesMaps;
+    private Map<Integer, Map<Integer, SnapshotInfo>> childrenStatesMaps;
 
     @Autowired
     public SnapshotService(
@@ -58,7 +58,7 @@ public class SnapshotService {
         processingFinalStateOrMarkerSynchronizer = new Object();
         isMarkedList = new ArrayList<>();
         isStateReadyToSend = new ArrayList<>();
-        childrenStatesMaps = new ArrayList<>();
+        childrenStatesMaps = new HashMap<>();
     }
 
 
@@ -139,12 +139,12 @@ public class SnapshotService {
             int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
             fillHasStatePendingToIndex(stateRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
-                //if we've received all the marker messages the send to parent, otherwise defer until we do receive all
+                //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
                 if (snapshotMarkerSynchronizer.getNumMessagesThisRound() == snapshotMarkerSynchronizer.getRoundSize()) {
                     snapshotController.sendStateMessage(snapshotInfos);
                 } else {
-                    childrenStatesMaps.add(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
-                    isStateReadyToSend.add(snapshotStateSynchronizer.getRoundNumber(), true);
+                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
+                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundNumber(), true);
                 }
             }
         }
