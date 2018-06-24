@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     private final List<Queue<T>> roundMessages;
 
-    private final int roundSize;
+    private int roundSize;
 
     private int roundNumber;
 
@@ -30,7 +30,7 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     public int getNumMessagesThisRound() {
        int numMessagesThisRound = 0;
        if(roundMessages.size() > roundNumber) {
-           numMessagesThisRound = roundMessages.size();
+           numMessagesThisRound = roundMessages.get(roundNumber).size();
        }
        return numMessagesThisRound;
     }
@@ -85,6 +85,10 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
 
     public int getRoundSize() {
         return roundSize;
+    }
+
+    public void setRoundSize(int roundSize) {
+        this.roundSize = roundSize;
     }
 
     public void ensureQueueForRoundIsInitialized(int roundNumber) {
