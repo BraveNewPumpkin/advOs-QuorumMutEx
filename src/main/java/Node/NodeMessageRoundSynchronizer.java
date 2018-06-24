@@ -27,6 +27,14 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
         return roundMessages.get(roundNumber);
     }
 
+    public int getNumMessagesThisRound() {
+       int numMessagesThisRound = 0;
+       if(roundMessages.size() > roundNumber) {
+           numMessagesThisRound = roundMessages.size();
+       }
+       return numMessagesThisRound;
+    }
+
     //NOT threadsafe
     public void enqueueMessage(T message) {
         int messageRoundNumber = message.getRoundNumber();

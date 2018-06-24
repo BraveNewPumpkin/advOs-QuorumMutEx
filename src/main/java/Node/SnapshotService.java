@@ -18,10 +18,9 @@ public class SnapshotService {
     private TreeInfo treeInfo;
     private Tree<Integer> tree;
     private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    @Lazy @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
-    private List<Boolean> isMarked;
+    private List<Boolean> isMarkedList;
 
     @Autowired
     public SnapshotService(
@@ -32,7 +31,9 @@ public class SnapshotService {
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
         @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
         @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer
+        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+        @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
@@ -41,21 +42,28 @@ public class SnapshotService {
         this.treeInfo = treeInfo;
         this.tree = tree;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
+        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
 
-        isMarked = new ArrayList<>();
+        isMarkedList = new ArrayList<>();
     }
 
 
-    public boolean isMarked(int messageRoundNumber) { return isMarked.get(messageRoundNumber); }
+    public boolean isMarked(int roundNumber) {
+        boolean isMarked = false;
+        if(isMarkedList.size() > roundNumber) {
+            isMarked = isMarkedList.get(roundNumber);
+        }
+        return isMarked;
+    }
 
     public void setIsMarked(int messageRoundNumber, boolean isMarkedVal){
-        int isMarkedCounter= this.isMarked.size()-1;
+        int isMarkedCounter= this.isMarkedList.size()-1;
         if( isMarkedCounter < messageRoundNumber){
             for(int i=isMarkedCounter;i<messageRoundNumber;i++){
-                isMarked.add(false);
+                isMarkedList.add(false);
             }
         }
-         this.isMarked.set(messageRoundNumber, isMarkedVal);
+         this.isMarkedList.set(messageRoundNumber, isMarkedVal);
     }
 
     public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
