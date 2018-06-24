@@ -21,8 +21,8 @@ public class SnapshotController {
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private final NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -39,7 +39,7 @@ public class SnapshotController {
             TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
             NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
-            @Lazy @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+            @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
             NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
     ){
         this.snapshotService = snapshotService;
@@ -72,7 +72,7 @@ public class SnapshotController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received StateMessage {}", message);
+                log.debug("<---received StateMessage {}. {} of {} this round", message, snapshotStateSynchronizer.getNumMessagesThisRound() + 1, snapshotStateSynchronizer.getRoundSize());
             }
             Runnable doStateThings = () -> {
                 Map<Integer, SnapshotInfo> snapshotInfoMap = new HashMap<>();

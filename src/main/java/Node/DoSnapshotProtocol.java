@@ -22,7 +22,10 @@ public class DoSnapshotProtocol implements Runnable {
     private final SnapshotService snapshotService;
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
+    private final TreeInfo treeInfo;
     private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private final NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final GateLock preparedForSnapshotSynchronizer;
     private final ScheduledExecutorService scheduler;
 
     private final Runnable doStartASnapshot;
@@ -41,8 +44,14 @@ public class DoSnapshotProtocol implements Runnable {
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/snapshotInfo")
             SnapshotInfo snapshotInfo,
+            @Qualifier("Node/BuildTreeConfig/treeInfo")
+            TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
             NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+            @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
+            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+            @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
+            GateLock preparedForSnapshotSynchronizer,
             @Qualifier("Node/SnapshotConfig/scheduler")
             ScheduledExecutorService scheduler
     ){
@@ -54,7 +63,10 @@ public class DoSnapshotProtocol implements Runnable {
         this.snapshotService = snapshotService;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
+        this.treeInfo = treeInfo;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
+        this.snapshotStateSynchronizer = snapshotStateSynchronizer;
+        this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
         this.scheduler = scheduler;
 
         doStartASnapshot = () -> {
@@ -75,7 +87,12 @@ public class DoSnapshotProtocol implements Runnable {
                 log.trace("we are root so sending initial buildTreeQueryMessage");
                 buildTreeController.sendBuildTreeQueryMessage();
                 log.trace("waiting for tree to be built to start snapshots");
-                buildingTreeSynchronizer.enter();
+            }
+            buildingTreeSynchronizer.enter();
+            int numberOfChildren = treeInfo.getNumChildren();
+            snapshotStateSynchronizer.setRoundSize(numberOfChildren);
+            preparedForSnapshotSynchronizer.open();
+            if(thisNodeInfo.getUid() == 0) {
                 final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doStartASnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
             }
         }catch (java.lang.InterruptedException e){

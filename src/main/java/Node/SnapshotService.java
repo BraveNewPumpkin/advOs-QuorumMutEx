@@ -15,10 +15,11 @@ public class SnapshotService {
     private final ThisNodeInfo thisNodeInfo;
     private final MapInfo mapInfo;
     private SnapshotInfo snapshotInfo;
-    private TreeInfo treeInfo;
+    private final TreeInfo treeInfo;
     private Tree<Integer> tree;
     private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final GateLock preparedForSnapshotSynchronizer;
 
     private List<Boolean> isMarkedList;
 
@@ -33,7 +34,9 @@ public class SnapshotService {
         @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
         NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
         @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
+        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+        @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
+        GateLock preparedForSnapshotSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.thisNodeInfo = thisNodeInfo;
@@ -42,7 +45,8 @@ public class SnapshotService {
         this.treeInfo = treeInfo;
         this.tree = tree;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
-        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
+        this.snapshotStateSynchronizer = snapshotStateSynchronizer;
+        this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
 
         isMarkedList = new ArrayList<>();
     }
@@ -67,6 +71,7 @@ public class SnapshotService {
     }
 
     public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
+        preparedForSnapshotSynchronizer.enter();
         if(!isMarked(messageRoundNumber)){
             setIsMarked(messageRoundNumber,true);
             snapshotController.sendMarkMessage(messageRoundNumber);
@@ -98,9 +103,9 @@ public class SnapshotService {
     }
 
     private boolean isLeaf() {
-        log.warn("tree.getRoot().getChildren(): {}", tree.getRoot().getChildren());
-        log.warn("tree.getRoot().getChildren().isEmpty(): {}", tree.getRoot().getChildren().isEmpty());
-        log.warn("tree.getRoot().getChildren().size(): {}", tree.getRoot().getChildren().size());
+        log.trace("tree.getRoot().getChildren(): {}", tree.getRoot().getChildren());
+        log.trace("tree.getRoot().getChildren().isEmpty(): {}", tree.getRoot().getChildren().isEmpty());
+        log.trace("tree.getRoot().getChildren().size(): {}", tree.getRoot().getChildren().size());
         if(tree.getRoot().getChildren().isEmpty()) {
             return true;
         } else {

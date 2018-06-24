@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,6 +25,14 @@ public class SnapshotConfig {
     }
 
     @Bean
+    @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
+    public GateLock getPreparedForSnapshotSynchronizer() {
+        GateLock preparedForSnapshotSynchronizer = new GateLock();
+        preparedForSnapshotSynchronizer.close();
+        return preparedForSnapshotSynchronizer;
+    }
+
+    @Bean
     @Qualifier("Node/SnapshotConfig/scheduler")
     public ScheduledExecutorService getScheduler() {
        return Executors.newScheduledThreadPool(1);
@@ -39,10 +46,8 @@ public class SnapshotConfig {
     }
 
     @Bean
-    @Lazy
     @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     public NodeMessageRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
-        int numberOfChildren = treeInfo.getNumChildren();
-        return new NodeMessageRoundSynchronizer<>(numberOfChildren);
+        return new NodeMessageRoundSynchronizer<>(0);
     }
 }
