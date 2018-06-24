@@ -76,6 +76,7 @@ public class SnapshotController {
             }
             Runnable doStateThings = () -> {
                 Map<Integer, SnapshotInfo> snapshotInfoMap = new HashMap<>();
+                snapshotInfoMap.put(thisNodeInfo.getUid(), snapshotInfo);
                 Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesThisRound();
                 messages.forEach((StateMessage stateMessage) -> {
                     snapshotInfoMap.putAll(stateMessage.getSnapshotInfos());
