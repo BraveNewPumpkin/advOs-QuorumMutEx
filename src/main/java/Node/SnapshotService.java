@@ -126,7 +126,7 @@ public class SnapshotService {
 
     public void fillHasStatePendingToIndex(int index) {
         if(index > isStateReadyToSend.size() - 1) {
-            int numEntriesToAdd = index - isStateReadyToSend.size() - 1;
+            int numEntriesToAdd = index - isStateReadyToSend.size() + 1;
             isStateReadyToSend.addAll(Collections.nCopies(numEntriesToAdd, false));
         }
     }
