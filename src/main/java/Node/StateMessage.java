@@ -38,4 +38,12 @@ public class StateMessage extends SimpleTargetableMessage implements RoundSynchr
     public int getRoundNumber(){
         return snapshotNumber;
     }
+
+    @Override
+    public String toString() {
+        return "StateMessage{" +
+                "snapshotInfo=" + snapshotInfo +
+                ", snapshotNumber=" + snapshotNumber +
+                "} " + super.toString();
+    }
 }
