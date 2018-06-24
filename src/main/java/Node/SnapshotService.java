@@ -88,8 +88,10 @@ public class SnapshotService {
                 Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
                 snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
                 snapshotController.sendStateMessage(snapshotInfos);
+                snapshotStateSynchronizer.incrementRoundNumber();
             }
             snapshotMarkerSynchronizer.incrementRoundNumber();
+
         }
     }
 
