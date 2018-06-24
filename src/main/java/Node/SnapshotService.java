@@ -140,7 +140,7 @@ public class SnapshotService {
             fillHasStatePendingToIndex(stateRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 //if we've received all the marker messages the send to parent, otherwise defer until we do receive all
-                if (snapshotMarkerSynchronizer.getMessagesThisRound().size() == snapshotMarkerSynchronizer.getRoundSize()) {
+                if (snapshotMarkerSynchronizer.getNumMessagesThisRound() == snapshotMarkerSynchronizer.getRoundSize()) {
                     snapshotController.sendStateMessage(snapshotInfos);
                 } else {
                     childrenStatesMaps.add(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
