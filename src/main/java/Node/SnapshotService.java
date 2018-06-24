@@ -88,10 +88,9 @@ public class SnapshotService {
         }
     }
 
-    public void doMarkingThings() {
+    public synchronized void doMarkingThings(int markerRoundNumber) {
         if(thisNodeInfo.getUid() != 0) {
             //if we are leaf, send state to parent
-            int markerRoundNumber = snapshotMarkerSynchronizer.getRoundNumber();
             fillHasStatePendingToIndex(markerRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
@@ -99,6 +98,7 @@ public class SnapshotService {
                     if (isLeaf()) {
                         snapshotInfos = saveStateAndCombineSnapshotInfoMaps(new ArrayList<>());
                     } else {
+                        log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
                         snapshotInfos = childrenStatesMaps.get(markerRoundNumber);
                         //update our state because it could be stale by the time we receive the last marker message for the round
                         SnapshotInfo thisSnapshotInfo = snapshotInfos.get(thisNodeInfo.getUid());
@@ -140,9 +140,11 @@ public class SnapshotService {
             fillHasStatePendingToIndex(stateRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
-                if (snapshotMarkerSynchronizer.getNumMessagesThisRound() == snapshotMarkerSynchronizer.getRoundSize()) {
+                int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
+                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()) {
                     snapshotController.sendStateMessage(snapshotInfos);
                 } else {
+                    log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
                     childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
                     isStateReadyToSend.set(snapshotStateSynchronizer.getRoundNumber(), true);
                 }

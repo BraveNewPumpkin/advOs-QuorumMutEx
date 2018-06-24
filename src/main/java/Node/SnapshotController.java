@@ -3,7 +3,6 @@ package Node;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -54,12 +53,16 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
             if (log.isDebugEnabled()) {
-                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesThisRound() + 1, snapshotMarkerSynchronizer.getRoundSize());
+//                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesThisRound() + 1, snapshotMarkerSynchronizer.getRoundSize());
             }
 
             snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
 
-            snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, snapshotService::doMarkingThings);
+            Runnable doMarkingThings = () -> {
+                snapshotService.doMarkingThings(message.getRoundNumber());
+            };
+
+            snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, doMarkingThings);
     }
 
     @MessageMapping("/stateMessage")
@@ -70,11 +73,11 @@ public class SnapshotController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received StateMessage {}. {} of {} this round", message, snapshotStateSynchronizer.getNumMessagesThisRound() + 1, snapshotStateSynchronizer.getRoundSize());
+                log.debug("<---received StateMessage {}. {} of {} for round {}", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber());
             }
             Runnable doStateThings = () -> {
                 List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
-                Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesThisRound();
+                Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(message.getSnapshotNumber());
                 messages.forEach((StateMessage stateMessage) -> {
                     snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
                 });
@@ -90,7 +93,7 @@ public class SnapshotController {
                 roundNumber
         );
         if(log.isDebugEnabled()){
-            log.debug("--->sending MarkMessage: {}", message);
+//            log.debug("--->sending MarkMessage: {}", message);
         }
         template.convertAndSend("/topic/markMessage", message);
         log.trace("MarkMessage message sent");

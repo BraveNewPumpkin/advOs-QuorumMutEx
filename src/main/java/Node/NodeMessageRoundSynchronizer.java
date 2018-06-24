@@ -23,16 +23,25 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
        roundMessages.add(new ConcurrentLinkedQueue<>());
    }
 
+   //no bounds safety
+    public Queue<T> getMessagesForGivenRound(int givenRoundNumber) {
+        return roundMessages.get(givenRoundNumber);
+    }
+
     public Queue<T> getMessagesThisRound() {
         return roundMessages.get(roundNumber);
     }
 
+    public int getNumMessagesForGivenRound(int givenRoundNumber) {
+        int numMessagesForGivenRound = 0;
+        if(roundMessages.size() > givenRoundNumber) {
+            numMessagesForGivenRound = roundMessages.get(givenRoundNumber).size();
+        }
+        return numMessagesForGivenRound;
+    }
+
     public int getNumMessagesThisRound() {
-       int numMessagesThisRound = 0;
-       if(roundMessages.size() > roundNumber) {
-           numMessagesThisRound = roundMessages.get(roundNumber).size();
-       }
-       return numMessagesThisRound;
+       return getNumMessagesForGivenRound(roundNumber);
     }
 
     //NOT threadsafe
