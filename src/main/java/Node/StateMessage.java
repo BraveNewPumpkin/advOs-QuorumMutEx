@@ -42,8 +42,7 @@ public class StateMessage extends SimpleTargetableMessage implements RoundSynchr
     @Override
     public String toString() {
         return "StateMessage{" +
-                "snapshotInfo=" + snapshotInfo +
-                ", snapshotNumber=" + snapshotNumber +
+                "snapshotNumber=" + snapshotNumber +
                 "} " + super.toString();
     }
 }

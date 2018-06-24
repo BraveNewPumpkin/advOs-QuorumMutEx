@@ -46,4 +46,14 @@ public class SnapshotInfo {
     public void setActive(boolean active) {
         isActive = active;
     }
+
+    @Override
+    public String toString() {
+        return "SnapshotInfo{" +
+                "sentMessages=" + sentMessages +
+                ", processedMessages=" + processedMessages +
+                ", vectorClock=" + vectorClock +
+                ", isActive=" + isActive +
+                '}';
+    }
 }
