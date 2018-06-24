@@ -9,9 +9,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 @Controller
 @Slf4j
@@ -75,13 +73,12 @@ public class SnapshotController {
                 log.debug("<---received StateMessage {}. {} of {} this round", message, snapshotStateSynchronizer.getNumMessagesThisRound() + 1, snapshotStateSynchronizer.getRoundSize());
             }
             Runnable doStateThings = () -> {
-                Map<Integer, SnapshotInfo> snapshotInfoMap = new HashMap<>();
-                snapshotInfoMap.put(thisNodeInfo.getUid(), snapshotInfo);
+                List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
                 Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesThisRound();
                 messages.forEach((StateMessage stateMessage) -> {
-                    snapshotInfoMap.putAll(stateMessage.getSnapshotInfos());
+                    snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
                 });
-                snapshotService.doStateThings(snapshotInfoMap, message.getSnapshotNumber());
+                snapshotService.doStateThings(snapshotInfoMaps, message.getSnapshotNumber());
             };
             snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThings);
         }
