@@ -53,7 +53,7 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
             if (log.isDebugEnabled()) {
-//                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesThisRound() + 1, snapshotMarkerSynchronizer.getRoundSize());
+                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesThisRound() + 1, snapshotMarkerSynchronizer.getRoundSize());
             }
 
             snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
@@ -93,18 +93,18 @@ public class SnapshotController {
                 roundNumber
         );
         if(log.isDebugEnabled()){
-//            log.debug("--->sending MarkMessage: {}", message);
+            log.debug("--->sending MarkMessage: {}", message);
         }
         template.convertAndSend("/topic/markMessage", message);
         log.trace("MarkMessage message sent");
     }
 
-    public void sendStateMessage(Map<Integer, SnapshotInfo> snapshotInfos) throws MessagingException {
+    public void sendStateMessage(Map<Integer, SnapshotInfo> snapshotInfos, int roundNumber) throws MessagingException {
         StateMessage message = new StateMessage(
                 thisNodeInfo.getUid(),
                 treeInfo.getParentId(),
                 snapshotInfos,
-                snapshotStateSynchronizer.getRoundNumber()
+                roundNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending StateMessage: {}", message);

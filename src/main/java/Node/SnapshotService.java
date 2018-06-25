@@ -105,7 +105,7 @@ public class SnapshotService {
                         thisSnapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
                         thisSnapshotInfo.setActive(mapInfo.isActive());
                     }
-                    snapshotController.sendStateMessage(snapshotInfos);
+                    snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
                     snapshotStateSynchronizer.incrementRoundNumber();
                 }
             }
@@ -142,7 +142,7 @@ public class SnapshotService {
                 //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
                 int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
                 if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()) {
-                    snapshotController.sendStateMessage(snapshotInfos);
+                    snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
                 } else {
                     log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
                     childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
