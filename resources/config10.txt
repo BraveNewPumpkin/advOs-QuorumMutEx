@@ -1,0 +1,22 @@
+# ten g l o b a l p a r ame te r s ( s e e above )
+10 6 10 1000 2000 300
+0 dc02.utdallas.edu 1232 # nodeID hostName l i s t e n P o r t
+1 dc03.utdallas.edu 1233
+2 dc04.utdallas.edu 1237
+3 dc05.utdallas.edu 1235
+4 dc06.utdallas.edu 1236
+5 dc07.utdallas.edu 1238
+6 dc08.utdallas.edu 1239
+7 dc09.utdallas.edu 1240
+8 dc10.utdallas.edu 1241
+9 dc11.utdallas.edu 1242
+1 6 # sp ac e d elimi t e d l i s t o f n ei g h b o r s f o r node 0
+0 3 2 # sp ac e d elimi t e d l i s t o f n ei g h b o r s f o r node 1
+1 3 # . . . node 2
+1 2 4 # . . . node 3
+3 5 7 # . . . node 4
+4 7 8 9 # . . . node 5
+0 8 9 # . . . node 6
+4 5 8 # . . . node 7
+5 6 7 9 # . . . node 8
+5 6 8 # . . . node 9
