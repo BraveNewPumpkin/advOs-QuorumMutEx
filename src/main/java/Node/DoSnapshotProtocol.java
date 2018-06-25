@@ -29,6 +29,7 @@ public class DoSnapshotProtocol implements Runnable {
     private final ScheduledExecutorService scheduler;
 
     private final Runnable doStartASnapshot;
+    private final Object scheduledStartingSnapshot;
 
     @Autowired
     public DoSnapshotProtocol(
@@ -68,6 +69,8 @@ public class DoSnapshotProtocol implements Runnable {
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
         this.scheduler = scheduler;
+
+        scheduledStartingSnapshot = new Object();
 
         doStartASnapshot = () -> {
             snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundNumber());

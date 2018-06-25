@@ -81,10 +81,12 @@ public class SnapshotService {
     }
 
     public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
-        preparedForSnapshotSynchronizer.enter();
-        if(!isMarked(messageRoundNumber)){
-            setIsMarked(messageRoundNumber,true);
-            snapshotController.sendMarkMessage(messageRoundNumber);
+        if(thisNodeInfo.getUid() != 0) {
+            preparedForSnapshotSynchronizer.enter();
+            if (!isMarked(messageRoundNumber)) {
+                setIsMarked(messageRoundNumber, true);
+                snapshotController.sendMarkMessage(messageRoundNumber);
+            }
         }
     }
 

@@ -23,6 +23,8 @@ public class SnapshotController {
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
+    private Object doingMarkingThings;
+    private Object doingStateThings;
 
     @Autowired
     public SnapshotController(
@@ -48,43 +50,74 @@ public class SnapshotController {
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
 
         markedSynchronizer = new Object();
+        doingMarkingThings = new Object();
+        doingStateThings = new Object();
     }
 
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
+        Runnable doCallMarkingThingsForMessage = () -> {
+            snapshotService.doMarkingThings(message.getRoundNumber());
+        };
+        Runnable doCallMarkingThingsForSubsequent = () -> {
+            snapshotService.doMarkingThings(snapshotMarkerSynchronizer.getRoundNumber());
+        };
+
+        //spawn in separate thread to allow the message processing thread to return to threadpool
+        Runnable doMarkingThings = () -> {
+            synchronized (doingMarkingThings) {
+                if (log.isDebugEnabled()) {
+                    log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
+                }
+
+                snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
+                snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, doCallMarkingThingsForMessage);
+                while(snapshotMarkerSynchronizer.getNumMessagesThisRound() == snapshotMarkerSynchronizer.getRoundSize()) {
+                    snapshotMarkerSynchronizer.runIfReady(doCallMarkingThingsForSubsequent);
+                }
             }
-
-            snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
-
-            Runnable doMarkingThings = () -> {
-                snapshotService.doMarkingThings(message.getRoundNumber());
-            };
-
-            snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, doMarkingThings);
+        };
+        Thread markingThingsThread = new Thread(doMarkingThings);
+        markingThingsThread.start();
     }
 
     @MessageMapping("/stateMessage")
     public void receiveStateMessage(StateMessage message) {
-        if(thisNodeInfo.getUid() != message.getTarget()) {
-            if (log.isTraceEnabled()) {
-                log.trace("<---received StateMessage {}", message);
+        Runnable doReceiveStateMessageThings = () -> {
+            synchronized (doingStateThings) {
+                if (thisNodeInfo.getUid() != message.getTarget()) {
+                    if (log.isTraceEnabled()) {
+                        log.trace("<---received StateMessage {}", message);
+                    }
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("<---received StateMessage {}. {} of {} for round {}", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber());
+                    }
+                    Runnable doStateThingsForMessage = () -> {
+                        List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
+                        Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(message.getSnapshotNumber());
+                        messages.forEach((StateMessage stateMessage) -> {
+                            snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
+                        });
+                        snapshotService.doStateThings(snapshotInfoMaps, message.getSnapshotNumber());
+                    };
+                    Runnable doStateThingsForSubsequent = () -> {
+                        List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
+                        Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(snapshotStateSynchronizer.getRoundNumber());
+                        messages.forEach((StateMessage stateMessage) -> {
+                            snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
+                        });
+                        snapshotService.doStateThings(snapshotInfoMaps, message.getSnapshotNumber());
+                    };
+                    snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThingsForMessage);
+                    while(snapshotStateSynchronizer.getNumMessagesThisRound() == snapshotStateSynchronizer.getRoundSize()) {
+                        snapshotStateSynchronizer.runIfReady(doStateThingsForSubsequent);
+                    }
+                }
             }
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received StateMessage {}. {} of {} for round {}", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber());
-            }
-            Runnable doStateThings = () -> {
-                List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
-                Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(message.getSnapshotNumber());
-                messages.forEach((StateMessage stateMessage) -> {
-                    snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
-                });
-                snapshotService.doStateThings(snapshotInfoMaps, message.getSnapshotNumber());
-            };
-            snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThings);
-        }
+        };
+        Thread stateThingsThread = new Thread(doReceiveStateMessageThings);
+        stateThingsThread.start();
     }
 
     public void sendMarkMessage(int roundNumber) throws MessagingException {
