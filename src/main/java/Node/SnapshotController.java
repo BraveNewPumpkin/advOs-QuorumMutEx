@@ -53,7 +53,7 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
             if (log.isDebugEnabled()) {
-                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesThisRound() + 1, snapshotMarkerSynchronizer.getRoundSize());
+                log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
             }
 
             snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
