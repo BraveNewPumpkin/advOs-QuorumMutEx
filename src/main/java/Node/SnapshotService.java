@@ -29,10 +29,12 @@ public class SnapshotService {
     //used to save and defer sending state to parent if we have not yet received all marked messages this round
     private List<Boolean> isStateReadyToSend;
     private Map<Integer, Map<Integer, SnapshotInfo>> childrenStatesMaps;
+    private final SnapshotReadWriter snapshotReadWriter;
 
     @Autowired
     public SnapshotService(
         @Lazy SnapshotController snapshotController,
+        SnapshotReadWriter snapshotReadWriter,
         @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
         @Qualifier("Node/MapConfig/mapInfo") MapInfo mapInfo,
         @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo,
@@ -46,6 +48,7 @@ public class SnapshotService {
         GateLock preparedForSnapshotSynchronizer
     ) {
         this.snapshotController = snapshotController;
+        this.snapshotReadWriter = snapshotReadWriter;
         this.thisNodeInfo = thisNodeInfo;
         this.mapInfo = mapInfo;
         this.snapshotInfo = snapshotInfo;
@@ -170,5 +173,6 @@ public class SnapshotService {
         if(log.isInfoEnabled()) {
             log.info("snapshot {}: {}", snapshotNumber, Arrays.toString(snapshotInfos.entrySet().toArray()));
         }
+        snapshotReadWriter.writeSnapshots(snapshotInfos);
     }
 }
