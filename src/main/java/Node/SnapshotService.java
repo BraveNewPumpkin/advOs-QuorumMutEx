@@ -211,9 +211,10 @@ public class SnapshotService {
         else
             log.debug("The Snapshot is Not Consistent");
 
-        log.debug("Total Sent Messages = {} and Total Received Messages = {}", totalSentMessages,totalProcessedMessages);
+//        log.debug("Total Sent Messages = {} and Total Received Messages = {}", totalSentMessages,totalProcessedMessages);
+//        log.debug("isActive: {}",areStatesActive);
 
-        if(!areStatesActive && totalSentMessages==totalProcessedMessages)
+        if(!areStatesActive && totalSentMessages==(totalProcessedMessages-thisNodeInfo.getTotalNumberOfNodes()))
             return true;
         else
             return false;
