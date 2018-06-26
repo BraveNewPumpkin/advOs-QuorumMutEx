@@ -107,7 +107,7 @@ public class SnapshotController {
                         messages.forEach((StateMessage stateMessage) -> {
                             snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
                         });
-                        snapshotService.doStateThings(snapshotInfoMaps, message.getSnapshotNumber());
+                        snapshotService.doStateThings(snapshotInfoMaps, snapshotStateSynchronizer.getRoundNumber());
                     };
                     snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThingsForMessage);
                     while(snapshotStateSynchronizer.getNumMessagesThisRound() == snapshotStateSynchronizer.getRoundSize()) {

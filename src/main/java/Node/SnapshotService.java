@@ -140,13 +140,21 @@ public class SnapshotService {
         Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
         if(thisNodeInfo.getUid() == 0) {
             printStates(snapshotInfos, snapshotNumber);
+            boolean isTerminated = terminationDetection(snapshotInfos);
+            log.debug("Termination Detection: {}",isTerminated);
+
         } else {
             int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
             fillHasStatePendingToIndex(stateRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
                 int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
-                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()) {
+                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()){
+                    //Added the following code to make the sent Vector clock to be more precise. Not sure so kept it commented
+//                    SnapshotInfo thisSnapshotInfo = snapshotInfos.get(thisNodeInfo.getUid());
+//                    thisSnapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
+//                    thisSnapshotInfo.setActive(mapInfo.isActive());
+                    //ends here
                     snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
                 } else {
                     log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
@@ -156,6 +164,59 @@ public class SnapshotService {
             }
         }
         snapshotStateSynchronizer.incrementRoundNumber();
+    }
+
+    public boolean terminationDetection(Map<Integer,SnapshotInfo> snapshotInfos){
+        int totalSentMessages=0;
+        int totalProcessedMessages=0;
+        boolean areStatesActive=false;
+        boolean isConsistent=true;
+
+        int n=thisNodeInfo.getTotalNumberOfNodes();
+        int[][] snapshotMatrix = new int[n][n];
+
+        Set entrySet = snapshotInfos.entrySet();
+        Iterator it= entrySet.iterator();
+
+        while(it.hasNext()){
+            Map.Entry map=(Map.Entry) it.next();
+            int key=(int)map.getKey();
+            SnapshotInfo snapInfo = (SnapshotInfo)map.getValue();
+
+            totalSentMessages+=snapInfo.getSentMessages();
+            totalProcessedMessages+=snapInfo.getProcessedMessages();
+
+            areStatesActive = areStatesActive || snapInfo.isActive();
+
+            for(int i=0;i<n;i++){
+                snapshotMatrix[key][i]=snapInfo.getVectorClock().get(i);
+            }
+        }
+
+        for(int q=0;q<n;q++){
+            int maxVal=0;
+            for(int p=0;p<n;p++){
+                int val=snapshotMatrix[p][q];
+                if(maxVal<val)
+                    maxVal=val;
+            }
+            if(maxVal != snapshotMatrix[q][q]){
+                isConsistent=false;
+                break;
+            }
+        }
+
+        if(isConsistent)
+            log.debug("The Snapshot is Consistent");
+        else
+            log.debug("The Snapshot is Not Consistent");
+
+        log.debug("Total Sent Messages = {} and Total Received Messages = {}", totalSentMessages,totalProcessedMessages);
+
+        if(!areStatesActive && totalSentMessages==totalProcessedMessages)
+            return true;
+        else
+            return false;
     }
 
     private boolean isLeaf() {
