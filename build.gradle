@@ -44,5 +44,6 @@ lombok {
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-websocket")
     compile("org.springframework.boot:spring-boot-starter-logging")
-    compile 'org.projectlombok:lombok:1.16.20'
+    compile("org.projectlombok:lombok:1.16.20")
+    compile("com.google.guava:guava:25.1-jre")
 }
