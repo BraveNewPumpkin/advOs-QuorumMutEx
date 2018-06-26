@@ -28,18 +28,27 @@ public class NodeConfigurator {
     @Value("${nodeConfigUri:file:resources/config.txt}")
     private String nodeConfigUri;
 
+    @Bean
+    @Qualifier("Node/NodeConfigurator/configResource")
+    public Resource getConfigResource(
+        @Autowired ApplicationContext context
+    ) {
+        Resource configResource = context.getResource(nodeConfigUri);
+        return configResource;
+    }
 
     @Bean
     @Qualifier("Node/NodeConfigurator/thisNodeInfo")
     public ThisNodeInfo getThisNodeInfo(
-        @Autowired ApplicationContext context
+        @Qualifier("Node/NodeConfigurator/configResource")
+        Resource configResource
     ) throws UnknownHostException, ConfigurationException {
         if (thisHostName.equals("")) {
             thisHostName = InetAddress.getLocalHost().getHostName();
         }
 
         //load config using thisHostName to know which node we are
-        NodeConfig nodeConfig = readNodeConfig(context, thisHostName);
+        NodeConfig nodeConfig = readNodeConfig(thisHostName, configResource);
 
         //if trying to run locally, reset hostname to localhost
         if(isLocal) {
@@ -52,6 +61,7 @@ public class NodeConfigurator {
         ThisNodeInfo thisNodeInfo = new ThisNodeInfo(
                 thisUid,
                 totalNumberOfNodes,
+                nodeConfig.nodes.keySet(),
                 thisHostName,
                 thisPort,
                 nodeConfig.minPerActive,
@@ -64,6 +74,7 @@ public class NodeConfigurator {
         nodeConfig.neighbors.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
+
         });
 
         return thisNodeInfo;
@@ -101,8 +112,10 @@ public class NodeConfigurator {
     }
 
 
-    private NodeConfig readNodeConfig(ApplicationContext context, String thisNodeHostName) throws ConfigurationException {
-        Resource resource = context.getResource(nodeConfigUri);
+    private NodeConfig readNodeConfig(
+            String thisNodeHostName,
+            Resource configResource
+        ) throws ConfigurationException {
         Map<Integer, NodeInfo> nodes = new HashMap<>();
         List<Integer> neighbors = new ArrayList<>();
         String line;
@@ -116,7 +129,7 @@ public class NodeConfigurator {
         int numOfNodes=0, minPerActive=0,maxPerActive=0, minSendDelay=0, snapshotDelay=0, maxNumber=0;
 
         try(
-                InputStream is = resource.getInputStream();
+                InputStream is = configResource.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
         ){
             while ((line = br.readLine()) != null) {
