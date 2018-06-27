@@ -23,8 +23,7 @@ public class SnapshotController {
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
-    private Object doingMarkingThings;
-    private Object doingStateThings;
+    private Object doingStateOrMarkingThings;
 
     @Autowired
     public SnapshotController(
@@ -50,8 +49,7 @@ public class SnapshotController {
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
 
         markedSynchronizer = new Object();
-        doingMarkingThings = new Object();
-        doingStateThings = new Object();
+        doingStateOrMarkingThings = new Object();
     }
 
     @MessageMapping("/markMessage")
@@ -59,22 +57,16 @@ public class SnapshotController {
         Runnable doCallMarkingThingsForMessage = () -> {
             snapshotService.doMarkingThings(message.getRoundNumber());
         };
-        Runnable doCallMarkingThingsForSubsequent = () -> {
-            snapshotService.doMarkingThings(snapshotMarkerSynchronizer.getRoundNumber());
-        };
 
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable doMarkingThings = () -> {
-            synchronized (doingMarkingThings) {
+            synchronized (doingStateOrMarkingThings) {
                 if (log.isDebugEnabled()) {
                     log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
                 }
 
                 snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
-                snapshotMarkerSynchronizer.enqueueAndRunIfReady(message, doCallMarkingThingsForMessage);
-                while(snapshotMarkerSynchronizer.getNumMessagesThisRound() == snapshotMarkerSynchronizer.getRoundSize()) {
-                    snapshotMarkerSynchronizer.runIfReady(doCallMarkingThingsForSubsequent);
-                }
+                snapshotMarkerSynchronizer.enqueueAndRunIfReadyNotInOrder(message, doCallMarkingThingsForMessage);
             }
         };
         Thread markingThingsThread = new Thread(doMarkingThings);
@@ -84,7 +76,7 @@ public class SnapshotController {
     @MessageMapping("/stateMessage")
     public void receiveStateMessage(StateMessage message) {
         Runnable doReceiveStateMessageThings = () -> {
-            synchronized (doingStateThings) {
+            synchronized (doingStateOrMarkingThings) {
                 if (thisNodeInfo.getUid() != message.getTarget()) {
                     if (log.isTraceEnabled()) {
                         log.trace("<---received StateMessage {}", message);
@@ -109,9 +101,9 @@ public class SnapshotController {
                         });
                         snapshotService.doStateThings(snapshotInfoMaps, snapshotStateSynchronizer.getRoundNumber());
                     };
-                    snapshotStateSynchronizer.enqueueAndRunIfReady(message, doStateThingsForMessage);
+                    snapshotStateSynchronizer.enqueueAndRunIfReadyInOrder(message, doStateThingsForMessage);
                     while(snapshotStateSynchronizer.getNumMessagesThisRound() == snapshotStateSynchronizer.getRoundSize()) {
-                        snapshotStateSynchronizer.runIfReady(doStateThingsForSubsequent);
+                        snapshotStateSynchronizer.runCurrentRoundIfReady(doStateThingsForSubsequent);
                     }
                 }
             }
