@@ -29,6 +29,7 @@ public class SnapshotService {
     //used to save and defer sending state to parent if we have not yet received all marked messages this round
     private List<Boolean> isStateReadyToSend;
     private Map<Integer, Map<Integer, SnapshotInfo>> childrenStatesMaps;
+    private Map<Integer, SnapshotInfo> thisNodeSnapshots;
     private final SnapshotReadWriter snapshotReadWriter;
 
     @Autowired
@@ -62,8 +63,59 @@ public class SnapshotService {
         isMarkedList = new ArrayList<>();
         isStateReadyToSend = new ArrayList<>();
         childrenStatesMaps = new HashMap<>();
+        thisNodeSnapshots = new HashMap<>();
     }
 
+    public synchronized void doMarkingThings(int markerRoundNumber) {
+        if(thisNodeInfo.getUid() != 0) {
+            //if we are leaf, send state to parent
+            fillHasStatePendingToIndex(markerRoundNumber);
+            synchronized (processingFinalStateOrMarkerSynchronizer) {
+                Map<Integer, SnapshotInfo> snapshotInfos;
+                snapshotInfos = saveStateAndCombineSnapshotInfoMaps(new ArrayList<>());
+                if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
+                    if (!isLeaf()) {
+                        log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
+                        snapshotInfos.putAll(childrenStatesMaps.get(markerRoundNumber));
+                    }
+                    snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
+                    snapshotStateSynchronizer.incrementRoundNumber();
+                } else {
+                    //save this node's state for when we receive from all children
+                    SnapshotInfo thisNodeSnapshot = snapshotInfos.get(thisNodeInfo.getUid());
+                    thisNodeSnapshots.put(markerRoundNumber, thisNodeSnapshot);
+                }
+            }
+            snapshotMarkerSynchronizer.incrementRoundNumber();
+        }
+    }
+
+    public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
+        Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
+        if(thisNodeInfo.getUid() == 0) {
+            printStates(snapshotInfos, snapshotNumber);
+            boolean isTerminated = terminationDetection(snapshotInfos);
+            log.debug("Termination Detection: {}",isTerminated);
+
+        } else {
+            synchronized (processingFinalStateOrMarkerSynchronizer) {
+                int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
+                fillHasStatePendingToIndex(stateRoundNumber);
+                //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
+                int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
+                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()){
+                    SnapshotInfo thisNodeSnapshot = thisNodeSnapshots.get(stateRoundNumber);
+                    snapshotInfos.put(thisNodeInfo.getUid(), thisNodeSnapshot);
+                    snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
+                } else {
+                    log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
+                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
+                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundNumber(), true);
+                }
+            }
+        }
+        snapshotStateSynchronizer.incrementRoundNumber();
+    }
 
     public boolean isMarked(int roundNumber) {
         boolean isMarked = false;
@@ -93,31 +145,6 @@ public class SnapshotService {
         }
     }
 
-    public synchronized void doMarkingThings(int markerRoundNumber) {
-        if(thisNodeInfo.getUid() != 0) {
-            //if we are leaf, send state to parent
-            fillHasStatePendingToIndex(markerRoundNumber);
-            synchronized (processingFinalStateOrMarkerSynchronizer) {
-                if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
-                    Map<Integer, SnapshotInfo> snapshotInfos;
-                    if (isLeaf()) {
-                        snapshotInfos = saveStateAndCombineSnapshotInfoMaps(new ArrayList<>());
-                    } else {
-                        log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
-                        snapshotInfos = childrenStatesMaps.get(markerRoundNumber);
-                        //update our state because it could be stale by the time we receive the last marker message for the round
-                        SnapshotInfo thisSnapshotInfo = snapshotInfos.get(thisNodeInfo.getUid());
-                        thisSnapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
-                        thisSnapshotInfo.setActive(mapInfo.isActive());
-                    }
-                    snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
-                    snapshotStateSynchronizer.incrementRoundNumber();
-                }
-            }
-            snapshotMarkerSynchronizer.incrementRoundNumber();
-        }
-    }
-
     public Map<Integer, SnapshotInfo> saveStateAndCombineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps) {
         Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
         snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
@@ -134,36 +161,6 @@ public class SnapshotService {
             int numEntriesToAdd = index - isStateReadyToSend.size() + 1;
             isStateReadyToSend.addAll(Collections.nCopies(numEntriesToAdd, false));
         }
-    }
-
-    public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
-        Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
-        if(thisNodeInfo.getUid() == 0) {
-            printStates(snapshotInfos, snapshotNumber);
-            boolean isTerminated = terminationDetection(snapshotInfos);
-            log.debug("Termination Detection: {}",isTerminated);
-
-        } else {
-            int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
-            fillHasStatePendingToIndex(stateRoundNumber);
-            synchronized (processingFinalStateOrMarkerSynchronizer) {
-                //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
-                int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
-                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()){
-                    //Added the following code to make the sent Vector clock to be more precise. Not sure so kept it commented
-//                    SnapshotInfo thisSnapshotInfo = snapshotInfos.get(thisNodeInfo.getUid());
-//                    thisSnapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
-//                    thisSnapshotInfo.setActive(mapInfo.isActive());
-                    //ends here
-                    snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
-                } else {
-                    log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
-                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
-                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundNumber(), true);
-                }
-            }
-        }
-        snapshotStateSynchronizer.incrementRoundNumber();
     }
 
     public boolean terminationDetection(Map<Integer,SnapshotInfo> snapshotInfos){
