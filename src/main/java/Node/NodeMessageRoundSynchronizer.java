@@ -57,21 +57,32 @@ public class NodeMessageRoundSynchronizer<T extends RoundSynchronizable> {
     }
 
     //threadsafe
-    public synchronized void enqueueAndRunIfReady(T message, Runnable work) {
+    public synchronized void enqueueAndRunIfReadyInOrder(T message, Runnable work) {
         enqueueMessage(message);
         //only try running if the message round is current round
         if(roundNumber == message.getRoundNumber()) {
-            this.runIfReady(work);
+            this.runCurrentRoundIfReady(work);
         }
     }
 
+    //threadsafe
+    public synchronized void enqueueAndRunIfReadyNotInOrder(T message, Runnable work) {
+        enqueueMessage(message);
+        this.runGivenRoundIfReady(work, message.getRoundNumber());
+    }
+
     //NOT threadsafe
-    public void runIfReady(Runnable work) {
-        int numberOfMessagesSoFarThisRound = getMessagesThisRound().size();
+    public void runCurrentRoundIfReady(Runnable work) {
+        runGivenRoundIfReady(work, roundNumber);
+    }
+
+    //NOT threadsafe
+    public void runGivenRoundIfReady(Runnable work, int givenRoundNumber) {
+        int numberOfMessagesSoFar = getMessagesForGivenRound(givenRoundNumber).size();
         if(log.isTraceEnabled()) {
-            log.trace(" numberOfMessagesSoFarThisRound: {} roundNumber: {}", numberOfMessagesSoFarThisRound, roundNumber);
+            log.trace(" numberOfMessagesSoFarThisRound: {} roundNumber: {}", numberOfMessagesSoFar, roundNumber);
         }
-        if (numberOfMessagesSoFarThisRound == roundSize) {
+        if (numberOfMessagesSoFar == roundSize) {
             work.run();
         }
     }
