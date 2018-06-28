@@ -94,9 +94,11 @@ public class SnapshotService {
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
         Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
         if(thisNodeInfo.getUid() == 0) {
-            printStates(snapshotInfos, snapshotNumber);
             boolean isTerminated = terminationDetection(snapshotInfos);
             log.debug("Termination Detection: {}",isTerminated);
+            if(!isTerminated){
+                printStates(snapshotInfos, snapshotNumber);
+            }
         } else {
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
