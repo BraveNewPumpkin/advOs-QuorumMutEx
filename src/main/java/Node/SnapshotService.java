@@ -31,6 +31,7 @@ public class SnapshotService {
     private Map<Integer, Map<Integer, SnapshotInfo>> childrenStatesMaps;
     private Map<Integer, SnapshotInfo> thisNodeSnapshots;
     private final SnapshotReadWriter snapshotReadWriter;
+    private boolean isTerminatedLastRound;
 
     @Autowired
     public SnapshotService(
@@ -64,6 +65,7 @@ public class SnapshotService {
         isStateReadyToSend = new ArrayList<>();
         childrenStatesMaps = new HashMap<>();
         thisNodeSnapshots = new HashMap<>();
+        isTerminatedLastRound = false;
     }
 
     public synchronized void doMarkingThings(int markerRoundNumber) {
@@ -94,11 +96,12 @@ public class SnapshotService {
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
         Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
         if(thisNodeInfo.getUid() == 0) {
-            boolean isTerminated = terminationDetection(snapshotInfos);
-            log.debug("Termination Detection: {}",isTerminated);
-            if(!isTerminated){
+            if(!isTerminatedLastRound){
                 printStates(snapshotInfos, snapshotNumber);
             }
+            boolean isTerminated = terminationDetection(snapshotInfos);
+            log.debug("Termination Detection: {}",isTerminated);
+            isTerminatedLastRound = isTerminated;
         } else {
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
