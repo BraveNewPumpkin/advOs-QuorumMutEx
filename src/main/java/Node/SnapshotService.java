@@ -96,7 +96,7 @@ public class SnapshotService {
             printStates(snapshotInfos, snapshotNumber);
             boolean isTerminated = terminationDetection(snapshotInfos);
             log.debug("Termination Detection: {}",isTerminated);
-
+            snapshotStateSynchronizer.incrementRoundNumber();
         } else {
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
@@ -107,6 +107,7 @@ public class SnapshotService {
                     SnapshotInfo thisNodeSnapshot = thisNodeSnapshots.get(stateRoundNumber);
                     snapshotInfos.put(thisNodeInfo.getUid(), thisNodeSnapshot);
                     snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
+                    snapshotStateSynchronizer.incrementRoundNumber();
                 } else {
                     log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
                     childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
@@ -114,7 +115,6 @@ public class SnapshotService {
                 }
             }
         }
-        snapshotStateSynchronizer.incrementRoundNumber();
     }
 
     public boolean isMarked(int roundNumber) {
