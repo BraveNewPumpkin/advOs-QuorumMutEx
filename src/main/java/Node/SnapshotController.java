@@ -83,7 +83,7 @@ public class SnapshotController {
                     }
                 } else {
                     if (log.isDebugEnabled()) {
-                        log.debug("<---received StateMessage {}. {} of {} for round {}", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber());
+                        log.debug("<---received StateMessage {}. {} of {} for round {}. current round {}.", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber(), snapshotStateSynchronizer.getRoundNumber());
                     }
                     Runnable doStateThingsForMessage = () -> {
                         List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
