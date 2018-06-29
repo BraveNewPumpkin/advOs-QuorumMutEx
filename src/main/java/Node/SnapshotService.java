@@ -73,8 +73,9 @@ public class SnapshotService {
             //if we are leaf, send state to parent
             fillHasStatePendingToIndex(markerRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
+                saveState();
                 Map<Integer, SnapshotInfo> snapshotInfos;
-                snapshotInfos = saveStateAndCombineSnapshotInfoMaps(new ArrayList<>());
+                snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>());
                 if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
                     if (!isLeaf()) {
                         log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
@@ -94,7 +95,8 @@ public class SnapshotService {
     }
 
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
-        Map<Integer, SnapshotInfo> snapshotInfos = saveStateAndCombineSnapshotInfoMaps(snapshotInfoMaps);
+        saveState();
+        Map<Integer, SnapshotInfo> snapshotInfos = combineSnapshotInfoMaps(snapshotInfoMaps);
         if(thisNodeInfo.getUid() == 0) {
             if(!isTerminatedLastRound){
                 printStates(snapshotInfos, snapshotNumber);
@@ -150,10 +152,13 @@ public class SnapshotService {
         }
     }
 
-    public Map<Integer, SnapshotInfo> saveStateAndCombineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps) {
-        Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
+    public void saveState(){
         snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
         snapshotInfo.setActive(mapInfo.isActive());
+    }
+
+    public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps) {
+        Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
         snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
         snapshotMaps.forEach((snapshotMap) -> {
             snapshotInfos.putAll(snapshotMap);
