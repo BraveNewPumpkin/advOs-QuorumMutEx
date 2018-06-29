@@ -73,7 +73,6 @@ public class SnapshotService {
             //if we are leaf, send state to parent
             fillHasStatePendingToIndex(markerRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
-                saveState();
                 Map<Integer, SnapshotInfo> snapshotInfos;
                 snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>());
                 if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
@@ -95,7 +94,6 @@ public class SnapshotService {
     }
 
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
-        saveState();
         Map<Integer, SnapshotInfo> snapshotInfos = combineSnapshotInfoMaps(snapshotInfoMaps);
         if(thisNodeInfo.getUid() == 0) {
             if(!isTerminatedLastRound){
@@ -146,6 +144,7 @@ public class SnapshotService {
         if(thisNodeInfo.getUid() != 0) {
             preparedForSnapshotSynchronizer.enter();
             if (!isMarked(messageRoundNumber)) {
+                saveState();
                 setIsMarked(messageRoundNumber, true);
                 snapshotController.sendMarkMessage(messageRoundNumber);
             }
