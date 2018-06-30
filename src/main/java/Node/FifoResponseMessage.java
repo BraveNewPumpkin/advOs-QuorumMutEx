@@ -2,32 +2,31 @@ package Node;
 
 public class FifoResponseMessage extends SimpleTargetableMessage {
     //stored as a plain string because mapping flipping jackson can't handle my abstraction
-    private String fifoRequestId;
+    private FifoRequestId fifoRequestId;
 
     public FifoResponseMessage() {
     }
 
     public FifoResponseMessage(int sourceUID, int target, FifoRequestId fifoRequestId) {
         super(sourceUID, target);
-        this.fifoRequestId = fifoRequestId.getRequestId();
-    }
-
-    public FifoRequestId getFifoRequestId() {
-        FifoRequestId fifoRequestId = new FifoRequestId();
-        fifoRequestId.setRequestId(this.fifoRequestId);
-        return fifoRequestId;
-    }
-
-    public String getFifoRequestIdAsString() {
-        return fifoRequestId;
-    }
-
-    public void setFifoRequestId(String fifoRequestId) {
         this.fifoRequestId = fifoRequestId;
     }
 
+    public String getFifoRequestIdAsString() {
+        return fifoRequestId.getRequestId();
+    }
+
+    public void setFifoRequestIdAsString(String fifoRequestId) {
+        this.fifoRequestId = new FifoRequestId();
+        this.fifoRequestId.setRequestId(fifoRequestId);
+    }
+
+    public FifoRequestId getFifoRequestId() {
+        return fifoRequestId;
+    }
+
     public void setFifoRequestId(FifoRequestId fifoRequestId) {
-        this.fifoRequestId = fifoRequestId.getRequestId();
+        this.fifoRequestId = fifoRequestId;
     }
 
     @Override
