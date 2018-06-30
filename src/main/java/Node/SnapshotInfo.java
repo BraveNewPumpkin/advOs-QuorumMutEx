@@ -1,7 +1,6 @@
 package Node;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SnapshotInfo {
@@ -9,17 +8,11 @@ public class SnapshotInfo {
     private int processedMessages;
     private List<Integer> vectorClock;
     private boolean isActive;
-    public int[] sentMessagesToNodes;
-    public int[] receivedMessagesFromNodes;
 
     public SnapshotInfo() {
         this.sentMessages = 0;
         this.processedMessages = 0;
         vectorClock = new ArrayList<>();
-        sentMessagesToNodes=new int[5];
-        Arrays.fill(sentMessagesToNodes,0);
-        receivedMessagesFromNodes=new int[5];
-        Arrays.fill(receivedMessagesFromNodes,0);
     }
 
     public int getSentMessages() {
@@ -52,14 +45,6 @@ public class SnapshotInfo {
 
     public void setActive(boolean active) {
         isActive = active;
-    }
-
-    public void setSentMessages(int sentMessages) {
-        this.sentMessages = sentMessages;
-    }
-
-    public void setProcessedMessages(int processedMessages) {
-        this.processedMessages = processedMessages;
     }
 
     @Override
