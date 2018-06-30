@@ -23,8 +23,8 @@ public class DoSnapshotProtocol implements Runnable {
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private final MessageRoundSynchronizer<MarkMessage, Integer> snapshotMarkerSynchronizer;
-    private final MessageRoundSynchronizer<StateMessage, Integer> snapshotStateSynchronizer;
+    private final MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
     private final ScheduledExecutorService scheduler;
 
@@ -48,9 +48,9 @@ public class DoSnapshotProtocol implements Runnable {
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-            MessageRoundSynchronizer<MarkMessage, Integer> snapshotMarkerSynchronizer,
+            MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-            MessageRoundSynchronizer<StateMessage, Integer> snapshotStateSynchronizer,
+            MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
             @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
             GateLock preparedForSnapshotSynchronizer,
             @Qualifier("Node/SnapshotConfig/scheduler")
@@ -76,7 +76,7 @@ public class DoSnapshotProtocol implements Runnable {
             snapshotService.saveState();
             snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundId());
             snapshotService.setIsMarked(snapshotMarkerSynchronizer.getRoundId(), true);
-            snapshotService.incrementRoundNumber(snapshotMarkerSynchronizer);
+            snapshotMarkerSynchronizer.incrementRoundNumber();
         };
     }
 
