@@ -70,6 +70,10 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/stateMessage":
                 payloadType = StateMessage.class;
                 break;
+            case "/topic/mapResponseMessage":
+            case "/topic/markResponseMessage":
+                payloadType = FifoResponseMessage.class;
+                break;
             default:
                 if (log.isErrorEnabled()) {
                     log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
@@ -114,6 +118,16 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
                 log.trace("calling snapshotController.receiveStateMessage");
                 StateMessage stateMessage = (StateMessage) message;
                 snapshotController.receiveStateMessage(stateMessage);
+                break;
+            case "/topic/mapResponseMessage":
+                log.trace("calling mapController.receiveFifoResponseMessage");
+                FifoResponseMessage fifoResponseMessage = (FifoResponseMessage) message;
+                mapController.receiveFifoResponseMessage(fifoResponseMessage);
+                break;
+            case "/topic/markResponseMessage":
+                log.trace("calling snapshotController.receiveFifoResponseMessage");
+                FifoResponseMessage fifoResponseMessage2 = (FifoResponseMessage) message;
+                snapshotController.receiveFifoResponseMessage(fifoResponseMessage2);
                 break;
         }
     }

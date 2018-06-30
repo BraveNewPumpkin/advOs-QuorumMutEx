@@ -1,12 +1,23 @@
 package Node;
 
-public class MarkMessage extends RoundSynchronizableMessage {
+public class MarkMessage extends RoundSynchronizableMessage implements FifoRequest{
+    private FifoRequestId fifoRequestId;
 
     public MarkMessage() {
     }
 
-    public MarkMessage(int sourceUID, int snapshotNumber) {
+    public MarkMessage(int sourceUID, int snapshotNumber, FifoRequestId fifoRequestId) {
         super(sourceUID, snapshotNumber);
+
+        this.fifoRequestId = fifoRequestId;
+    }
+
+    public FifoRequestId getFifoRequestId() {
+        return fifoRequestId;
+    }
+
+    public void setFifoRequestId(FifoRequestId fifoRequestId) {
+        this.fifoRequestId = fifoRequestId;
     }
 
     @Override

@@ -8,13 +8,17 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.concurrent.Semaphore;
+
 @Controller
 @Slf4j
 public class MapController {
     private final MapService mapService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-    private SnapshotInfo snapshotInfo;
+    private final SnapshotInfo snapshotInfo;
+    private final Semaphore sendingFifoSynchronizer;
+    private final FifoRequestId currentFifoRequestId;
 
     @Autowired
     public MapController(
@@ -23,12 +27,18 @@ public class MapController {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/NodeConfigurator/snapshotInfo")
-            SnapshotInfo snapshotInfo
+            SnapshotInfo snapshotInfo,
+            @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
+            Semaphore sendingFifoSynchronizer,
+            @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
+            FifoRequestId currentFifoRequestId
             ){
         this.mapService = mapService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
+        this.sendingFifoSynchronizer = sendingFifoSynchronizer;
+        this.currentFifoRequestId = currentFifoRequestId;
     }
 
     @MessageMapping("/mapMessage")
@@ -45,15 +55,53 @@ public class MapController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Thread activeThingsThread = new Thread(mapService::doActiveThings);
             activeThingsThread.start();
+            sendFifoResponse(message.getSourceUID(), message.getFifoRequestId());
         }
     }
 
-    public void sendMapMessage(int targetUid) throws MessagingException {
+
+    @MessageMapping("/mapResponseMessage")
+    public void receiveFifoResponseMessage(FifoResponseMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received mapResponseMessage {}", message);
+            }
+            if (message.getFifoRequestId().equals(currentFifoRequestId)) {
+                sendingFifoSynchronizer.release();
+            } else {
+                throw new Error("got response {} without corresponding request");
+            }
+        }
+    }
+
+    public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
         thisNodeInfo.incrementVectorClock();
+
+        FifoResponseMessage message = new FifoResponseMessage(
+                thisNodeInfo.getUid(),
+                targetUid,
+                fifoRequestId
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending mapResponseMessage: {}", message);
+        }
+        template.convertAndSend("/topic/mapResponseMessage", message);
+        log.trace("mapResponseMessage message sent");
+    }
+
+    public void sendMapMessage(int targetUid) throws MessagingException {
+        try {
+            sendingFifoSynchronizer.acquire();
+        } catch (java.lang.InterruptedException e) {
+            //ignore
+        }
+        thisNodeInfo.incrementVectorClock();
+        currentFifoRequestId.setRequestId("map" + snapshotInfo.getSentMessages());
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),
                 targetUid,
-                thisNodeInfo.getVectorClock()
+                thisNodeInfo.getVectorClock(),
+                currentFifoRequestId
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending map message: {}", message);

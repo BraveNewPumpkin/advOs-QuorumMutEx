@@ -140,7 +140,7 @@ public class SnapshotService {
          this.isMarkedList.set(messageRoundNumber, isMarkedVal);
     }
 
-    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber){
+    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber, int sourceId, FifoRequestId fifoRequestId){
         if(thisNodeInfo.getUid() != 0) {
             preparedForSnapshotSynchronizer.enter();
             if (!isMarked(messageRoundNumber)) {
@@ -148,6 +148,7 @@ public class SnapshotService {
                 setIsMarked(messageRoundNumber, true);
                 snapshotController.sendMarkMessage(messageRoundNumber);
             }
+            snapshotController.sendFifoResponse(sourceId, fifoRequestId);
         }
     }
 

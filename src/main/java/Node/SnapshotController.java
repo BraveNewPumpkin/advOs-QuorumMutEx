@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.*;
+import java.util.concurrent.Semaphore;
 
 @Controller
 @Slf4j
@@ -20,6 +21,8 @@ public class SnapshotController {
     private final TreeInfo treeInfo;
     private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private final NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final Semaphore sendingFifoSynchronizer;
+    private final FifoRequestId currentFifoRequestId;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -38,7 +41,11 @@ public class SnapshotController {
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
             NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer
+            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+            @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
+            Semaphore sendingFifoSynchronizer,
+            @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
+            FifoRequestId currentFifoRequestId
     ){
         this.snapshotService = snapshotService;
         this.template = template;
@@ -47,6 +54,8 @@ public class SnapshotController {
         this.treeInfo = treeInfo;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
+        this.sendingFifoSynchronizer = sendingFifoSynchronizer;
+        this.currentFifoRequestId = currentFifoRequestId;
 
         markedSynchronizer = new Object();
         doingStateOrMarkingThings = new Object();
@@ -65,7 +74,7 @@ public class SnapshotController {
                     log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
                 }
 
-                snapshotService.checkAndSendMarkerMessage(message.getRoundNumber());
+                snapshotService.checkAndSendMarkerMessage(message.getRoundNumber(), message.getSourceUID(), message.getFifoRequestId());
                 snapshotMarkerSynchronizer.enqueueAndRunIfReadyNotInOrder(message, doCallMarkingThingsForMessage);
             }
         };
@@ -112,10 +121,48 @@ public class SnapshotController {
         stateThingsThread.start();
     }
 
+    @MessageMapping("/markResponseMessage")
+    public void receiveFifoResponseMessage(FifoResponseMessage message) {
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received markResponseMessage {}", message);
+            }
+            if (message.getFifoRequestId().equals(currentFifoRequestId)) {
+                sendingFifoSynchronizer.release();
+            } else {
+                throw new Error("got response {} without corresponding request");
+            }
+        }
+    }
+
+    public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
+        thisNodeInfo.incrementVectorClock();
+
+        //TODO implement fifoResponseRoundSynchronizer for responses from mark messages
+        FifoResponseMessage message = new FifoResponseMessage(
+                thisNodeInfo.getUid(),
+                targetUid,
+                fifoRequestId
+        );
+
+        if(log.isDebugEnabled()){
+            log.debug("--->sending fifoResponseMessage: {}", message);
+        }
+        template.convertAndSend("/topic/fifoResponseMessage", message);
+        log.trace("fifoResponseMessage message sent");
+    }
+
     public void sendMarkMessage(int roundNumber) throws MessagingException {
+        try {
+            sendingFifoSynchronizer.acquire();
+        } catch (java.lang.InterruptedException e) {
+            //ignore
+        }
+        currentFifoRequestId.setRequestId("mark" + roundNumber);
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),
-                roundNumber
+                roundNumber,
+                currentFifoRequestId
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending MarkMessage: {}", message);

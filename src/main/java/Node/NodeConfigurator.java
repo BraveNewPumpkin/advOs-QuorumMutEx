@@ -15,6 +15,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 @Configuration
 @Slf4j
@@ -89,7 +90,9 @@ public class NodeConfigurator {
             "/topic/buildTreeAckMessage",
             "/topic/buildTreeNackMessage",
             "/topic/markMessage",
-            "/topic/stateMessage"
+            "/topic/stateMessage",
+            "/topic/markResponseMessage",
+            "/topic/mapResponseMessage"
         );
     }
 
@@ -111,6 +114,17 @@ public class NodeConfigurator {
         return new SnapshotInfo();
     }
 
+    @Bean
+    @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
+    public Semaphore getSendingFifoSynchronizer() {
+        return new Semaphore(1, true);
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
+    public FifoRequestId getCurrentFifoRequestId() {
+        return new FifoRequestId();
+    }
 
     private NodeConfig readNodeConfig(
             String thisNodeHostName,
