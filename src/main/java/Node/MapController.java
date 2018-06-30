@@ -66,11 +66,11 @@ public class MapController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received mapResponseMessage {}", message);
             }
-            FifoRequestId messageFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
-            if (message.getFifoRequestId().equals(messageFifoRequestId)) {
+            FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
+            if (message.getFifoRequestId().equals(currentFifoRequestId)) {
                 sendingFifoSynchronizer.release();
             } else {
-                throw new Error("got response with FifoRequestId " + messageFifoRequestId + " without corresponding request");
+                throw new Error("got response with FifoRequestId " + message.getFifoRequestIdAsString() + " did not match current FifoRequestId " + currentFifoRequestId.getRequestId());
             }
         }
     }
