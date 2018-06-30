@@ -97,8 +97,8 @@ public class MapController {
             //ignore
         }
         thisNodeInfo.incrementVectorClock();
-        FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
-        currentFifoRequestId.setRequestId("map" + snapshotInfo.getSentMessages());
+        FifoRequestId currentFifoRequestId = new FifoRequestId("map" + snapshotInfo.getSentMessages());
+        fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),
                 targetUid,

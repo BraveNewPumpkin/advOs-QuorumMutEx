@@ -8,6 +8,10 @@ public class FifoRequestId {
     public FifoRequestId(){
     }
 
+    public FifoRequestId(String requestId){
+        this.requestId = requestId;
+    }
+
     public String getRequestId() {
         return requestId;
     }
