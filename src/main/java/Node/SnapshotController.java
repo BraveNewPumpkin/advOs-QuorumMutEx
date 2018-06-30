@@ -156,7 +156,7 @@ public class SnapshotController {
         } catch (java.lang.InterruptedException e) {
             //ignore
         }
-        FifoRequestId currentFifoRequestId = new FifoRequestId("mark" + roundNumber);
+        FifoRequestId currentFifoRequestId = new FifoRequestId(thisNodeInfo.getUid()+"mark" + roundNumber);
         fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),

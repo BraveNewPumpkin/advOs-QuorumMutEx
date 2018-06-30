@@ -17,6 +17,7 @@ public class DoMapProtocol implements Runnable{
     private final MapController mapController;
     private final MapService mapService;
     private Semaphore connectingSynchronizer;
+    private final ThisNodeInfo thisNodeInfo;
 
     @Autowired
     public DoMapProtocol(
@@ -24,19 +25,23 @@ public class DoMapProtocol implements Runnable{
             MapController mapController,
             MapService mapService,
             @Qualifier("Node/MapConfig/connectingSynchronizer")
-            Semaphore connectingSynchronizer
+            Semaphore connectingSynchronizer,
+            @Qualifier("Node/NodeConfigurator/thisNodeInfo")
+            ThisNodeInfo thisNodeInfo
+
     ){
         this.webSocketConnector = webSocketConnector;
         this.mapController = mapController;
         this.mapService = mapService;
         this.connectingSynchronizer = connectingSynchronizer;
+        this.thisNodeInfo=thisNodeInfo;
     }
 
     @Override
     public void run(){
         log.info("sleeping to allow other instances to spin up");
         try {
-            TimeUnit.SECONDS.sleep(20);
+            TimeUnit.SECONDS.sleep(25);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
@@ -45,13 +50,16 @@ public class DoMapProtocol implements Runnable{
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            TimeUnit.SECONDS.sleep(20);
+            TimeUnit.SECONDS.sleep(25);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
         connectingSynchronizer.release();
         log.trace("waiting for tree to be built to start MAP protocol");
-        mapService.doActiveThings();
+
+        if(thisNodeInfo.getUid()==0) {
+            mapService.doActiveThings();
+        }
     }
 
 }

@@ -1,5 +1,5 @@
-#numNodes minPerActive maxPerActive snapshotDelay maxNumber
-5 6 10 1000 500 100
+# s i x g l o b a l p a r ame te r s ( s e e above )
+5 6 10 1000 2000 300
 0 dc02.utdallas.edu 1232 # nodeID hostName l i s t e n P o r t
 1 dc03.utdallas.edu 1233
 2 dc04.utdallas.edu 1237

@@ -62,7 +62,7 @@ public class MapController {
 
     @MessageMapping("/mapResponseMessage")
     public void receiveFifoResponseMessage(FifoResponseMessage message) {
-        if(thisNodeInfo.getUid() != message.getTarget()) {
+        if(thisNodeInfo.getUid() == message.getTarget()) {
             if (log.isDebugEnabled()) {
                 log.debug("<---received mapResponseMessage {}", message);
             }
@@ -76,7 +76,7 @@ public class MapController {
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-        thisNodeInfo.incrementVectorClock();
+//        thisNodeInfo.incrementVectorClock();
 
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
@@ -97,7 +97,7 @@ public class MapController {
             //ignore
         }
         thisNodeInfo.incrementVectorClock();
-        FifoRequestId currentFifoRequestId = new FifoRequestId("map" + snapshotInfo.getSentMessages());
+        FifoRequestId currentFifoRequestId = new FifoRequestId(thisNodeInfo.getUid()+"map" + snapshotInfo.getSentMessages());
         fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),
