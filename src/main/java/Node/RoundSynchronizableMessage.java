@@ -1,29 +1,31 @@
 package Node;
 
-public class RoundSynchronizableMessage extends NodeMessage implements RoundSynchronizable {
-    private int roundNumber;
+public class RoundSynchronizableMessage<T> extends NodeMessage implements RoundSynchronizable<T> {
+    private T roundId;
 
     public RoundSynchronizableMessage() {
         super();
     }
 
-    public RoundSynchronizableMessage(int sourceUID, int roundNumber) {
+    public RoundSynchronizableMessage(int sourceUID, T roundId) {
         super(sourceUID);
-        this.roundNumber = roundNumber;
+        this.roundId = roundId;
     }
 
     @Override
     public String toString() {
         return "RoundSynchronizableMessage{" +
-                "roundNumber=" + roundNumber +
+                "roundId=" + roundId +
                 "} " + super.toString();
     }
 
-    public int getRoundNumber() {
-        return roundNumber;
+    @Override
+    public T getRoundId() {
+        return roundId;
     }
 
-    public void setRoundNumber(int roundNumber) {
-        this.roundNumber = roundNumber;
+    @Override
+    public void setRoundId(T roundId) {
+        this.roundId = roundId;
     }
 }

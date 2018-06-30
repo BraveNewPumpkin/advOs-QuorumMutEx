@@ -17,8 +17,8 @@ public class SnapshotService {
     private SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
     private Tree<Integer> tree;
-    private NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    private NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
 
     //protection for if we receive the last marker message from neighbors and last state message from children at the same time
@@ -43,9 +43,9 @@ public class SnapshotService {
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
         @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
         @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-        NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+        MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
         @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-        NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+        MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
         @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
         GateLock preparedForSnapshotSynchronizer
     ) {
@@ -80,6 +80,7 @@ public class SnapshotService {
                         log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
                         snapshotInfos.putAll(childrenStatesMaps.get(markerRoundNumber));
                     } else {
+
                         snapshotStateSynchronizer.incrementRoundNumber();
                     }
                     snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
@@ -104,7 +105,7 @@ public class SnapshotService {
             isTerminatedLastRound = isTerminated;
         } else {
             synchronized (processingFinalStateOrMarkerSynchronizer) {
-                int stateRoundNumber = snapshotStateSynchronizer.getRoundNumber();
+                int stateRoundNumber = snapshotStateSynchronizer.getRoundId();
                 fillHasStatePendingToIndex(stateRoundNumber);
                 //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
                 int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
@@ -114,8 +115,8 @@ public class SnapshotService {
                     snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
                 } else {
                     log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
-                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundNumber(), snapshotInfos);
-                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundNumber(), true);
+                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundId(), snapshotInfos);
+                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundId(), true);
                 }
             }
         }

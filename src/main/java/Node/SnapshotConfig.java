@@ -40,14 +40,20 @@ public class SnapshotConfig {
 
     @Bean
     @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-    public NodeMessageRoundSynchronizer<MarkMessage> getSnapshotMarkerSynchronizer() {
+    public MessageIntRoundSynchronizer<MarkMessage> getSnapshotMarkerSynchronizer() {
         int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-        return new NodeMessageRoundSynchronizer<>(numberOfNeighbors);
+        return new MessageIntRoundSynchronizer<>(numberOfNeighbors);
     }
 
     @Bean
     @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-    public NodeMessageRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
-        return new NodeMessageRoundSynchronizer<>(0);
+    public MessageIntRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
+        return new MessageIntRoundSynchronizer<>(0);
+    }
+
+    @Bean
+    @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
+    public MessageRoundSynchronizer<String, FifoResponseMessage> getFifoResponseRoundSynchronizer() {
+        return new MessageRoundSynchronizer<>(0);
     }
 }

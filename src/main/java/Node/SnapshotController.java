@@ -19,8 +19,8 @@ public class SnapshotController {
     private final ThisNodeInfo thisNodeInfo;
     private SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    private final NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
+    private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final Semaphore sendingFifoSynchronizer;
     private final FifoRequestId currentFifoRequestId;
 
@@ -39,9 +39,9 @@ public class SnapshotController {
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-            NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+            MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+            MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
             Semaphore sendingFifoSynchronizer,
             @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
@@ -64,17 +64,17 @@ public class SnapshotController {
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
         Runnable doCallMarkingThingsForMessage = () -> {
-            snapshotService.doMarkingThings(message.getRoundNumber());
+            snapshotService.doMarkingThings(message.getRoundId());
         };
 
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable doMarkingThings = () -> {
             synchronized (doingStateOrMarkingThings) {
                 if (log.isDebugEnabled()) {
-                    log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundNumber()) + 1, snapshotMarkerSynchronizer.getRoundSize());
+                    log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundId()) + 1, snapshotMarkerSynchronizer.getRoundSize());
                 }
 
-                snapshotService.checkAndSendMarkerMessage(message.getRoundNumber(), message.getSourceUID(), message.getFifoRequestId());
+                snapshotService.checkAndSendMarkerMessage(message.getRoundId(), message.getSourceUID(), message.getFifoRequestId());
                 snapshotMarkerSynchronizer.enqueueAndRunIfReadyNotInOrder(message, doCallMarkingThingsForMessage);
             }
         };
@@ -92,7 +92,7 @@ public class SnapshotController {
                     }
                 } else {
                     if (log.isDebugEnabled()) {
-                        log.debug("<---received StateMessage {}. {} of {} for round {}. current round {}.", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber(), snapshotStateSynchronizer.getRoundNumber());
+                        log.debug("<---received StateMessage {}. {} of {} for round {}. current round {}.", message, snapshotStateSynchronizer.getNumMessagesForGivenRound(message.getSnapshotNumber()) + 1, snapshotStateSynchronizer.getRoundSize(), message.getSnapshotNumber(), snapshotStateSynchronizer.getRoundId());
                     }
                     Runnable doStateThingsForMessage = () -> {
                         List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
@@ -104,11 +104,11 @@ public class SnapshotController {
                     };
                     Runnable doStateThingsForSubsequent = () -> {
                         List<Map<Integer, SnapshotInfo>> snapshotInfoMaps = new ArrayList<>();
-                        Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(snapshotStateSynchronizer.getRoundNumber());
+                        Queue<StateMessage> messages = snapshotStateSynchronizer.getMessagesForGivenRound(snapshotStateSynchronizer.getRoundId());
                         messages.forEach((StateMessage stateMessage) -> {
                             snapshotInfoMaps.add(stateMessage.getSnapshotInfos());
                         });
-                        snapshotService.doStateThings(snapshotInfoMaps, snapshotStateSynchronizer.getRoundNumber());
+                        snapshotService.doStateThings(snapshotInfoMaps, snapshotStateSynchronizer.getRoundId());
                     };
                     snapshotStateSynchronizer.enqueueAndRunIfReadyInOrder(message, doStateThingsForMessage);
                     while(snapshotStateSynchronizer.getNumMessagesThisRound() == snapshotStateSynchronizer.getRoundSize()) {
@@ -139,6 +139,7 @@ public class SnapshotController {
         thisNodeInfo.incrementVectorClock();
 
         //TODO implement fifoResponseRoundSynchronizer for responses from mark messages
+
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
                 targetUid,

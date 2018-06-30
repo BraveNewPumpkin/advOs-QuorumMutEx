@@ -1,7 +1,7 @@
 package Node;
 
-public interface RoundSynchronizable {
-    public int getRoundNumber();
+public interface RoundSynchronizable<T> {
+    public T getRoundId();
 
-    public void setRoundNumber(int roundNumber);
+    public void setRoundId(T roundId);
 }

@@ -1,6 +1,6 @@
 package Node;
 
-public class MarkMessage extends RoundSynchronizableMessage implements FifoRequest{
+public class MarkMessage extends RoundSynchronizableMessage<Integer> implements FifoRequest{
     private FifoRequestId fifoRequestId;
 
     public MarkMessage() {

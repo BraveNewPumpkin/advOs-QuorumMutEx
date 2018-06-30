@@ -23,8 +23,8 @@ public class DoSnapshotProtocol implements Runnable {
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private final NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    private final NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final MessageRoundSynchronizer<MarkMessage, Integer> snapshotMarkerSynchronizer;
+    private final MessageRoundSynchronizer<StateMessage, Integer> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
     private final ScheduledExecutorService scheduler;
 
@@ -48,9 +48,9 @@ public class DoSnapshotProtocol implements Runnable {
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
             @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-            NodeMessageRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
+            MessageRoundSynchronizer<MarkMessage, Integer> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
-            NodeMessageRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+            MessageRoundSynchronizer<StateMessage, Integer> snapshotStateSynchronizer,
             @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
             GateLock preparedForSnapshotSynchronizer,
             @Qualifier("Node/SnapshotConfig/scheduler")
@@ -74,9 +74,9 @@ public class DoSnapshotProtocol implements Runnable {
 
         doStartASnapshot = () -> {
             snapshotService.saveState();
-            snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundNumber());
-            snapshotService.setIsMarked(snapshotMarkerSynchronizer.getRoundNumber(), true);
-            snapshotMarkerSynchronizer.incrementRoundNumber();
+            snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundId());
+            snapshotService.setIsMarked(snapshotMarkerSynchronizer.getRoundId(), true);
+            snapshotService.incrementRoundNumber(snapshotMarkerSynchronizer);
         };
     }
 

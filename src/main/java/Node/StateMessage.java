@@ -2,7 +2,7 @@ package Node;
 
 import java.util.Map;
 
-public class StateMessage extends SimpleTargetableMessage implements RoundSynchronizable{
+public class StateMessage extends SimpleTargetableMessage implements RoundSynchronizable<Integer>{
     private Map<Integer, SnapshotInfo> snapshotInfo;
     private int snapshotNumber;
 
@@ -31,11 +31,11 @@ public class StateMessage extends SimpleTargetableMessage implements RoundSynchr
         this.snapshotNumber = snapshotNumber;
     }
 
-    public void setRoundNumber(int roundNumber){
-        snapshotNumber = roundNumber;
+    public void setRoundId(Integer roundId){
+        snapshotNumber = roundId;
     }
 
-    public int getRoundNumber(){
+    public Integer getRoundId(){
         return snapshotNumber;
     }
 

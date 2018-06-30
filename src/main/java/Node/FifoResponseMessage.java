@@ -1,8 +1,8 @@
 package Node;
 
-public class FifoResponseMessage extends SimpleTargetableMessage {
-    //stored as a plain string because mapping flipping jackson can't handle my abstraction
+public class FifoResponseMessage extends SimpleTargetableMessage implements RoundSynchronizable<String> {
     private FifoRequestId fifoRequestId;
+    private String roundId;
 
     public FifoResponseMessage() {
     }
@@ -27,6 +27,16 @@ public class FifoResponseMessage extends SimpleTargetableMessage {
 
     public void setFifoRequestId(FifoRequestId fifoRequestId) {
         this.fifoRequestId = fifoRequestId;
+    }
+
+    @Override
+    public String getRoundId() {
+        return roundId;
+    }
+
+    @Override
+    public void setRoundId(String roundId) {
+        this.roundId = roundId;
     }
 
     @Override
