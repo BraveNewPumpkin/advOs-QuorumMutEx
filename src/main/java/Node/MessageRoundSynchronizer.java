@@ -29,8 +29,7 @@ public class MessageRoundSynchronizer<T, M extends RoundSynchronizable<T>> {
     }
 
     public int getNumMessagesForGivenRound(T givenRoundId) {
-        int numMessagesForGivenRound = 0;
-        return numMessagesForGivenRound;
+        return getMessagesForGivenRound(givenRoundId).size();
     }
 
     public int getNumMessagesThisRound() {
@@ -53,7 +52,7 @@ public class MessageRoundSynchronizer<T, M extends RoundSynchronizable<T>> {
     public synchronized void enqueueAndRunIfReadyInOrder(M message, Runnable work) {
         enqueueMessage(message);
         //only try running if the message round is current round
-        if(roundId == message.getRoundId()) {
+        if(roundId.equals(message.getRoundId())) {
             this.runCurrentRoundIfReady(work);
         }
     }

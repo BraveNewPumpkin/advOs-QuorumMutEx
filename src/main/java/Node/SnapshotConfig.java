@@ -53,7 +53,7 @@ public class SnapshotConfig {
 
     @Bean
     @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
-    public MessageRoundSynchronizer<String, FifoResponseMessage> getFifoResponseRoundSynchronizer() {
+    public MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> getFifoResponseRoundSynchronizer() {
         return new MessageRoundSynchronizer<>(0);
     }
 }

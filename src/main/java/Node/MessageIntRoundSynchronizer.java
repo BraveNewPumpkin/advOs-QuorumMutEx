@@ -10,6 +10,13 @@ public class MessageIntRoundSynchronizer<M extends RoundSynchronizable<Integer>>
         super(roundSize);
     }
 
+    @Override
+    public void enqueueMessage(M message) {
+        int messageRoundId = message.getRoundId();
+        ensureQueueForRoundIsInitialized(messageRoundId);
+        roundMessages.get(messageRoundId).add(message);
+    }
+
     public void incrementRoundNumber() {
         if(log.isTraceEnabled()) {
             log.trace("moving from round {} to round {}", getRoundId(), getRoundId() + 1);

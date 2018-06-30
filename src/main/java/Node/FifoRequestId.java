@@ -32,4 +32,9 @@ public class FifoRequestId {
 
         return requestId != null ? requestId.equals(that.requestId) : that.requestId == null;
     }
+
+    @Override
+    public int hashCode() {
+        return requestId != null ? requestId.hashCode() : 0;
+    }
 }

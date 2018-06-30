@@ -120,12 +120,6 @@ public class NodeConfigurator {
         return new Semaphore(1, true);
     }
 
-    @Bean
-    @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
-    public FifoRequestId getCurrentFifoRequestId() {
-        return new FifoRequestId();
-    }
-
     private NodeConfig readNodeConfig(
             String thisNodeHostName,
             Resource configResource

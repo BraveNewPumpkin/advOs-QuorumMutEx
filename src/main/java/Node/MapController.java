@@ -18,7 +18,7 @@ public class MapController {
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
     private final Semaphore sendingFifoSynchronizer;
-    private final FifoRequestId currentFifoRequestId;
+    private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
 
     @Autowired
     public MapController(
@@ -30,15 +30,15 @@ public class MapController {
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
             Semaphore sendingFifoSynchronizer,
-            @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
-            FifoRequestId currentFifoRequestId
+            @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
+            MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer
             ){
         this.mapService = mapService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.sendingFifoSynchronizer = sendingFifoSynchronizer;
-        this.currentFifoRequestId = currentFifoRequestId;
+        this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
     }
 
     @MessageMapping("/mapMessage")
@@ -66,6 +66,7 @@ public class MapController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received mapResponseMessage {}", message);
             }
+            FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
             if (message.getFifoRequestId().equals(currentFifoRequestId)) {
                 sendingFifoSynchronizer.release();
             } else {
@@ -96,6 +97,7 @@ public class MapController {
             //ignore
         }
         thisNodeInfo.incrementVectorClock();
+        FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
         currentFifoRequestId.setRequestId("map" + snapshotInfo.getSentMessages());
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),

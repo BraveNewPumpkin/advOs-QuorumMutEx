@@ -21,8 +21,8 @@ public class SnapshotController {
     private final TreeInfo treeInfo;
     private final MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
     private final Semaphore sendingFifoSynchronizer;
-    private final FifoRequestId currentFifoRequestId;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -42,10 +42,10 @@ public class SnapshotController {
             MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
             MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
+            @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
+            MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
-            Semaphore sendingFifoSynchronizer,
-            @Qualifier("Node/NodeConfigurator/currentFifoRequestId")
-            FifoRequestId currentFifoRequestId
+            Semaphore sendingFifoSynchronizer
     ){
         this.snapshotService = snapshotService;
         this.template = template;
@@ -54,8 +54,8 @@ public class SnapshotController {
         this.treeInfo = treeInfo;
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
+        this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
         this.sendingFifoSynchronizer = sendingFifoSynchronizer;
-        this.currentFifoRequestId = currentFifoRequestId;
 
         markedSynchronizer = new Object();
         doingStateOrMarkingThings = new Object();
@@ -127,18 +127,15 @@ public class SnapshotController {
             if (log.isDebugEnabled()) {
                 log.debug("<---received markResponseMessage {}", message);
             }
-            if (message.getFifoRequestId().equals(currentFifoRequestId)) {
+            Runnable doReleaseSendingFifoSynchronizer = () -> {
                 sendingFifoSynchronizer.release();
-            } else {
-                throw new Error("got response {} without corresponding request");
-            }
+            };
+            fifoResponseRoundSynchronizer.enqueueAndRunIfReadyInOrder(message, doReleaseSendingFifoSynchronizer);
         }
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
         thisNodeInfo.incrementVectorClock();
-
-        //TODO implement fifoResponseRoundSynchronizer for responses from mark messages
 
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
@@ -159,6 +156,7 @@ public class SnapshotController {
         } catch (java.lang.InterruptedException e) {
             //ignore
         }
+        FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
         currentFifoRequestId.setRequestId("mark" + roundNumber);
         MarkMessage message = new MarkMessage(
                 thisNodeInfo.getUid(),

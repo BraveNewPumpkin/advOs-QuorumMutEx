@@ -1,8 +1,7 @@
 package Node;
 
-public class FifoResponseMessage extends SimpleTargetableMessage implements RoundSynchronizable<String> {
+public class FifoResponseMessage extends SimpleTargetableMessage implements RoundSynchronizable<FifoRequestId> {
     private FifoRequestId fifoRequestId;
-    private String roundId;
 
     public FifoResponseMessage() {
     }
@@ -30,13 +29,13 @@ public class FifoResponseMessage extends SimpleTargetableMessage implements Roun
     }
 
     @Override
-    public String getRoundId() {
-        return roundId;
+    public FifoRequestId getRoundId() {
+        return fifoRequestId;
     }
 
     @Override
-    public void setRoundId(String roundId) {
-        this.roundId = roundId;
+    public void setRoundId(FifoRequestId fifoRequestId) {
+        this.fifoRequestId = fifoRequestId;
     }
 
     @Override
