@@ -28,7 +28,7 @@ public class MessageIntRoundSynchronizer<M extends RoundSynchronizable<Integer>>
     }
 
     public void ensureQueueForRoundIsInitialized(int roundNumber) {
-        if(roundMessages.size() < roundNumber) {
+        if(roundMessages.size() <= roundNumber) {
             for(int i = roundMessages.size(); i <= roundNumber; i++) {
                 roundMessages.put(i, new ConcurrentLinkedQueue<>());
             }
