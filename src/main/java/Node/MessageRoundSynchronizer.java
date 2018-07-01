@@ -29,7 +29,12 @@ public class MessageRoundSynchronizer<T, M extends RoundSynchronizable<T>> {
     }
 
     public int getNumMessagesForGivenRound(T givenRoundId) {
-        return getMessagesForGivenRound(givenRoundId).size();
+       int numMessages = 0;
+       if(roundMessages.containsKey(givenRoundId)) {
+           Queue<M> messages = getMessagesForGivenRound(givenRoundId);
+           numMessages = messages.size();
+       }
+       return numMessages;
     }
 
     public int getNumMessagesThisRound() {
