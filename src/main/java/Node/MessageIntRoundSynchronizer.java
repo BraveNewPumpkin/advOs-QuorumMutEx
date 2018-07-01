@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class MessageIntRoundSynchronizer<M extends RoundSynchronizable<Integer>> extends  MessageRoundSynchronizer<Integer, M> {
     public MessageIntRoundSynchronizer(int roundSize) {
         super(roundSize);
+        setRoundId(0);
     }
 
     @Override
