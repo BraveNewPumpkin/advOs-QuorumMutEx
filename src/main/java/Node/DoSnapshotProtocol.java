@@ -73,10 +73,15 @@ public class DoSnapshotProtocol implements Runnable {
         scheduledStartingSnapshot = new Object();
 
         doStartASnapshot = () -> {
-            snapshotService.saveState();
-            snapshotController.sendMarkMessage(snapshotMarkerSynchronizer.getRoundId());
-            snapshotService.setIsMarked(snapshotMarkerSynchronizer.getRoundId(), true);
-            snapshotMarkerSynchronizer.incrementRoundNumber();
+            try {
+                snapshotService.saveState();
+                int currentMarkerRoundNumber = snapshotMarkerSynchronizer.getRoundId();
+                snapshotController.sendMarkMessage(currentMarkerRoundNumber);
+                snapshotService.setIsMarked(currentMarkerRoundNumber, true);
+                snapshotMarkerSynchronizer.incrementRoundNumber();
+            } catch (Exception e) {
+                log.error("exception starting snapshot {}: ", snapshotMarkerSynchronizer.getRoundId(), e.getMessage());
+            }
         };
     }
 
