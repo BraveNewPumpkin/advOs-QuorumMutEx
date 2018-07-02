@@ -76,7 +76,6 @@ public class MapController {
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
                 targetUid,

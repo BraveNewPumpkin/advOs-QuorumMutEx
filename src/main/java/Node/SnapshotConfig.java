@@ -24,6 +24,7 @@ public class SnapshotConfig {
         this.treeInfo = treeInfo;
     }
 
+    //allows us to wait for tree to be built before we start trying to take snapshot
     @Bean
     @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
     public GateLock getPreparedForSnapshotSynchronizer() {

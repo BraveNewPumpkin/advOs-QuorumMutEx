@@ -242,9 +242,6 @@ public class SnapshotService {
     }
 
     private boolean isLeaf() {
-        log.trace("tree.getRoot().getChildren(): {}", tree.getRoot().getChildren());
-        log.trace("tree.getRoot().getChildren().isEmpty(): {}", tree.getRoot().getChildren().isEmpty());
-        log.trace("tree.getRoot().getChildren().size(): {}", tree.getRoot().getChildren().size());
         if(tree.getRoot().getChildren().isEmpty()) {
             return true;
         } else {

@@ -100,6 +100,7 @@ public class DoSnapshotProtocol implements Runnable {
             buildingTreeSynchronizer.enter();
             int numberOfChildren = treeInfo.getNumChildren();
             snapshotStateSynchronizer.setRoundSize(numberOfChildren);
+            //tree is built and children are initialized so we can now take snapshots
             preparedForSnapshotSynchronizer.open();
             if(thisNodeInfo.getUid() == 0) {
                 final ScheduledFuture<?> snapshotHandle = scheduler.scheduleAtFixedRate(doStartASnapshot, 0, thisNodeInfo.getSnapshotDelay(), MILLISECONDS);
