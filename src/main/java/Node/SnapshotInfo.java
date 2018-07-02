@@ -15,6 +15,14 @@ public class SnapshotInfo {
         vectorClock = new ArrayList<>();
     }
 
+    public SnapshotInfo(SnapshotInfo other) {
+        this.sentMessages = other.sentMessages;
+        this.processedMessages = other.processedMessages;
+        List<Integer> newVectorClock = new ArrayList<>(other.getVectorClock());
+        this.vectorClock = newVectorClock;
+        this.isActive = other.isActive;
+    }
+
     public int getSentMessages() {
         return sentMessages;
     }
