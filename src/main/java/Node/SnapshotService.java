@@ -145,7 +145,7 @@ public class SnapshotService {
         if(thisNodeInfo.getUid() != 0) {
             preparedForSnapshotSynchronizer.enter();
             if (!isMarked(messageRoundNumber)) {
-                saveState();
+                saveState(messageRoundNumber);
                 setIsMarked(messageRoundNumber, true);
                 snapshotController.sendMarkMessage(messageRoundNumber);
             }
@@ -153,16 +153,10 @@ public class SnapshotService {
         snapshotController.sendFifoResponse(sourceId, fifoRequestId);
     }
 
-    public void saveState(){
-        SnapshotInfo snap = new SnapshotInfo();
-        snap.setVectorClock(new ArrayList<>(thisNodeInfo.getVectorClock()));
-        snap.setActive(mapInfo.isActive());
-        snap.setSentMessages(snapshotInfo.getSentMessages());
-        snap.setProcessedMessages(snapshotInfo.getProcessedMessages());
-//        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
-//        snapshotInfo.setActive(mapInfo.isActive());
-        thisNodeSnapshots.put(snapshotMarkerSynchronizer.getRoundId(),snap);
-        log.debug("In saveState(), round: {}   vectorClock: {}", snapshotMarkerSynchronizer.getRoundId(),thisNodeSnapshots.get(snapshotMarkerSynchronizer.getRoundId()).getVectorClock());
+    public void saveState(int roundNumber){
+        SnapshotInfo copy = new SnapshotInfo(snapshotInfo);
+        thisNodeSnapshots.put(roundNumber, copy);
+        log.trace("In saveState(), round: {}   vectorClock: {}", snapshotMarkerSynchronizer.getRoundId(),thisNodeSnapshots.get(snapshotMarkerSynchronizer.getRoundId()).getVectorClock());
     }
 
     public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps, int roundNumber) {
@@ -172,7 +166,6 @@ public class SnapshotService {
         SnapshotInfo snap=thisNodeSnapshots.get(roundNumber);
         snapshotInfos.put(thisNodeInfo.getUid(), snap);
 
-//        snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
         snapshotMaps.forEach((snapshotMap) -> {
             snapshotInfos.putAll(snapshotMap);
         });
