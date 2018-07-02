@@ -23,6 +23,7 @@ public class SnapshotController {
     private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
     private final Semaphore sendingFifoSynchronizer;
+    private final GateLock snapshotIsRunningSynchronizer;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -45,7 +46,9 @@ public class SnapshotController {
             @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
             MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
-            Semaphore sendingFifoSynchronizer
+            Semaphore sendingFifoSynchronizer,
+            @Qualifier("Node/SnapshotConfig/snapshotIsRunningSynchronizer")
+            GateLock snapshotIsRunningSynchronizer
     ){
         this.snapshotService = snapshotService;
         this.template = template;
@@ -56,6 +59,7 @@ public class SnapshotController {
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
         this.sendingFifoSynchronizer = sendingFifoSynchronizer;
+        this.snapshotIsRunningSynchronizer = snapshotIsRunningSynchronizer;
 
         markedSynchronizer = new Object();
         doingStateOrMarkingThings = new Object();
@@ -69,7 +73,7 @@ public class SnapshotController {
 
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable doMarkingThings = () -> {
-            synchronized (doingStateOrMarkingThings) {
+            synchronized (markedSynchronizer) {
                 if (log.isDebugEnabled()) {
                     log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundId()) + 1, snapshotMarkerSynchronizer.getRoundSize());
                 }
@@ -129,8 +133,12 @@ public class SnapshotController {
                 log.debug("<---received markResponseMessage {}", message);
             }
             Runnable doReleaseSendingFifoSynchronizer = () -> {
-//                log.debug("Releasing sendingFifoSynchronizer for round Id {}", message.getRoundId());
+                if(log.isTraceEnabled()) {
+                    log.trace("Releasing sendingFifoSynchronizer for round Id {}", message.getRoundId());
+                }
                 sendingFifoSynchronizer.release();
+                log.trace("releasing snapshotIsRunningSynchronizer");
+                snapshotIsRunningSynchronizer.open();
             };
             fifoResponseRoundSynchronizer.enqueueAndRunIfReadyInOrder(message, doReleaseSendingFifoSynchronizer);
         }

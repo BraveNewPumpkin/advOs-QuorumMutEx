@@ -33,6 +33,15 @@ public class SnapshotConfig {
         return preparedForSnapshotSynchronizer;
     }
 
+    //this is to prevent map (application) messages from bing received while we are sending out the marker messages to neighbors
+    @Bean
+    @Qualifier("Node/SnapshotConfig/snapshotIsRunningSynchronizer")
+    public GateLock getSnapshotIsRunningSynchronizer() {
+        GateLock snapshotIsRunningSynchronizer = new GateLock();
+        snapshotIsRunningSynchronizer.open();
+        return snapshotIsRunningSynchronizer;
+    }
+
     @Bean
     @Qualifier("Node/SnapshotConfig/scheduler")
     public ScheduledExecutorService getScheduler() {

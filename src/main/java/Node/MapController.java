@@ -18,6 +18,7 @@ public class MapController {
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
     private final Semaphore sendingFifoSynchronizer;
+    private final GateLock snapshotIsRunningSynchronizer;
     private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
 
     @Autowired
@@ -30,6 +31,8 @@ public class MapController {
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
             Semaphore sendingFifoSynchronizer,
+            @Qualifier("Node/SnapshotConfig/snapshotIsRunningSynchronizer")
+            GateLock snapshotIsRunningSynchronizer,
             @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
             MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer
             ){
@@ -38,6 +41,7 @@ public class MapController {
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.sendingFifoSynchronizer = sendingFifoSynchronizer;
+        this.snapshotIsRunningSynchronizer = snapshotIsRunningSynchronizer;
         this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
     }
 
@@ -48,6 +52,7 @@ public class MapController {
                log.trace("<---received  map message {}", message);
             }
         } else {
+            snapshotIsRunningSynchronizer.enter();
             thisNodeInfo.mergeVectorClock(message.getVectorClock());
             if (log.isDebugEnabled()) {
                 log.debug("<---received map message {}  current Vector Clock {}", message, thisNodeInfo.getVectorClock());

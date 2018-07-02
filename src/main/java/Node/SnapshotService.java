@@ -20,6 +20,7 @@ public class SnapshotService {
     private MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
+    private final GateLock snapshotIsRunningSynchronizer;
 
     //protection for if we receive the last marker message from neighbors and last state message from children at the same time
     private final Object processingFinalStateOrMarkerSynchronizer;
@@ -47,7 +48,9 @@ public class SnapshotService {
         @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
         MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
         @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
-        GateLock preparedForSnapshotSynchronizer
+        GateLock preparedForSnapshotSynchronizer,
+        @Qualifier("Node/SnapshotConfig/snapshotIsRunningSynchronizer")
+        GateLock snapshotIsRunningSynchronizer
     ) {
         this.snapshotController = snapshotController;
         this.snapshotReadWriter = snapshotReadWriter;
@@ -59,6 +62,7 @@ public class SnapshotService {
         this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
+        this.snapshotIsRunningSynchronizer = snapshotIsRunningSynchronizer;
 
         processingFinalStateOrMarkerSynchronizer = new Object();
         isMarkedList = new ArrayList<>();
@@ -154,6 +158,7 @@ public class SnapshotService {
     }
 
     public void saveState(){
+        snapshotIsRunningSynchronizer.close();
         snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
         snapshotInfo.setActive(mapInfo.isActive());
     }
