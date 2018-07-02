@@ -76,8 +76,6 @@ public class MapController {
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-//        thisNodeInfo.incrementVectorClock();
-
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
                 targetUid,
