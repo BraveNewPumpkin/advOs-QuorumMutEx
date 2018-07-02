@@ -19,6 +19,10 @@ public class SnapshotInfo {
         return sentMessages;
     }
 
+    public void setSentMessages(int sentMessages) {
+        this.sentMessages = sentMessages;
+    }
+
     public void incrementSentMessages() {
         this.sentMessages++;
     }
@@ -29,6 +33,10 @@ public class SnapshotInfo {
 
     public int getProcessedMessages() {
         return processedMessages;
+    }
+
+    public void setProcessedMessages(int processedMessages) {
+        this.processedMessages = processedMessages;
     }
 
     public List<Integer> getVectorClock() {

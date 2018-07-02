@@ -74,7 +74,7 @@ public class SnapshotService {
             fillHasStatePendingToIndex(markerRoundNumber);
             synchronized (processingFinalStateOrMarkerSynchronizer) {
                 Map<Integer, SnapshotInfo> snapshotInfos;
-                snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>());
+                snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>(),snapshotMarkerSynchronizer.getRoundId());
                 if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
                     if (!isLeaf()) {
                         log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
@@ -86,8 +86,8 @@ public class SnapshotService {
                     snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
                 } else {
                     //save this node's state for when we receive from all children
-                    SnapshotInfo thisNodeSnapshot = snapshotInfos.get(thisNodeInfo.getUid());
-                    thisNodeSnapshots.put(markerRoundNumber, thisNodeSnapshot);
+//                    SnapshotInfo thisNodeSnapshot = snapshotInfos.get(thisNodeInfo.getUid());
+//                    thisNodeSnapshots.put(markerRoundNumber, thisNodeSnapshot);
                 }
             }
             snapshotMarkerSynchronizer.incrementRoundNumber();
@@ -95,7 +95,7 @@ public class SnapshotService {
     }
 
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
-        Map<Integer, SnapshotInfo> snapshotInfos = combineSnapshotInfoMaps(snapshotInfoMaps);
+        Map<Integer, SnapshotInfo> snapshotInfos = combineSnapshotInfoMaps(snapshotInfoMaps, snapshotStateSynchronizer.getRoundId());
         if(thisNodeInfo.getUid() == 0) {
             if(!isTerminatedLastRound){
                 printStates(snapshotInfos, snapshotNumber);
@@ -154,13 +154,25 @@ public class SnapshotService {
     }
 
     public void saveState(){
-        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
-        snapshotInfo.setActive(mapInfo.isActive());
+        SnapshotInfo snap = new SnapshotInfo();
+        snap.setVectorClock(new ArrayList<>(thisNodeInfo.getVectorClock()));
+        snap.setActive(mapInfo.isActive());
+        snap.setSentMessages(snapshotInfo.getSentMessages());
+        snap.setProcessedMessages(snapshotInfo.getProcessedMessages());
+//        snapshotInfo.setVectorClock(thisNodeInfo.getVectorClock());
+//        snapshotInfo.setActive(mapInfo.isActive());
+        thisNodeSnapshots.put(snapshotMarkerSynchronizer.getRoundId(),snap);
+        log.debug("In saveState(), round: {}   vectorClock: {}", snapshotMarkerSynchronizer.getRoundId(),thisNodeSnapshots.get(snapshotMarkerSynchronizer.getRoundId()).getVectorClock());
     }
 
-    public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps) {
+    public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps, int roundNumber) {
         Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
-        snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
+
+        //just added, including the additional parameter
+        SnapshotInfo snap=thisNodeSnapshots.get(roundNumber);
+        snapshotInfos.put(thisNodeInfo.getUid(), snap);
+
+//        snapshotInfos.put(thisNodeInfo.getUid(), snapshotInfo);
         snapshotMaps.forEach((snapshotMap) -> {
             snapshotInfos.putAll(snapshotMap);
         });
@@ -222,7 +234,8 @@ public class SnapshotService {
 //        log.debug("Total Sent Messages = {} and Total Received Messages = {}", totalSentMessages,totalProcessedMessages);
 //        log.debug("isActive: {}",areStatesActive);
 
-        if(!areStatesActive && totalSentMessages==(totalProcessedMessages-thisNodeInfo.getTotalNumberOfNodes()))
+//        if(!areStatesActive && totalSentMessages==(totalProcessedMessages-thisNodeInfo.getTotalNumberOfNodes()))
+        if(!areStatesActive && totalSentMessages==(totalProcessedMessages-1))
             return true;
         else
             return false;
