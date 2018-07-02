@@ -84,6 +84,7 @@ public class SnapshotController {
 
     @MessageMapping("/stateMessage")
     public void receiveStateMessage(StateMessage message) {
+//        log.debug("Inside receiveStateMessage for round {}",message.getRoundId());
         Runnable doReceiveStateMessageThings = () -> {
             synchronized (doingStateOrMarkingThings) {
                 if (thisNodeInfo.getUid() != message.getTarget()) {
@@ -128,6 +129,7 @@ public class SnapshotController {
                 log.debug("<---received markResponseMessage {}", message);
             }
             Runnable doReleaseSendingFifoSynchronizer = () -> {
+//                log.debug("Releasing sendingFifoSynchronizer for round Id {}", message.getRoundId());
                 sendingFifoSynchronizer.release();
             };
             fifoResponseRoundSynchronizer.enqueueAndRunIfReadyInOrder(message, doReleaseSendingFifoSynchronizer);
@@ -135,7 +137,6 @@ public class SnapshotController {
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-        thisNodeInfo.incrementVectorClock();
 
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
@@ -151,6 +152,7 @@ public class SnapshotController {
     }
 
     public void sendMarkMessage(int roundNumber) throws MessagingException {
+//        log.debug("Inside sendMarkMessage for round {}",roundNumber);
         try {
             sendingFifoSynchronizer.acquire();
         } catch (java.lang.InterruptedException e) {

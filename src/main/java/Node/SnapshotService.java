@@ -149,8 +149,8 @@ public class SnapshotService {
                 setIsMarked(messageRoundNumber, true);
                 snapshotController.sendMarkMessage(messageRoundNumber);
             }
-            snapshotController.sendFifoResponse(sourceId, fifoRequestId);
         }
+        snapshotController.sendFifoResponse(sourceId, fifoRequestId);
     }
 
     public void saveState(){
