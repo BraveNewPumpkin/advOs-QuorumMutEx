@@ -137,7 +137,6 @@ public class SnapshotController {
     }
 
     public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-
         FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
                 targetUid,
@@ -152,7 +151,6 @@ public class SnapshotController {
     }
 
     public void sendMarkMessage(int roundNumber) throws MessagingException {
-//        log.debug("Inside sendMarkMessage for round {}",roundNumber);
         try {
             sendingFifoSynchronizer.acquire();
         } catch (java.lang.InterruptedException e) {
