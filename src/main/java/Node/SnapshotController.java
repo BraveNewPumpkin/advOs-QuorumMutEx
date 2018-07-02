@@ -123,7 +123,7 @@ public class SnapshotController {
 
     @MessageMapping("/markResponseMessage")
     public void receiveFifoResponseMessage(FifoResponseMessage message) {
-        if(thisNodeInfo.getUid() != message.getTarget()) {
+        if(thisNodeInfo.getUid() == message.getTarget()) {
             if (log.isDebugEnabled()) {
                 log.debug("<---received markResponseMessage {}", message);
             }
@@ -146,7 +146,7 @@ public class SnapshotController {
         if(log.isDebugEnabled()){
             log.debug("--->sending fifoResponseMessage: {}", message);
         }
-        template.convertAndSend("/topic/fifoResponseMessage", message);
+        template.convertAndSend("/topic/markResponseMessage", message);
         log.trace("fifoResponseMessage message sent");
     }
 
