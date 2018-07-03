@@ -6,7 +6,7 @@ import java.util.List;
 public class SnapshotInfo {
     private int sentMessages;
     private int processedMessages;
-    private List<Integer> vectorClock;
+    private final List<Integer> vectorClock;
     private boolean isActive;
 
     public SnapshotInfo() {
@@ -15,10 +15,10 @@ public class SnapshotInfo {
         vectorClock = new ArrayList<>();
     }
 
-    public SnapshotInfo(SnapshotInfo other) {
+    public SnapshotInfo(SnapshotInfo other, List<Integer> currentVectorClock) {
         this.sentMessages = other.sentMessages;
         this.processedMessages = other.processedMessages;
-        List<Integer> newVectorClock = new ArrayList<>(other.getVectorClock());
+        List<Integer> newVectorClock = new ArrayList<>(currentVectorClock);
         this.vectorClock = newVectorClock;
         this.isActive = other.isActive;
     }
@@ -49,10 +49,6 @@ public class SnapshotInfo {
 
     public List<Integer> getVectorClock() {
         return vectorClock;
-    }
-
-    public void setVectorClock(List<Integer> vectorClock) {
-        this.vectorClock = vectorClock;
     }
 
     public boolean isActive() {

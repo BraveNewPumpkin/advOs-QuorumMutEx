@@ -23,13 +23,12 @@ public class DoSnapshotProtocol implements Runnable {
     private final ThisNodeInfo thisNodeInfo;
     private final SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private final MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
     private final ScheduledExecutorService scheduler;
+    private final MutableWrapper<Integer> currentMarkRoundNumber;
 
     private final Runnable doStartASnapshot;
-    private final Object scheduledStartingSnapshot;
 
     @Autowired
     public DoSnapshotProtocol(
@@ -47,14 +46,14 @@ public class DoSnapshotProtocol implements Runnable {
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
-            @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-            MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
             MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
             @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
             GateLock preparedForSnapshotSynchronizer,
             @Qualifier("Node/SnapshotConfig/scheduler")
-            ScheduledExecutorService scheduler
+            ScheduledExecutorService scheduler,
+            @Qualifier("Node/SnapshotConfig/currentMarkRoundNumber")
+            MutableWrapper<Integer> currentMarkRoundNumber
     ){
         this.connectingSynchronizer = connectingSynchronizer;
         this.buildingTreeSynchronizer = buildingTreeSynchronizer;
@@ -65,21 +64,19 @@ public class DoSnapshotProtocol implements Runnable {
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
-        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
         this.scheduler = scheduler;
-
-        scheduledStartingSnapshot = new Object();
+        this.currentMarkRoundNumber = currentMarkRoundNumber;
 
         doStartASnapshot = () -> {
             try {
-                int currentMarkerRoundNumber = snapshotMarkerSynchronizer.getRoundId();
+                int currentMarkerRoundNumber = currentMarkRoundNumber.get();
                 snapshotController.sendMarkMessage(currentMarkerRoundNumber);
                 snapshotService.setIsMarked(currentMarkerRoundNumber, true);
-                snapshotMarkerSynchronizer.incrementRoundNumber();
+                this.currentMarkRoundNumber.set(currentMarkRoundNumber.get() + 1);
             } catch (Exception e) {
-                log.error("exception starting snapshot {}: ", snapshotMarkerSynchronizer.getRoundId(), e.getMessage());
+                log.error("exception starting snapshot {}: ", currentMarkRoundNumber, e.getMessage());
             }
         };
     }

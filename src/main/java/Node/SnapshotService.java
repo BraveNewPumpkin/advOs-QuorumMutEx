@@ -14,22 +14,18 @@ public class SnapshotService {
     private final SnapshotController snapshotController;
     private final ThisNodeInfo thisNodeInfo;
     private final MapInfo mapInfo;
-    private SnapshotInfo snapshotInfo;
+    private final SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private Tree<Integer> tree;
-    private MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
-    private MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
+    private final Tree<Integer> tree;
+    private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final GateLock preparedForSnapshotSynchronizer;
-
-    //protection for if we receive the last marker message from neighbors and last state message from children at the same time
-    private final Object processingFinalStateOrMarkerSynchronizer;
+    private final MutableWrapper<Integer> currentMarkRoundNumber;
 
     //isMarked booleans for each round
-    private List<Boolean> isMarkedList;
+    private final List<Boolean> isMarkedList;
     //used to save and defer sending state to parent if we have not yet received all marked messages this round
-    private List<Boolean> isStateReadyToSend;
-    private Map<Integer, Map<Integer, SnapshotInfo>> childrenStatesMaps;
-    private Map<Integer, SnapshotInfo> thisNodeSnapshots;
+    private final List<Boolean> isStateReadyToSend;
+    private final Map<Integer, SnapshotInfo> thisNodeSnapshots;
     private final SnapshotReadWriter snapshotReadWriter;
     private boolean isTerminatedLastRound;
 
@@ -42,12 +38,12 @@ public class SnapshotService {
         @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo,
         @Qualifier("Node/BuildTreeConfig/treeInfo") TreeInfo treeInfo,
         @Qualifier("Node/BuildTreeConfig/tree") Tree<Integer> tree,
-        @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-        MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
         @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
         MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
         @Qualifier("Node/SnapshotConfig/preparedForSnapshotSynchronizer")
-        GateLock preparedForSnapshotSynchronizer
+        GateLock preparedForSnapshotSynchronizer,
+        @Qualifier("Node/SnapshotConfig/currentMarkRoundNumber")
+        MutableWrapper<Integer> currentMarkRoundNumber
     ) {
         this.snapshotController = snapshotController;
         this.snapshotReadWriter = snapshotReadWriter;
@@ -56,42 +52,33 @@ public class SnapshotService {
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
         this.tree = tree;
-        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.preparedForSnapshotSynchronizer = preparedForSnapshotSynchronizer;
+        this.currentMarkRoundNumber = currentMarkRoundNumber;
 
-        processingFinalStateOrMarkerSynchronizer = new Object();
         isMarkedList = new ArrayList<>();
         isStateReadyToSend = new ArrayList<>();
-        childrenStatesMaps = new HashMap<>();
         thisNodeSnapshots = new HashMap<>();
         isTerminatedLastRound = false;
     }
 
-    public synchronized void doMarkingThings(int markerRoundNumber) {
+    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber, int sourceId, FifoRequestId fifoRequestId){
         if(thisNodeInfo.getUid() != 0) {
-            //if we are leaf, send state to parent
-            fillHasStatePendingToIndex(markerRoundNumber);
-            synchronized (processingFinalStateOrMarkerSynchronizer) {
-                Map<Integer, SnapshotInfo> snapshotInfos;
-                snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>(),snapshotMarkerSynchronizer.getRoundId());
-                if (isLeaf() || isStateReadyToSend.get(markerRoundNumber)) {
-                    if (!isLeaf()) {
-                        log.debug("sending deferred stateMessage for round {}", markerRoundNumber);
-                        snapshotInfos.putAll(childrenStatesMaps.get(markerRoundNumber));
-                    } else {
-
-                        snapshotStateSynchronizer.incrementRoundNumber();
-                    }
-                    snapshotController.sendStateMessage(snapshotInfos, markerRoundNumber);
-                } else {
-                    //save this node's state for when we receive from all children
-//                    SnapshotInfo thisNodeSnapshot = snapshotInfos.get(thisNodeInfo.getUid());
-//                    thisNodeSnapshots.put(markerRoundNumber, thisNodeSnapshot);
+            preparedForSnapshotSynchronizer.enter();
+            if (messageRoundNumber >= currentMarkRoundNumber.get()) {
+                if(isMarked(messageRoundNumber)) {
+                    throw new Error("got a mark message for round " + messageRoundNumber + ", but we were in round " + currentMarkRoundNumber);
+                }
+                setIsMarked(messageRoundNumber, true);
+                snapshotController.sendMarkMessage(messageRoundNumber);
+                currentMarkRoundNumber.set(currentMarkRoundNumber.get() + 1);
+                if(isLeaf()) {
+                    Map<Integer, SnapshotInfo> snapshotInfos = combineSnapshotInfoMaps(new ArrayList<>(), messageRoundNumber);
+                    snapshotController.sendStateMessage(snapshotInfos, messageRoundNumber);
                 }
             }
-            snapshotMarkerSynchronizer.incrementRoundNumber();
         }
+        snapshotController.sendFifoResponse(sourceId, fifoRequestId);
     }
 
     public synchronized void doStateThings(List<Map<Integer, SnapshotInfo>> snapshotInfoMaps, int snapshotNumber){
@@ -104,21 +91,10 @@ public class SnapshotService {
             log.debug("Termination Detection: {}",isTerminated);
             isTerminatedLastRound = isTerminated;
         } else {
-            synchronized (processingFinalStateOrMarkerSynchronizer) {
-                int stateRoundNumber = snapshotStateSynchronizer.getRoundId();
-                fillHasStatePendingToIndex(stateRoundNumber);
-                //if we've received all the marker messages then send to parent, otherwise defer until we do receive all
-                int numMarkerMessagesForStateRound = snapshotMarkerSynchronizer.getNumMessagesForGivenRound(stateRoundNumber);
-                if (numMarkerMessagesForStateRound == snapshotMarkerSynchronizer.getRoundSize()){
-                    SnapshotInfo thisNodeSnapshot = thisNodeSnapshots.get(stateRoundNumber);
-                    snapshotInfos.put(thisNodeInfo.getUid(), thisNodeSnapshot);
-                    snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
-                } else {
-                    log.debug("did not have all marker message for round {}. deferring.", stateRoundNumber);
-                    childrenStatesMaps.put(snapshotStateSynchronizer.getRoundId(), snapshotInfos);
-                    isStateReadyToSend.set(snapshotStateSynchronizer.getRoundId(), true);
-                }
-            }
+            int stateRoundNumber = snapshotStateSynchronizer.getRoundId();
+            SnapshotInfo thisNodeSnapshot = thisNodeSnapshots.get(stateRoundNumber);
+            snapshotInfos.put(thisNodeInfo.getUid(), thisNodeSnapshot);
+            snapshotController.sendStateMessage(snapshotInfos, stateRoundNumber);
         }
         snapshotStateSynchronizer.incrementRoundNumber();
     }
@@ -141,29 +117,23 @@ public class SnapshotService {
          this.isMarkedList.set(messageRoundNumber, isMarkedVal);
     }
 
-    public synchronized void checkAndSendMarkerMessage(int messageRoundNumber, int sourceId, FifoRequestId fifoRequestId){
-        if(thisNodeInfo.getUid() != 0) {
-            preparedForSnapshotSynchronizer.enter();
-            if (!isMarked(messageRoundNumber)) {
-                saveState(messageRoundNumber);
-                setIsMarked(messageRoundNumber, true);
-                snapshotController.sendMarkMessage(messageRoundNumber);
-            }
-        }
-        snapshotController.sendFifoResponse(sourceId, fifoRequestId);
-    }
-
     public void saveState(int roundNumber){
-        SnapshotInfo copy = new SnapshotInfo(snapshotInfo);
+        SnapshotInfo copy = new SnapshotInfo(snapshotInfo, thisNodeInfo.getVectorClock());
         thisNodeSnapshots.put(roundNumber, copy);
-        log.trace("In saveState(), round: {}   vectorClock: {}", snapshotMarkerSynchronizer.getRoundId(),thisNodeSnapshots.get(snapshotMarkerSynchronizer.getRoundId()).getVectorClock());
+        if(log.isTraceEnabled()) {
+            List<Integer>  vectorClock = thisNodeSnapshots.get(currentMarkRoundNumber.get()).getVectorClock();
+            log.trace("In saveState(), round: {}   vectorClock: {}", currentMarkRoundNumber, vectorClock);
+        }
     }
 
-    public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(List<Map<Integer, SnapshotInfo>> snapshotMaps, int roundNumber) {
+    public Map<Integer, SnapshotInfo> combineSnapshotInfoMaps(
+            List<Map<Integer, SnapshotInfo>> snapshotMaps,
+            int roundNumber
+    ) {
         Map<Integer, SnapshotInfo> snapshotInfos = new HashMap<>();
 
         //just added, including the additional parameter
-        SnapshotInfo snap=thisNodeSnapshots.get(roundNumber);
+        SnapshotInfo snap = thisNodeSnapshots.get(roundNumber);
         snapshotInfos.put(thisNodeInfo.getUid(), snap);
 
         snapshotMaps.forEach((snapshotMap) -> {
@@ -172,58 +142,51 @@ public class SnapshotService {
         return snapshotInfos;
     }
 
-    public void fillHasStatePendingToIndex(int index) {
-        if(index > isStateReadyToSend.size() - 1) {
-            int numEntriesToAdd = index - isStateReadyToSend.size() + 1;
-            isStateReadyToSend.addAll(Collections.nCopies(numEntriesToAdd, false));
-        }
-    }
+    public boolean terminationDetection(Map<Integer,SnapshotInfo> snapshotInfos) {
+        int totalSentMessages = 0;
+        int totalProcessedMessages = 0;
+        boolean areStatesActive = false;
+        boolean isConsistent = true;
 
-    public boolean terminationDetection(Map<Integer,SnapshotInfo> snapshotInfos){
-        int totalSentMessages=0;
-        int totalProcessedMessages=0;
-        boolean areStatesActive=false;
-        boolean isConsistent=true;
-
-        int n=thisNodeInfo.getTotalNumberOfNodes();
+        int n = thisNodeInfo.getTotalNumberOfNodes();
         int[][] snapshotMatrix = new int[n][n];
 
         Set entrySet = snapshotInfos.entrySet();
-        Iterator it= entrySet.iterator();
+        Iterator it = entrySet.iterator();
 
-        while(it.hasNext()){
-            Map.Entry map=(Map.Entry) it.next();
-            int key=(int)map.getKey();
-            SnapshotInfo snapInfo = (SnapshotInfo)map.getValue();
+        while (it.hasNext()) {
+            Map.Entry map = (Map.Entry) it.next();
+            int key = (int) map.getKey();
+            SnapshotInfo snapInfo = (SnapshotInfo) map.getValue();
 
-            totalSentMessages+=snapInfo.getSentMessages();
-            totalProcessedMessages+=snapInfo.getProcessedMessages();
+            totalSentMessages += snapInfo.getSentMessages();
+            totalProcessedMessages += snapInfo.getProcessedMessages();
 
             areStatesActive = areStatesActive || snapInfo.isActive();
 
-            for(int i=0;i<n;i++){
-                snapshotMatrix[key][i]=snapInfo.getVectorClock().get(i);
+            for (int i = 0; i < n; i++) {
+                snapshotMatrix[key][i] = snapInfo.getVectorClock().get(i);
             }
         }
 
-        for(int q=0;q<n;q++){
-            int maxVal=0;
-            for(int p=0;p<n;p++){
-                int val=snapshotMatrix[p][q];
-                if(maxVal<val)
-                    maxVal=val;
+        for (int q = 0; q < n; q++) {
+            int maxVal = 0;
+            for (int p = 0; p < n; p++) {
+                int val = snapshotMatrix[p][q];
+                if (maxVal < val)
+                    maxVal = val;
             }
-            if(maxVal != snapshotMatrix[q][q]){
-                isConsistent=false;
+            if (maxVal != snapshotMatrix[q][q]) {
+                isConsistent = false;
                 break;
             }
         }
 
-        if(isConsistent)
+        if (isConsistent) {
             log.debug("The Snapshot is Consistent");
-        else
-            log.debug("The Snapshot is Not Consistent");
-
+        } else {
+            throw new Error("was NOT consistant in round " + snapshotStateSynchronizer.getRoundId());
+        }
 //        log.debug("Total Sent Messages = {} and Total Received Messages = {}", totalSentMessages,totalProcessedMessages);
 //        log.debug("isActive: {}",areStatesActive);
 
