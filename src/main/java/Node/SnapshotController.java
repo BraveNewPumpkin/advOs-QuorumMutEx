@@ -66,7 +66,7 @@ public class SnapshotController {
 
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable doMarkingThings = () -> {
-            synchronized (doingStateOrMarkingThings) {
+            synchronized (markedSynchronizer) {
                 if (log.isDebugEnabled()) {
                     log.debug("<---received MarkMessage {}. Current round {}", message, currentMarkRoundNumber);
                 }
