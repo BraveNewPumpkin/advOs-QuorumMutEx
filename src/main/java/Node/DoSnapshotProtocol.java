@@ -74,7 +74,6 @@ public class DoSnapshotProtocol implements Runnable {
 
         doStartASnapshot = () -> {
             try {
-                snapshotService.saveState();
                 int currentMarkerRoundNumber = snapshotMarkerSynchronizer.getRoundId();
                 snapshotController.sendMarkMessage(currentMarkerRoundNumber);
                 snapshotService.setIsMarked(currentMarkerRoundNumber, true);

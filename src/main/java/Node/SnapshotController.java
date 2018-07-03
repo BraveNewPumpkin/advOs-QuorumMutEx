@@ -156,6 +156,12 @@ public class SnapshotController {
         } catch (java.lang.InterruptedException e) {
             //ignore
         }
+
+        //save state after acquire to prevent map message from being sent after state was saved but before mark was sent
+        if(thisNodeInfo.getUid() == 0) {
+            snapshotService.saveState(roundNumber);
+        }
+
         FifoRequestId currentFifoRequestId = new FifoRequestId(thisNodeInfo.getUid()+"mark" + roundNumber);
         fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MarkMessage message = new MarkMessage(
