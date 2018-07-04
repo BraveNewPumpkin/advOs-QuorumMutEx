@@ -213,4 +213,7 @@ public class SnapshotService {
         }
         snapshotReadWriter.writeSnapshots(snapshotInfos);
     }
+     public boolean getIsTerminatedLastRound() {
+        return isTerminatedLastRound;
+     }
 }

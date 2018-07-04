@@ -71,10 +71,12 @@ public class DoSnapshotProtocol implements Runnable {
 
         doStartASnapshot = () -> {
             try {
-                int currentMarkerRoundNumber = currentMarkRoundNumber.get();
-                snapshotController.sendMarkMessage(currentMarkerRoundNumber);
-                snapshotService.setIsMarked(currentMarkerRoundNumber, true);
-                this.currentMarkRoundNumber.set(currentMarkRoundNumber.get() + 1);
+                if(!snapshotService.getIsTerminatedLastRound()) {
+                    int currentMarkerRoundNumber = currentMarkRoundNumber.get();
+                    snapshotController.sendMarkMessage(currentMarkerRoundNumber);
+                    snapshotService.setIsMarked(currentMarkerRoundNumber, true);
+                    this.currentMarkRoundNumber.set(currentMarkRoundNumber.get() + 1);
+                }
             } catch (Exception e) {
                 log.error("exception starting snapshot {}: ", currentMarkRoundNumber, e.getMessage());
             }
