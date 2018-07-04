@@ -21,7 +21,7 @@ apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
 
 jar {
-    version =  '1.0.0'
+    version =  '1.0.4'
 }
 /*
 springBoot {
@@ -29,8 +29,8 @@ springBoot {
 }
 */
 
-sourceCompatibility = 1.9
-targetCompatibility = 1.9
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
