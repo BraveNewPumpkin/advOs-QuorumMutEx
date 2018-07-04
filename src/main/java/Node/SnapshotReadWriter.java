@@ -45,7 +45,7 @@ public class SnapshotReadWriter {
                     fileOutputWriters.put(nodeUid, fileOutputWriter);
                     log.trace("opened {} for writing", outputFilePath);
                 } catch (java.io.IOException e) {
-                    log.error("failed to open {} for writing: {}", outputFileName, e.getMessage());
+                    log.error("failed to open {} for writing: {}", outputFilePath.toAbsolutePath(), e.getMessage());
                 }
             });
         }

@@ -1,22 +1,22 @@
 # ten g l o b a l p a r ame te r s ( s e e above )
 10 6 10 1000 2000 20
-0 dc02.utdallas.edu 1232 # nodeID hostName l i s t e n P o r t
-1 dc03.utdallas.edu 1233
-2 dc04.utdallas.edu 1237
-3 dc05.utdallas.edu 1235
-4 dc06.utdallas.edu 1236
-5 dc07.utdallas.edu 1238
-6 dc08.utdallas.edu 1239
-7 dc09.utdallas.edu 1240
-8 dc10.utdallas.edu 1241
-9 dc11.utdallas.edu 1242
-1 6 # sp ac e d elimi t e d l i s t o f n ei g h b o r s f o r node 0
-0 3 2 # sp ac e d elimi t e d l i s t o f n ei g h b o r s f o r node 1
-1 3 # . . . node 2
-1 2 4 # . . . node 3
-3 5 7 # . . . node 4
-4 7 8 9 # . . . node 5
-0 8 9 # . . . node 6
-4 5 8 # . . . node 7
-5 6 7 9 # . . . node 8
+0 dc22.utdallas.edu 1232 # nodeID hostName l i s t e n P o r t
+1 dc23.utdallas.edu 1233
+2 dc24.utdallas.edu 1237
+3 dc25.utdallas.edu 1235
+4 dc26.utdallas.edu 1236
+5 dc27.utdallas.edu 1238
+6 dc28.utdallas.edu 1239
+7 dc29.utdallas.edu 1240
+8 dc30.utdallas.edu 1241
+9 dc31.utdallas.edu 1242
+1 6 # sp ac e d elimi t e d31 l i s t o f n ei g h b o r s f o r node 0
+0 3 2 # sp ac e d elimi t e31 d l i s t o f n ei g h b o r s f o r node 1
+1 3 # . . . node 231
+1 2 4 # . . . node 331
+3 5 7 # . . . node 431
+4 7 8 9 # . . . node 531
+0 8 9 # . . . node 631
+4 5 8 # . . . node 731
+5 6 7 9 # . . . node 831
 5 6 8 # . . . node 9
