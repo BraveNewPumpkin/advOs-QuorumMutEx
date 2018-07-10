@@ -21,7 +21,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Autowired
     public WebSocketConfig(
-        @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
+        @Qualifier("Node/ConnectConfig/subscriptionDestinations")
         List<String> subscriptionsDestinations
 
     ){

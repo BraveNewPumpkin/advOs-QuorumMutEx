@@ -22,7 +22,7 @@ public class QuorumMutExController {
             QuorumMutExService quorumMutExService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-            ThisNodeInfo thisNodeInfo,
+            ThisNodeInfo thisNodeInfo
             ){
         this.quorumMutExService = quorumMutExService;
         this.template = template;
@@ -36,9 +36,8 @@ public class QuorumMutExController {
                log.trace("<---received  map message {}", message);
             }
         } else {
-            thisNodeInfo.mergeVectorClock(message.getVectorClock());
             if (log.isDebugEnabled()) {
-                log.debug("<---received map message {}  current Vector Clock {}", message, thisNodeInfo.getVectorClock());
+                log.debug("<---received map message {}  current Scalar Clock {}", message, thisNodeInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);

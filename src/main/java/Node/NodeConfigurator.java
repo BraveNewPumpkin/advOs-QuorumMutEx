@@ -65,11 +65,6 @@ public class NodeConfigurator {
                 nodeConfig.nodes.keySet(),
                 thisHostName,
                 thisPort,
-                nodeConfig.minPerActive,
-                nodeConfig.maxPerActive,
-                nodeConfig.minSendDelay,
-                nodeConfig.snapshotDelay,
-                nodeConfig.maxNumber
         );
 
         nodeConfig.neighbors.forEach(neighborUid -> {
