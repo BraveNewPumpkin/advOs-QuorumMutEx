@@ -8,7 +8,9 @@ public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> quorum;
     private final int totalNumberOfNodes;
     private final int numberOfRequests;
-    private final int scalarClock;
+
+
+
 
 
     ThisNodeInfo(
@@ -22,7 +24,6 @@ public final class ThisNodeInfo extends NodeInfo{
         quorum = new ArrayList<>();
         this.totalNumberOfNodes = totalNumberOfNodes;
         this.numberOfRequests=numberOfRequests;
-        scalarClock=0;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
@@ -40,4 +41,7 @@ public final class ThisNodeInfo extends NodeInfo{
     public int getNumberOfRequests() {
         return numberOfRequests;
     }
+
+
+
 }
