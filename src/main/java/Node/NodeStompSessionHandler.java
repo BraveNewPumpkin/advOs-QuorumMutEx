@@ -13,7 +13,7 @@ import java.util.concurrent.CountDownLatch;
 @Component
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
-    private final MapController mapController;
+    private final QuorumMutExController quorumMutExController;
     private final BuildTreeController buildTreeController;
     private final SnapshotController snapshotController;
     private CountDownLatch connectionTimeoutLatch;
@@ -21,7 +21,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
 
     @Autowired
     public NodeStompSessionHandler(
-            MapController mapController,
+            QuorumMutExController quorumMutExController,
             BuildTreeController buildTreeController,
             SnapshotController snapshotController,
             @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
@@ -29,7 +29,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
             List<String> subscriptionsDestinations
     ) {
-        this.mapController = mapController;
+        this.quorumMutExController = quorumMutExController;
         this.buildTreeController = buildTreeController;
         this.snapshotController = snapshotController;
         this.connectionTimeoutLatch = connectionTimeoutLatch;
@@ -92,7 +92,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/mapMessage":
                 log.trace("calling mapController.mapMessage");
                 MapMessage mapMessage = (MapMessage) message;
-                mapController.mapMessage(mapMessage);
+                quorumMutExController.mapMessage(mapMessage);
                 break;
             case "/topic/buildTreeQueryMessage":
                 log.trace("calling buildTreeController.buildTreeQueryMessage");
@@ -122,7 +122,7 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
             case "/topic/mapResponseMessage":
                 log.trace("calling mapController.receiveFifoResponseMessage");
                 FifoResponseMessage fifoResponseMessage = (FifoResponseMessage) message;
-                mapController.receiveFifoResponseMessage(fifoResponseMessage);
+                quorumMutExController.receiveFifoResponseMessage(fifoResponseMessage);
                 break;
             case "/topic/markResponseMessage":
                 log.trace("calling snapshotController.receiveFifoResponseMessage");

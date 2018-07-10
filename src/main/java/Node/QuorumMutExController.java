@@ -12,33 +12,21 @@ import java.util.concurrent.Semaphore;
 
 @Controller
 @Slf4j
-public class MapController {
-    private final MapService mapService;
+public class QuorumMutExController {
+    private final QuorumMutExService quorumMutExService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-    private final SnapshotInfo snapshotInfo;
-    private final Semaphore sendingFifoSynchronizer;
-    private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
 
     @Autowired
-    public MapController(
-            MapService mapService,
+    public QuorumMutExController(
+            QuorumMutExService quorumMutExService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/NodeConfigurator/snapshotInfo")
-            SnapshotInfo snapshotInfo,
-            @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
-            Semaphore sendingFifoSynchronizer,
-            @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
-            MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer
             ){
-        this.mapService = mapService;
+        this.quorumMutExService = quorumMutExService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
-        this.snapshotInfo = snapshotInfo;
-        this.sendingFifoSynchronizer = sendingFifoSynchronizer;
-        this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
     }
 
     @MessageMapping("/mapMessage")
@@ -53,7 +41,7 @@ public class MapController {
                 log.debug("<---received map message {}  current Vector Clock {}", message, thisNodeInfo.getVectorClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-            Thread activeThingsThread = new Thread(mapService::doActiveThings);
+            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
             activeThingsThread.start();
             sendFifoResponse(message.getSourceUID(), message.getFifoRequestId());
         }

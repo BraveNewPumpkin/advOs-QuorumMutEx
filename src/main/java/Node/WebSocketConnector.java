@@ -4,8 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.*;
@@ -92,10 +90,10 @@ public class WebSocketConnector {
             }
         });
         if(log.isTraceEnabled()) {
-            log.trace("thisNodeInfo.getNeighbors(): {}", thisNodeInfo.getNeighbors());
+            log.trace("thisNodeInfo.getQuorum(): {}", thisNodeInfo.getQuorum());
         }
         //run the lambda in parallel for each neighboring node
-        thisNodeInfo.getNeighbors().parallelStream().forEach(sessionBuildingLambda);
+        thisNodeInfo.getQuorum().parallelStream().forEach(sessionBuildingLambda);
 
         return Collections.unmodifiableList(Arrays.asList(sessions.toArray(new StompSession[0])));
     }

@@ -13,8 +13,8 @@ public class Application {
             log.trace("before running application");
         }
         ApplicationContext context = SpringApplication.run(Application.class, args);
-        DoMapProtocol doMapProtocol = context.getBean(DoMapProtocol.class);
-        Thread mapThread = new Thread(doMapProtocol);
+        DoStartCSRequester doStartCSRequester = context.getBean(DoStartCSRequester.class);
+        Thread mapThread = new Thread(doStartCSRequester);
         if(log.isTraceEnabled()) {
             log.trace("before running doMapProtocol thread");
         }

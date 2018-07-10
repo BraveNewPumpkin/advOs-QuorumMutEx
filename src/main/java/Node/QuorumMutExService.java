@@ -12,39 +12,28 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-public class MapService {
-    private final MapController mapController;
+public class QuorumMutExService {
+    private final QuorumMutExController quorumMutExController;
     private final ThisNodeInfo thisNodeInfo;
-    private MapInfo mapInfo;
-    private GateLock buildingTreeSynchronizer;
-
-    private Object maxNumberSynchronizer;
-    private SnapshotInfo snapshotInfo;
-
+    private QuorumMutExInfo quorumMutExInfo;
 
     @Autowired
-    public MapService(
-            @Lazy MapController mapController,
+    public QuorumMutExService(
+            @Lazy QuorumMutExController quorumMutExController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo,
-            @Qualifier("Node/MapConfig/mapInfo") MapInfo mapInfo,
+            @Qualifier("Node/MapConfig/mapInfo") QuorumMutExInfo quorumMutExInfo,
             @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer") Object maxNumberSynchronizer,
-            @Qualifier("Node/MapConfig/buildingTreeSynchronizer")
-            GateLock buildingTreeSynchronizer,
-            @Qualifier("Node/NodeConfigurator/snapshotInfo") SnapshotInfo snapshotInfo
     ) {
-        this.mapController = mapController;
+        this.quorumMutExController = quorumMutExController;
         this.thisNodeInfo = thisNodeInfo;
-        this.mapInfo = mapInfo;
-        this.maxNumberSynchronizer = maxNumberSynchronizer;
-        this.buildingTreeSynchronizer = buildingTreeSynchronizer;
-        this.snapshotInfo = snapshotInfo;
+        this.quorumMutExInfo = quorumMutExInfo;
     }
 
     public void doActiveThings(){
         buildingTreeSynchronizer.enter();
         synchronized (maxNumberSynchronizer) {
-            if(mapInfo.getMessagesSent() < thisNodeInfo.getMaxNumber()) {
-                mapInfo.setActive(true);
+            if(quorumMutExInfo.getMessagesSent() < thisNodeInfo.getMaxNumber()) {
+                quorumMutExInfo.setActive(true);
                 int numMessagesToSend = genNumMessagesToSend();
                 //loop send message(s)
                 for(int i = 0; i < numMessagesToSend; i++) {
@@ -52,7 +41,7 @@ public class MapService {
                     waitMinSendDelay();
                 }
                 //set passive
-                mapInfo.setActive(false);
+                quorumMutExInfo.setActive(false);
             }
             snapshotInfo.incrementProcessedMessages();
         }
@@ -60,8 +49,8 @@ public class MapService {
 
     public void sendToRandomNeighbor() {
         NodeInfo targetNeighbor = chooseRandomNeighbor();
-        mapController.sendMapMessage(targetNeighbor.getUid());
-        mapInfo.incrementMessagesSent();
+        quorumMutExController.sendMapMessage(targetNeighbor.getUid());
+        quorumMutExInfo.incrementMessagesSent();
     }
 
     public void waitMinSendDelay() {
@@ -75,7 +64,7 @@ public class MapService {
 
     public int genNumMessagesToSend() {
         //pick random number of messages to send between minPerActive and min(maxPerActive, maxNumber - messagesSent)
-        int maxNum = Math.min(thisNodeInfo.getMaxPerActive(), thisNodeInfo.getMaxNumber() - mapInfo.getMessagesSent());
+        int maxNum = Math.min(thisNodeInfo.getMaxPerActive(), thisNodeInfo.getMaxNumber() - quorumMutExInfo.getMessagesSent());
 
         //the check is so that in case the number of messages that can be sent is > 0 but < maxPerActive
         if(maxNum < thisNodeInfo.getMinPerActive())
@@ -87,7 +76,7 @@ public class MapService {
     }
 
     public NodeInfo chooseRandomNeighbor(){
-        List<NodeInfo> neighbors = thisNodeInfo.getNeighbors();
+        List<NodeInfo> neighbors = thisNodeInfo.getQuorum();
         Random rand = new Random();
         NodeInfo chosenNeighbor = neighbors.get(rand.nextInt(neighbors.size()));
         return chosenNeighbor;

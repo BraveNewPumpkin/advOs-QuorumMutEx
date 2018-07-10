@@ -82,39 +82,6 @@ public class NodeConfigurator {
     }
 
     @Bean
-    @Qualifier("Node/NodeConfigurator/subscriptionDestinations")
-    public List<String> getSubscriptionDestinations() {
-        return Arrays.asList(
-            "/topic/mapMessage",
-            "/topic/buildTreeQueryMessage",
-            "/topic/buildTreeAckMessage",
-            "/topic/buildTreeNackMessage",
-            "/topic/markMessage",
-            "/topic/stateMessage",
-            "/topic/markResponseMessage",
-            "/topic/mapResponseMessage"
-        );
-    }
-
-    @Bean
-    @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
-    public CountDownLatch getConnectionTimeoutLatch() {
-        return new CountDownLatch(1);
-    }
-
-    @Bean
-    @Qualifier("Node/NodeConfigurator/maxNumberSynchronizer")
-    public Object getMaxNumberSynchronizer() {
-        return new Object();
-    }
-
-    @Bean
-    @Qualifier("Node/NodeConfigurator/snapshotInfo")
-    public SnapshotInfo getSnapshotInfo() {
-        return new SnapshotInfo();
-    }
-
-    @Bean
     @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
     public Semaphore getSendingFifoSynchronizer() {
         return new Semaphore(1, true);
