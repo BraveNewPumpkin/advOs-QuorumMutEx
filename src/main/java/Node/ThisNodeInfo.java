@@ -6,24 +6,23 @@ import static java.lang.Math.max;
 
 public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> quorum;
-    private final Set<Integer> allNodeUids;
     private final int totalNumberOfNodes;
-    private final int interRequestDelay;
-    private final int csExecutionTime;
+    private final int numberOfRequests;
     private final int scalarClock;
 
 
     ThisNodeInfo(
             int uid,
             int totalNumberOfNodes,
-            Set<Integer> allNodeUids,
             String hostName,
             int port,
+            int numberOfRequests
             ) {
         super(uid, hostName, port);
-        this.allNodeUids = allNodeUids;
         quorum = new ArrayList<>();
         this.totalNumberOfNodes = totalNumberOfNodes;
+        this.numberOfRequests=numberOfRequests;
+        scalarClock=0;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){
@@ -38,8 +37,7 @@ public final class ThisNodeInfo extends NodeInfo{
         return totalNumberOfNodes;
     }
 
-    public Set<Integer> getAllNodeUids() {
-        return allNodeUids;
+    public int getNumberOfRequests() {
+        return numberOfRequests;
     }
-
 }

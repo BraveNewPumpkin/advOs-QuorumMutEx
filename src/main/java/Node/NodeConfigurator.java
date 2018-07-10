@@ -39,8 +39,8 @@ public class NodeConfigurator {
     }
 
     @Bean
-    @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-    public ThisNodeInfo getThisNodeInfo(
+    @Qualifier("Node/NodeConfigurator/nodeConfig")
+    public NodeConfig getNodeConfig(
         @Qualifier("Node/NodeConfigurator/configResource")
         Resource configResource
     ) throws UnknownHostException, ConfigurationException {
@@ -50,6 +50,15 @@ public class NodeConfigurator {
 
         //load config using thisHostName to know which node we are
         NodeConfig nodeConfig = readNodeConfig(thisHostName, configResource);
+
+        return nodeConfig;
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/thisNodeInfo")
+    public ThisNodeInfo getThisNodeInfo(
+        @Qualifier("Node/NodeConfigurator/nodeConfig")
+        NodeConfig nodeConfig){
 
         //if trying to run locally, reset hostname to localhost
         if(isLocal) {
@@ -62,18 +71,31 @@ public class NodeConfigurator {
         ThisNodeInfo thisNodeInfo = new ThisNodeInfo(
                 thisUid,
                 totalNumberOfNodes,
-                nodeConfig.nodes.keySet(),
                 thisHostName,
                 thisPort,
+                nodeConfig.numberOfRequests
         );
 
-        nodeConfig.neighbors.forEach(neighborUid -> {
+        nodeConfig.quorum.forEach(neighborUid -> {
             NodeInfo neighbor = nodeConfig.nodes.get(neighborUid);
             thisNodeInfo.addNeighbor(neighbor);
 
         });
 
         return thisNodeInfo;
+    }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/csRequester")
+    public CsRequesterInfo getCsRequesterInfo(
+        @Qualifier("Node/NodeConfigurator/nodeConfig")
+        NodeConfig nodeConfig){
+        CsRequesterInfo csRequester = new CsRequesterInfo(
+          nodeConfig.meanInterRequestDelay,
+          nodeConfig.meanCsExecutionTime
+        );
+
+        return csRequester;
     }
 
     @Bean
@@ -87,16 +109,16 @@ public class NodeConfigurator {
             Resource configResource
         ) throws ConfigurationException {
         Map<Integer, NodeInfo> nodes = new HashMap<>();
-        List<Integer> neighbors = new ArrayList<>();
+        List<Integer> quorum = new ArrayList<>();
         String line;
         int count = 0;
 
         boolean validLine1=false;
         boolean nodeDetails=false;
-        boolean neighborDetails=false;
+        boolean quorumDetails=false;
         boolean hasThisNodeUidBeenFound = false;
         int thisNodeUid=0;
-        int numOfNodes=0, minPerActive=0,maxPerActive=0, minSendDelay=0, snapshotDelay=0, maxNumber=0;
+        int numOfNodes=0, meanInterRequestDelay=0,meanCsExecutionTime=0, numberOfRequests=0;
 
         try(
                 InputStream is = configResource.getInputStream();
@@ -116,11 +138,9 @@ public class NodeConfigurator {
                 }
                 if(!validLine1 && words.size()>=6){
                     numOfNodes=Integer.parseInt(words.remove());
-                    minPerActive=Integer.parseInt(words.remove());
-                    maxPerActive=Integer.parseInt(words.remove());
-                    minSendDelay=Integer.parseInt(words.remove());
-                    snapshotDelay=Integer.parseInt(words.remove());
-                    maxNumber=Integer.parseInt(words.remove());
+                    meanInterRequestDelay=Integer.parseInt(words.remove());
+                    meanCsExecutionTime=Integer.parseInt(words.remove());
+                    numberOfRequests=Integer.parseInt(words.remove());
                     validLine1=true;
                 }
                 else if(!nodeDetails && count<numOfNodes){
@@ -146,7 +166,7 @@ public class NodeConfigurator {
                         count=0; //reusing count variable for counting nodes while extracting neighbors
                     }
                 }
-                else if(!neighborDetails && count<numOfNodes){
+                else if(!quorumDetails && count<numOfNodes){
                     //Read neighbors
                     if(!hasThisNodeUidBeenFound) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
@@ -161,7 +181,7 @@ public class NodeConfigurator {
                         String str=words.remove();
 
                         if(str.matches("\\d+")){
-                            neighbors.add(Integer.parseInt(str));
+                            quorum.add(Integer.parseInt(str));
                         }
                         else {
                             break;
@@ -169,7 +189,7 @@ public class NodeConfigurator {
                     }
                     count++;
                     if(count==numOfNodes)
-                        neighborDetails=true;
+                        quorumDetails=true;
                 }
             }
         }
@@ -177,19 +197,17 @@ public class NodeConfigurator {
             log.error(e.getMessage());
         }
 
-        return new NodeConfig(thisNodeUid, numOfNodes, nodes,minPerActive,maxPerActive,minSendDelay,snapshotDelay,maxNumber,neighbors);
+        return new NodeConfig(thisNodeUid, numOfNodes, nodes, meanInterRequestDelay, meanCsExecutionTime, numberOfRequests, quorum);
     }
 
     private class NodeConfig {
         private int thisUid;
         private int totalNumberOfNodes;
         private Map<Integer, NodeInfo> nodes;
-        private List<Integer> neighbors;
-        private int minPerActive;
-        private int maxPerActive;
-        private int minSendDelay;
-        private int snapshotDelay;
-        private int maxNumber;
+        private List<Integer> quorum;
+        private int meanInterRequestDelay;
+        private int meanCsExecutionTime;
+        private int numberOfRequests;
 
 
 
@@ -197,22 +215,18 @@ public class NodeConfigurator {
                 int thisUid,
                 int totalNumberOfNodes,
                 Map<Integer, NodeInfo> nodes,
-                int minPerActive,
-                int maxPerActive,
-                int minSendDelay,
-                int snapshotDelay,
-                int maxNumber,
-                List<Integer> neighbors
+                int meanInterRequestDelay,
+                int meanCsExecutionTime,
+                int numberOfRequests,
+                List<Integer> quorum
         ) {
             this.thisUid = thisUid;
             this.totalNumberOfNodes = totalNumberOfNodes;
             this.nodes = nodes;
-            this.minPerActive=minPerActive;
-            this.maxPerActive=maxPerActive;
-            this.minSendDelay=minSendDelay;
-            this.snapshotDelay=snapshotDelay;
-            this.maxNumber=maxNumber;
-            this.neighbors = neighbors;
+            this.meanInterRequestDelay=meanInterRequestDelay;
+            this.meanCsExecutionTime=meanCsExecutionTime;
+            this.numberOfRequests=numberOfRequests;
+            this.quorum = quorum;
         }
     }
 }
