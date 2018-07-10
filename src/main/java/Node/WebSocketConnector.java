@@ -50,6 +50,9 @@ public class WebSocketConnector {
         ConcurrentLinkedQueue<StompSession> sessions = new ConcurrentLinkedQueue<>();
         //lambda to open connection and start sessions
         Consumer<NodeInfo> sessionBuildingLambda = (neighbor -> {
+            if(log.isTraceEnabled()) {
+                log.trace("starting connection to node {}", neighbor.getUid());
+            }
             final WebSocketClient client = new StandardWebSocketClient();
             final List<Transport> transports = new ArrayList<>(2);
             final RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
@@ -64,6 +67,9 @@ public class WebSocketConnector {
             final WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
             stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
+            if(log.isTraceEnabled()) {
+                log.trace("building uri for connection to {}", neighbor.getUid());
+            }
             final String uri = UriComponentsBuilder.newInstance()
                     .scheme("ws")
                     .userInfo("node" + String.valueOf(neighbor.getUid()))
@@ -73,7 +79,7 @@ public class WebSocketConnector {
                     .build()
                     .toUriString();
             try {
-                log.trace("starting stomp connection");
+                log.trace("starting stomp connection for uri: {}", uri);
                 final ListenableFuture<StompSession> future = stompClient.connect(uri, sessionHandler);
                 //wait for other instances to spin up
                 if(!connectionTimeoutLatch.await(30, TimeUnit.SECONDS)) {
@@ -82,9 +88,12 @@ public class WebSocketConnector {
                 final StompSession session = future.get(30, TimeUnit.SECONDS);
                 sessions.add(session);
             }catch(Throwable t) {
-                log.error(t.getMessage());
+                log.error("error thrown connecting stompClient: {}", t.getMessage());
             }
         });
+        if(log.isTraceEnabled()) {
+            log.trace("thisNodeInfo.getNeighbors(): {}", thisNodeInfo.getNeighbors());
+        }
         //run the lambda in parallel for each neighboring node
         thisNodeInfo.getNeighbors().parallelStream().forEach(sessionBuildingLambda);
 

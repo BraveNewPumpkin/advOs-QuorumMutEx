@@ -17,12 +17,12 @@ public class SnapshotController {
     private final SnapshotService snapshotService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-    private SnapshotInfo snapshotInfo;
+    private final SnapshotInfo snapshotInfo;
     private final TreeInfo treeInfo;
-    private final MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer;
     private final MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer;
     private final MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer;
     private final Semaphore sendingFifoSynchronizer;
+    private final MutableWrapper<Integer> currentMarkRoundNumber;
 
     //used to prevent race conditions with checking if marked
     private Object markedSynchronizer;
@@ -38,24 +38,24 @@ public class SnapshotController {
             SnapshotInfo snapshotInfo,
             @Qualifier("Node/BuildTreeConfig/treeInfo")
             TreeInfo treeInfo,
-            @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-            MessageIntRoundSynchronizer<MarkMessage> snapshotMarkerSynchronizer,
             @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
             MessageIntRoundSynchronizer<StateMessage> snapshotStateSynchronizer,
             @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
             MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> fifoResponseRoundSynchronizer,
             @Qualifier("Node/NodeConfigurator/sendingFifoSynchronizer")
-            Semaphore sendingFifoSynchronizer
+            Semaphore sendingFifoSynchronizer,
+            @Qualifier("Node/SnapshotConfig/currentMarkRoundNumber")
+            MutableWrapper<Integer> currentMarkRoundNumber
     ){
         this.snapshotService = snapshotService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.snapshotInfo = snapshotInfo;
         this.treeInfo = treeInfo;
-        this.snapshotMarkerSynchronizer = snapshotMarkerSynchronizer;
         this.snapshotStateSynchronizer = snapshotStateSynchronizer;
         this.fifoResponseRoundSynchronizer = fifoResponseRoundSynchronizer;
         this.sendingFifoSynchronizer = sendingFifoSynchronizer;
+        this.currentMarkRoundNumber = currentMarkRoundNumber;
 
         markedSynchronizer = new Object();
         doingStateOrMarkingThings = new Object();
@@ -63,19 +63,15 @@ public class SnapshotController {
 
     @MessageMapping("/markMessage")
     public void receiveMarkMessage(MarkMessage message) {
-        Runnable doCallMarkingThingsForMessage = () -> {
-            snapshotService.doMarkingThings(message.getRoundId());
-        };
 
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable doMarkingThings = () -> {
-            synchronized (doingStateOrMarkingThings) {
+            synchronized (markedSynchronizer) {
                 if (log.isDebugEnabled()) {
-                    log.debug("<---received MarkMessage {}. {} of {} this round", message, snapshotMarkerSynchronizer.getNumMessagesForGivenRound(message.getRoundId()) + 1, snapshotMarkerSynchronizer.getRoundSize());
+                    log.debug("<---received MarkMessage {}. Current round {}", message, currentMarkRoundNumber);
                 }
 
                 snapshotService.checkAndSendMarkerMessage(message.getRoundId(), message.getSourceUID(), message.getFifoRequestId());
-                snapshotMarkerSynchronizer.enqueueAndRunIfReadyNotInOrder(message, doCallMarkingThingsForMessage);
             }
         };
         Thread markingThingsThread = new Thread(doMarkingThings);
@@ -156,6 +152,10 @@ public class SnapshotController {
         } catch (java.lang.InterruptedException e) {
             //ignore
         }
+
+        //save state after acquire to prevent map message from being sent after state was saved but before mark was sent
+        snapshotService.saveState(roundNumber);
+
         FifoRequestId currentFifoRequestId = new FifoRequestId(thisNodeInfo.getUid()+"mark" + roundNumber);
         fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MarkMessage message = new MarkMessage(

@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
 public class SnapshotConfig {
@@ -40,13 +41,6 @@ public class SnapshotConfig {
     }
 
     @Bean
-    @Qualifier("Node/SnapshotConfig/snaphshotMarkerSynchronizer")
-    public MessageIntRoundSynchronizer<MarkMessage> getSnapshotMarkerSynchronizer() {
-        int numberOfNeighbors = thisNodeInfo.getNeighbors().size();
-        return new MessageIntRoundSynchronizer<>(numberOfNeighbors);
-    }
-
-    @Bean
     @Qualifier("Node/SnapshotConfig/snaphshotStateSynchronizer")
     public MessageIntRoundSynchronizer<StateMessage> getSnapshotStateSynchronizer() {
         return new MessageIntRoundSynchronizer<>(0);
@@ -56,5 +50,11 @@ public class SnapshotConfig {
     @Qualifier("Node/SnapshotConfig/fifoResponseRoundSynchronizer")
     public MessageRoundSynchronizer<FifoRequestId, FifoResponseMessage> getFifoResponseRoundSynchronizer() {
         return new MessageRoundSynchronizer<>(thisNodeInfo.getNeighbors().size());
+    }
+
+    @Bean
+    @Qualifier("Node/SnapshotConfig/currentMarkRoundNumber")
+    public MutableWrapper<Integer> getCurrentMarkRoundNumber() {
+        return new MutableWrapper<>(0);
     }
 }
