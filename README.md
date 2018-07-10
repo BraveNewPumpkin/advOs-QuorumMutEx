@@ -1,5 +1,5 @@
-# MAP Snapshot
-a practice implementation using Spring WebSocket of the MAP protocol and using Chandy and Lamport’s protocol for recording a consistent global snapshot to check the state.
+# Quorum Based Distributed Mutual Exclusion
+a practice implementation using Spring WebSocket of Maekawa's quorum based mutual exclusion algorithm.
 
 parameters are:
 
@@ -11,4 +11,4 @@ parameters are:
 
 
 References:
-Leslie Lamport, K. Mani Chandy: Distributed Snapshots: Determining Global States of a Distributed System. In: ACM Transactions on Computer Systems 3. Nr. 1, February 1985.
+M. Maekawa, "A √N algorithm for mutual exclusion in decentralized systems”, ACM Transactions in Computer Systems, vol. 3., no. 2., pp. 145-159, 1985.
