@@ -43,61 +43,21 @@ public class QuorumMutExController {
                 log.debug("<---received map message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-            activeThingsThread.start();
-            sendFifoResponse(message.getSourceUID(), message.getFifoRequestId());
+//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
+//            activeThingsThread.start();
         }
     }
 
-
-    @MessageMapping("/mapResponseMessage")
-    public void receiveFifoResponseMessage(FifoResponseMessage message) {
-        if(thisNodeInfo.getUid() == message.getTarget()) {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received mapResponseMessage {}", message);
-            }
-            FifoRequestId currentFifoRequestId = fifoResponseRoundSynchronizer.getRoundId();
-            if (message.getFifoRequestId().equals(currentFifoRequestId)) {
-                sendingFifoSynchronizer.release();
-            } else {
-                throw new Error("got response with FifoRequestId " + message.getFifoRequestIdAsString() + " did not match current FifoRequestId " + currentFifoRequestId.getRequestId());
-            }
-        }
-    }
-
-    public void sendFifoResponse(int targetUid, FifoRequestId fifoRequestId) throws MessagingException {
-        FifoResponseMessage message = new FifoResponseMessage(
-                thisNodeInfo.getUid(),
-                targetUid,
-                fifoRequestId
-        );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending mapResponseMessage: {}", message);
-        }
-        template.convertAndSend("/topic/mapResponseMessage", message);
-        log.trace("mapResponseMessage message sent");
-    }
 
     public void sendMapMessage(int targetUid) throws MessagingException {
-        try {
-            sendingFifoSynchronizer.acquire();
-        } catch (java.lang.InterruptedException e) {
-            //ignore
-        }
-        thisNodeInfo.incrementVectorClock();
-        FifoRequestId currentFifoRequestId = new FifoRequestId(thisNodeInfo.getUid()+"map" + snapshotInfo.getSentMessages());
-        fifoResponseRoundSynchronizer.setRoundId(currentFifoRequestId);
         MapMessage message = new MapMessage(
                 thisNodeInfo.getUid(),
-                targetUid,
-                thisNodeInfo.getVectorClock(),
-                currentFifoRequestId
+                targetUid
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending map message: {}", message);
         }
         template.convertAndSend("/topic/mapMessage", message);
-        snapshotInfo.incrementSentMessages();
         log.trace("MapMessage message sent");
     }
 }

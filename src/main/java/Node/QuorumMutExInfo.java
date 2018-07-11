@@ -20,8 +20,8 @@ public class QuorumMutExInfo {
             int incrementedValue = scalarClock++;
             scalarClock = incrementedValue;
         }
-        public void mergeScalarCLock () {
-            int maxValue = max(scalarClock, csScalarClock);
+        public void mergeScalarCLock (int csScalarClock) {
+            int maxValue = Math.max(scalarClock, csScalarClock);
             scalarClock = maxValue;
             incrementScalarClock();
         }

@@ -12,15 +12,16 @@ import java.util.concurrent.Semaphore;
 public class DoStartCSRequester implements Runnable{
     private final WebSocketConnector webSocketConnector;
     private final QuorumMutExController quorumMutExController;
-    private Semaphore connectingSynchronizer;
+    private final CsRequester csRequester;
+    private final Semaphore connectingSynchronizer;
     private final ThisNodeInfo thisNodeInfo;
 
     @Autowired
     public DoStartCSRequester(
             WebSocketConnector webSocketConnector,
             QuorumMutExController quorumMutExController,
-            QuorumMutExService quorumMutExService,
-            @Qualifier("Node/MapConfig/connectingSynchronizer")
+            CsRequester csRequester,
+            @Qualifier("Node/ConnectConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo
@@ -28,12 +29,14 @@ public class DoStartCSRequester implements Runnable{
     ){
         this.webSocketConnector = webSocketConnector;
         this.quorumMutExController = quorumMutExController;
+        this.csRequester = csRequester;
         this.connectingSynchronizer = connectingSynchronizer;
-        this.thisNodeInfo=thisNodeInfo;
+        this.thisNodeInfo = thisNodeInfo;
     }
 
     @Override
     public void run(){
+        csRequester.startRequesting();
     }
 
 }
