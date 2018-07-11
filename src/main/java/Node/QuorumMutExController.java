@@ -16,17 +16,20 @@ public class QuorumMutExController {
     private final QuorumMutExService quorumMutExService;
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
-
+    private final QuorumMutExInfo quorumMutExInfo;
     @Autowired
     public QuorumMutExController(
             QuorumMutExService quorumMutExService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-            ThisNodeInfo thisNodeInfo
+            ThisNodeInfo thisNodeInfo,
+            @Qualifier("Node/QuorumMutExConfig/quorumMutExInfo")
+            QuorumMutExInfo quorumMutExInfo
             ){
         this.quorumMutExService = quorumMutExService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
+        this.quorumMutExInfo = quorumMutExInfo;
     }
 
     @MessageMapping("/mapMessage")
@@ -37,7 +40,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received map message {}  current Scalar Clock {}", message, thisNodeInfo.getScalarClock());
+                log.debug("<---received map message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
