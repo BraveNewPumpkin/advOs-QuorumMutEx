@@ -136,7 +136,7 @@ public class NodeConfigurator {
                 if(words.peek().matches("\\D+")){
                     continue;
                 }
-                if(!validLine1 && words.size()>=6){
+                if(!validLine1 && words.size()>=4){
                     numOfNodes=Integer.parseInt(words.remove());
                     meanInterRequestDelay=Integer.parseInt(words.remove());
                     meanCsExecutionTime=Integer.parseInt(words.remove());
@@ -199,6 +199,13 @@ public class NodeConfigurator {
 
         return new NodeConfig(thisNodeUid, numOfNodes, nodes, meanInterRequestDelay, meanCsExecutionTime, numberOfRequests, quorum);
     }
+
+    @Bean
+    @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+    public CountDownLatch getConnectionTimeoutLatch() {
+        return new CountDownLatch(1);
+    }
+
 
     private class NodeConfig {
         private int thisUid;
