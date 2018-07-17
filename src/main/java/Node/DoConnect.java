@@ -4,11 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+@Component
 @Slf4j
 public class DoConnect implements Runnable {
     private final WebSocketConnector webSocketConnector;
@@ -18,7 +20,7 @@ public class DoConnect implements Runnable {
     @Autowired
     public DoConnect (
             WebSocketConnector webSocketConnector,
-            @Qualifier("Node/MapConfig/connectingSynchronizer")
+            @Qualifier("Node/ConnectConfig/connectingSynchronizer")
             Semaphore connectingSynchronizer,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo

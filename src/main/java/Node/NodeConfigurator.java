@@ -200,13 +200,6 @@ public class NodeConfigurator {
         return new NodeConfig(thisNodeUid, numOfNodes, nodes, meanInterRequestDelay, meanCsExecutionTime, numberOfRequests, quorum);
     }
 
-    @Bean
-    @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
-    public CountDownLatch getConnectionTimeoutLatch() {
-        return new CountDownLatch(1);
-    }
-
-
     private class NodeConfig {
         private int thisUid;
         private int totalNumberOfNodes;

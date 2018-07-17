@@ -35,7 +35,7 @@ public class WebSocketConnector {
         StompSessionHandler sessionHandler,
         @Qualifier("Node/NodeConfigurator/thisNodeInfo")
         ThisNodeInfo thisNodeInfo,
-        @Qualifier("Node/NodeConfigurator/connectionTimeoutLatch")
+        @Qualifier("Node/ConnectConfig/connectionTimeoutLatch")
         CountDownLatch connectionTimeoutLatch
     ){
         this.sessionHandler = sessionHandler;

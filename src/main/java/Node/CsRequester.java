@@ -27,9 +27,8 @@ public class CsRequester {
             while (true) {
                 double interRequestDelay = getRandomInterRequestDelay();
                 long roundedInterRequestDelay = Math.round(interRequestDelay);
+                log.trace("interRequestDelay: before rounding: {}. sleeping for {} milliseconds", interRequestDelay, roundedInterRequestDelay);
                 TimeUnit.MILLISECONDS.sleep(roundedInterRequestDelay);
-                //TODO remove
-                log.info("before rounding: {}. sleeping for {} milliseconds", interRequestDelay, roundedInterRequestDelay);
             }
         } catch (java.lang.InterruptedException e) {
             //ignore
