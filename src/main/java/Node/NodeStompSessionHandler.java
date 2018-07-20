@@ -9,30 +9,29 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 @Component
 @Slf4j
 public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
-    private final QuorumMutExController quorumMutExController;
-    private CountDownLatch connectionTimeoutLatch;
-    private List<String> subscriptionsDestinations;
+    private final CountDownLatch connectionTimeoutLatch;
+    private final List<MessageRouteInfo> messageRouteInfos;
 
     @Autowired
     public NodeStompSessionHandler(
-            QuorumMutExController quorumMutExController,
             @Qualifier("Node/ConnectConfig/connectionTimeoutLatch")
             CountDownLatch connectionTimeoutLatch,
-            @Qualifier("Node/ConnectConfig/subscriptionDestinations")
-            List<String> subscriptionsDestinations
+            @Qualifier("Node/ConnectConfig/messageRouteInfos")
+            List<MessageRouteInfo> messageRouteInfos
     ) {
-        this.quorumMutExController = quorumMutExController;
         this.connectionTimeoutLatch = connectionTimeoutLatch;
-        this.subscriptionsDestinations = subscriptionsDestinations;
+        this.messageRouteInfos = messageRouteInfos;
     }
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-        subscriptionsDestinations.parallelStream().forEach((subscriptionDestination) -> {
+        messageRouteInfos.parallelStream().forEach((messageRouteInfo) -> {
+            String subscriptionDestination = messageRouteInfo.getDestinationPath();
             session.subscribe(subscriptionDestination, this);
         });
         //we've connected so cancel the timeout
@@ -44,18 +43,27 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
     @Override
     public Type getPayloadType(StompHeaders stompHeaders) {
         log.trace("getting payload type");
-        Type payloadType = Object.class;
-        switch (stompHeaders.getDestination()) {
-            case "/topic/mapMessage":
-                payloadType = MapMessage.class;
-                break;
-            default:
-                if (log.isErrorEnabled()) {
-                    log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
+        OnceMutableHolder<Type> payloadTypeHolder = new OnceMutableHolder<>(Object.class);
+        messageRouteInfos.parallelStream().forEach((messageRouteInfo) -> {
+            String routeDestination = messageRouteInfo.getDestinationPath();
+            String messageDestination = stompHeaders.getDestination();
+            if(routeDestination.equals(messageDestination)) {
+                Type payloadType = messageRouteInfo.getMessageClass();
+                try {
+                    payloadTypeHolder.setThing(payloadType);
+                } catch(DuplicateMatchException e) {
+                    if (log.isErrorEnabled()) {
+                        log.error(e.getMessage());
+                    }
                 }
-                break;
+            }
+        });
+        if(!payloadTypeHolder.isUpdated()) {
+            if (log.isErrorEnabled()) {
+                log.error("unknown destination to determine payload type {}", stompHeaders.getDestination());
+            }
         }
-        return payloadType;
+        return payloadTypeHolder.getThing();
     }
 
     @Override
@@ -63,13 +71,25 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         if(log.isDebugEnabled()) {
             log.debug("handling frame. Destination: {}", stompHeaders.getDestination());
         }
-        switch (stompHeaders.getDestination()) {
-            case "/topic/mapMessage":
-                log.trace("calling mapController.mapMessage");
-                MapMessage mapMessage = (MapMessage) message;
-                quorumMutExController.mapMessage(mapMessage);
-                break;
-        }
+        OnceMutableHolder<Consumer> handlerHolder = new OnceMutableHolder<>((failedMessage) -> {
+            if (log.isErrorEnabled()) {
+                log.error("unable to match destination to determine handler method");
+            }
+        });
+        messageRouteInfos.parallelStream().forEach((messageRouteInfo) -> {
+            String routeDestination = messageRouteInfo.getDestinationPath();
+            String messageDestination = stompHeaders.getDestination();
+            if (routeDestination.equals(messageDestination)) {
+                try {
+                    handlerHolder.setThing(messageRouteInfo.getHandlerMethod());
+                } catch(DuplicateMatchException e) {
+                    if (log.isErrorEnabled()) {
+                        log.error(e.getMessage());
+                    }
+                }
+            }
+        });
+        handlerHolder.getThing().accept(message);
     }
 
     @Override
@@ -89,4 +109,37 @@ public class NodeStompSessionHandler extends StompSessionHandlerAdapter {
         //we've failed to connect so cancel the timeout
         connectionTimeoutLatch.countDown();
     }
+
+    private class OnceMutableHolder<T> {
+        private T thing;
+        private boolean updated;
+
+        public OnceMutableHolder(T defaultThing) {
+            thing = defaultThing;
+            updated = false;
+        }
+
+        public synchronized void setThing(T thing) throws DuplicateMatchException {
+            if(updated == true) {
+                throw new DuplicateMatchException("trying to update to " + thing.toString() + ", but already updated to " + this.thing.toString());
+            }
+            this.thing = thing;
+            updated = true;
+        }
+
+        public T getThing() {
+            return thing;
+        }
+
+        public boolean isUpdated() {
+            return updated;
+        }
+
+    }
+    public class DuplicateMatchException extends Exception {
+        public DuplicateMatchException(String explanation) {
+            super(explanation);
+        }
+    }
+
 }

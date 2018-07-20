@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -15,15 +16,35 @@ import java.util.concurrent.TimeUnit;
 public class QuorumMutExService {
     private final QuorumMutExController quorumMutExController;
     private final ThisNodeInfo thisNodeInfo;
-    private QuorumMutExInfo quorumMutExInfo;
+    private final QuorumMutExInfo quorumMutExInfo;
+
+    private final Semaphore criticalSectionLock;
 
     @Autowired
     public QuorumMutExService(
             @Lazy QuorumMutExController quorumMutExController,
+            QuorumMutExInfo quorumMutExInfo,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo") ThisNodeInfo thisNodeInfo
     ) {
         this.quorumMutExController = quorumMutExController;
         this.thisNodeInfo = thisNodeInfo;
         this.quorumMutExInfo = quorumMutExInfo;
+
+        criticalSectionLock = new Semaphore(0);
+    }
+
+    public void cs_enter() {
+        //TODO make request
+        //wait until we are allowed to enter cs
+        try {
+            criticalSectionLock.acquire();
+        } catch(java.lang.InterruptedException e) {
+            //ignore
+        }
+
+    }
+
+    public void cs_leave() {
+        //TODO send releases
     }
 }

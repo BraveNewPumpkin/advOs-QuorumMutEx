@@ -17,16 +17,16 @@ import java.util.List;
 @Configuration
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
-    private List<String> subscriptionsDestinations;
+    private List<MessageRouteInfo> messageRouteInfos;
 
     @Autowired
     public WebSocketConfig(
-        @Qualifier("Node/ConnectConfig/subscriptionDestinations")
-        List<String> subscriptionsDestinations
+        @Qualifier("Node/ConnectConfig/messageRouteInfos")
+        List<MessageRouteInfo> messageRouteInfos
 
     ){
         super();
-        this.subscriptionsDestinations = subscriptionsDestinations;
+        this.messageRouteInfos = messageRouteInfos;
     }
 
     @Bean
@@ -36,7 +36,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        String[] subscriptions = subscriptionsDestinations.toArray(new String[subscriptionsDestinations.size()]);
+        String[] subscriptions = new String[messageRouteInfos.size()];
+        for(int i = 0; i < messageRouteInfos.size(); i++) {
+            subscriptions[i] = messageRouteInfos.get(i).getDestinationPath();
+        }
         registry.addHandler(webSocketHandler(), subscriptions)
                 .setHandshakeHandler(new DefaultHandshakeHandler(new TomcatRequestUpgradeStrategy()))
                 .setAllowedOrigins("*")
