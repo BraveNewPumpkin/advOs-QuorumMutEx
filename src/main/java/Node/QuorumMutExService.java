@@ -34,17 +34,16 @@ public class QuorumMutExService {
     }
 
     public void cs_enter() {
-        //TODO make request
         //wait until we are allowed to enter cs
+        quorumMutExController.sendRequestMessage();
         try {
             criticalSectionLock.acquire();
         } catch(java.lang.InterruptedException e) {
             //ignore
         }
-
     }
 
     public void cs_leave() {
-        //TODO send releases
+        quorumMutExController.sendReleaseMessage();
     }
 }
