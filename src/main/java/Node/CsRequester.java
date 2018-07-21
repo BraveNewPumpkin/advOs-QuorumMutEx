@@ -11,24 +11,28 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class CsRequester {
-    public final CsRequesterInfo csRequesterInfo;
-    public final Random random;
     private final QuorumMutExService quorumMutExService;
+    private final CsRequesterInfo csRequesterInfo;
+    private final ThisNodeInfo thisNodeInfo;
+    private final Random random;
 
     @Autowired
     public CsRequester(
         QuorumMutExService quorumMutExService,
         @Qualifier("Node/NodeConfigurator/csRequester")
-        CsRequesterInfo csRequesterInfo
+        CsRequesterInfo csRequesterInfo,
+        @Qualifier("Node/NodeConfigurator/thisNodeInfo")
+        ThisNodeInfo thisNodeInfo
     ) {
         this.quorumMutExService = quorumMutExService;
         this.csRequesterInfo = csRequesterInfo;
+        this.thisNodeInfo = thisNodeInfo;
 
         random = new Random();
     }
 
     public void startRequesting(){
-            while (true) {
+        for(int i = 0; i < thisNodeInfo.getNumberOfRequests(); i++) {
                 waitRandomInterRequestDelay();
                 double csExecutionDelay = getRandomCsExecutionTime();
                 long roundedCsExecutionDelay = Math.round(csExecutionDelay);

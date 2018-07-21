@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +45,25 @@ public class QuorumMutExService {
     }
 
     public void cs_leave() {
+        quorumMutExInfo.incrementScalarClock();
         quorumMutExController.sendReleaseMessage();
+    }
+
+    public synchronized void intakeRequest(int sourceUid, int sourceClock) {
+        //TODO prevent duplicate inquires to same active with boolean
+        CsRequest newRequest = new CsRequest(sourceUid, sourceClock);
+        CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
+        //check if we have active
+        if(quorumMutExInfo.isLocked()) {
+            int compareResult = newRequest.compareTo(activeRequest);
+            if(compareResult < 0) {
+                quorumMutExController.sendInquireMessage(activeRequest.getSourceUid());
+            }
+            quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
+        } else {
+            quorumMutExInfo.setActiveRequest(newRequest);
+            quorumMutExInfo.setLocked(true);
+            quorumMutExController.sendGrantMessage(sourceUid);
+        }
     }
 }

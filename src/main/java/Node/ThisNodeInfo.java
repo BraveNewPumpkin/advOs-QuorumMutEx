@@ -2,16 +2,10 @@ package Node;
 
 import java.util.*;
 
-import static java.lang.Math.max;
-
 public final class ThisNodeInfo extends NodeInfo{
     private final List<NodeInfo> quorum;
     private final int totalNumberOfNodes;
     private final int numberOfRequests;
-
-
-
-
 
     ThisNodeInfo(
             int uid,
@@ -23,7 +17,7 @@ public final class ThisNodeInfo extends NodeInfo{
         super(uid, hostName, port);
         quorum = new ArrayList<>();
         this.totalNumberOfNodes = totalNumberOfNodes;
-        this.numberOfRequests=numberOfRequests;
+        this.numberOfRequests = numberOfRequests;
     }
 
     public boolean addNeighbor(NodeInfo neighbor){

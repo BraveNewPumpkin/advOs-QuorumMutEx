@@ -15,6 +15,8 @@ public class QuorumMutExController {
     private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final QuorumMutExInfo quorumMutExInfo;
+    private final CsRequesterInfo csRequesterInfo;
+
     @Autowired
     public QuorumMutExController(
             QuorumMutExService quorumMutExService,
@@ -22,12 +24,15 @@ public class QuorumMutExController {
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/QuorumMutExConfig/quorumMutExInfo")
-            QuorumMutExInfo quorumMutExInfo
+            QuorumMutExInfo quorumMutExInfo,
+            @Qualifier("Node/NodeConfigurator/csRequester")
+            CsRequesterInfo csRequesterInfo
             ){
         this.quorumMutExService = quorumMutExService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.quorumMutExInfo = quorumMutExInfo;
+        this.csRequesterInfo = csRequesterInfo;
     }
 
     @MessageMapping("/requestMessage")
@@ -36,8 +41,13 @@ public class QuorumMutExController {
             log.debug("<---received request message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+        Runnable intakeRequestCall = () -> {
+            int sourceUid = message.getSourceUID();
+            int sourceTimestamp = message.getSourceTimestamp();
+            quorumMutExService.intakeRequest(sourceUid, sourceTimestamp);
+        };
+        Thread intakeRequestThread = new Thread(intakeRequestCall);
+        intakeRequestThread.start();
     }
 
     @MessageMapping("/releaseMessage")
@@ -46,6 +56,7 @@ public class QuorumMutExController {
             log.debug("<---received release message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
+        //TODO merge criticalSectionNumber
 //            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
 //            activeThingsThread.start();
     }
@@ -77,6 +88,8 @@ public class QuorumMutExController {
                 log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
+            //TODO merge criticalSectionNumber
+            //TODO if we have all grant messages increment critical section number
 //            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
 //            activeThingsThread.start();
         }
@@ -116,7 +129,8 @@ public class QuorumMutExController {
 
     public void sendRequestMessage() throws MessagingException {
         RequestMessage message = new RequestMessage(
-                thisNodeInfo.getUid()
+                thisNodeInfo.getUid(),
+                quorumMutExInfo.getScalarClock()
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending request message: {}", message);
@@ -127,7 +141,8 @@ public class QuorumMutExController {
 
     public void sendReleaseMessage() throws MessagingException {
         ReleaseMessage message = new ReleaseMessage(
-                thisNodeInfo.getUid()
+                thisNodeInfo.getUid(),
+                csRequesterInfo.getCriticalSectionNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending release message: {}", message);
@@ -139,7 +154,8 @@ public class QuorumMutExController {
     public void sendGrantMessage(int targetUid) throws MessagingException {
         GrantMessage message = new GrantMessage(
                 thisNodeInfo.getUid(),
-                targetUid
+                targetUid,
+                csRequesterInfo.getCriticalSectionNumber()
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending grant message: {}", message);
