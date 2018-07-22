@@ -87,4 +87,8 @@ public class QuorumMutExInfo {
     public void decrementGrantsReceived() {
         grantsReceived--;
     }
+
+    public void resetGrantsReceived(){
+        grantsReceived=0;
+    }
 }

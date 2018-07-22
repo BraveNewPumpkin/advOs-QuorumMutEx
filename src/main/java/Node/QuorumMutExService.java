@@ -50,9 +50,11 @@ public class QuorumMutExService {
     }
 
     public void cs_leave() {
+        criticalSectionLock.release();
         quorumMutExInfo.incrementScalarClock();
         quorumMutExInfo.setFailedReceived(false);
         quorumMutExInfo.getInquiriesPending().clear();
+        quorumMutExInfo.resetGrantsReceived();
         quorumMutExController.sendReleaseMessage();
     }
 
