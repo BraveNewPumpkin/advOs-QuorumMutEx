@@ -87,6 +87,7 @@ public class QuorumMutExService {
         if(requestQueue.size() > 0) {
             CsRequest nextActiveRequest = requestQueue.remove();
             quorumMutExInfo.setActiveRequest(nextActiveRequest);
+            quorumMutExController.sendGrantMessage(nextActiveRequest.getSourceUid());
         } else {
             quorumMutExInfo.setLocked(false);
         }
