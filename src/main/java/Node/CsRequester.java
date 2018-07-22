@@ -54,6 +54,7 @@ public class CsRequester {
                 } catch (java.lang.InterruptedException e) {
                     //ignore
                 }
+                csRequesterInfo.incrementCriticalSectionNumber();
                 quorumMutExService.cs_leave();
             }
     }
