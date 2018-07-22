@@ -76,8 +76,12 @@ public class QuorumMutExController {
                 log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+            Runnable processFailedCall = () -> {
+                int sourceUid = message.getSourceUID();
+                quorumMutExService.processFailed(sourceUid);
+            };
+            Thread processFailedThread = new Thread(processFailedCall);
+            processFailedThread.start();
         }
     }
 
