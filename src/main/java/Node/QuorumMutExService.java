@@ -39,7 +39,7 @@ public class QuorumMutExService {
         criticalSectionLock = new Semaphore(0);
     }
 
-    public void cs_enter() {
+    public synchronized void cs_enter() {
         //wait until we are allowed to enter cs
         quorumMutExController.sendRequestMessage();
         try {
@@ -49,7 +49,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void cs_leave() {
+    public synchronized void cs_leave() {
         quorumMutExInfo.incrementScalarClock();
         quorumMutExInfo.setFailedReceived(false);
         quorumMutExInfo.getInquiriesPending().clear();
@@ -80,7 +80,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processRelease(int sourceUid, int sourceCriticalSectionNumber) {
+    public synchronized void processRelease(int sourceUid, int sourceCriticalSectionNumber) {
         csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
         quorumMutExInfo.setInquireSent(false);
         //set new active to first request from queue
@@ -94,14 +94,14 @@ public class QuorumMutExService {
         }
     }
 
-    public void processFailed(int sourceUid) {
+    public synchronized void processFailed(int sourceUid) {
         quorumMutExInfo.setFailedReceived(true);
         quorumMutExInfo.getInquiriesPending().parallelStream().forEach((uid) -> {
             quorumMutExController.sendYieldMessage(sourceUid);
         });
     }
 
-    public void processGrant(int sourceUid, int sourceCriticalSectionNumber) {
+    public synchronized void processGrant(int sourceUid, int sourceCriticalSectionNumber) {
         csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
         quorumMutExInfo.incrementGrantsReceived();
         //check if we have all grants and can run critical section
@@ -110,7 +110,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processInquire(int sourceUid, int sourceTimeStamp) {
+    public synchronized void processInquire(int sourceUid, int sourceTimeStamp) {
         //check to make sure this is not an outdated message
         if(sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
             //check if currently in critical section
@@ -125,7 +125,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processYield(int sourceUid) {
+    public synchronized void processYield(int sourceUid) {
         quorumMutExInfo.setInquireSent(false);
         quorumMutExInfo.setLocked(false);
         //swap active and head of queue
