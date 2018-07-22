@@ -114,7 +114,7 @@ public class QuorumMutExService {
         //check to make sure this is not an outdated message
         if(sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
             //check if currently in critical section
-            if(!criticalSectionLock.hasQueuedThreads()) {
+            if(criticalSectionLock.hasQueuedThreads()) {
                 if (quorumMutExInfo.isFailedReceived()) {
                     quorumMutExController.sendYieldMessage(sourceUid);
                     quorumMutExInfo.decrementGrantsReceived();
