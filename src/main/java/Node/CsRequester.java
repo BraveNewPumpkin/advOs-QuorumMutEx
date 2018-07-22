@@ -48,7 +48,7 @@ public class CsRequester {
                 long roundedCsExecutionDelay = Math.round(csExecutionDelay);
                 log.trace("csExecutionDelay: before rounding: {}. sleeping for {} milliseconds", csExecutionDelay, roundedCsExecutionDelay);
                 quorumMutExService.cs_enter();
-                log.info("running critical section");
+                log.info("running critical section number {}", csRequesterInfo.getCriticalSectionNumber());
                 try {
                     TimeUnit.MILLISECONDS.sleep(roundedCsExecutionDelay);
                 } catch (java.lang.InterruptedException e) {
