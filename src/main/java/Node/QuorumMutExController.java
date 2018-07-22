@@ -56,9 +56,13 @@ public class QuorumMutExController {
             log.debug("<---received release message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
-        //TODO merge criticalSectionNumber
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+        Runnable processReleaseCall = () -> {
+            int sourceUid = message.getSourceUID();
+            int sourceCriticalSectionNumber = message.getCriticalSectionNumber();
+            quorumMutExService.processRelease(sourceUid, sourceCriticalSectionNumber);
+        };
+        Thread processReleaseThread = new Thread(processReleaseCall);
+        processReleaseThread.start();
     }
 
     @MessageMapping("/failedMessage")
@@ -88,10 +92,12 @@ public class QuorumMutExController {
                 log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-            //TODO merge criticalSectionNumber
-            //TODO if we have all grant messages increment critical section number
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+            Runnable processGrantCall = () -> {
+                int sourceUid = message.getSourceUID();
+                quorumMutExService.processGrant(sourceUid, message.getCriticalSectionNumber());
+            };
+            Thread processGrantThread = new Thread(processGrantCall);
+            processGrantThread.start();
         }
     }
 
@@ -106,8 +112,12 @@ public class QuorumMutExController {
                 log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+            Runnable processInquireCall = () -> {
+                int sourceUid = message.getSourceUID();
+                quorumMutExService.processInquire(sourceUid);
+            };
+            Thread processInquireThread = new Thread(processInquireCall);
+            processInquireThread.start();
         }
     }
 
@@ -122,8 +132,12 @@ public class QuorumMutExController {
                 log.debug("<---received yield message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
-//            Thread activeThingsThread = new Thread(quorumMutExService::doActiveThings);
-//            activeThingsThread.start();
+            Runnable processYieldCall = () -> {
+                int sourceUid = message.getSourceUID();
+                quorumMutExService.processYield(sourceUid);
+            };
+            Thread processYieldThread = new Thread(processYieldCall);
+            processYieldThread.start();
         }
     }
 
