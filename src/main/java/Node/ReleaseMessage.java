@@ -18,5 +18,12 @@ public class ReleaseMessage extends NodeMessage {
     public void setCriticalSectionNumber(int criticalSectionNumber) {
         this.criticalSectionNumber = criticalSectionNumber;
     }
+
+    @Override
+    public String toString() {
+        return "ReleaseMessage{" +
+                "criticalSectionNumber=" + criticalSectionNumber +
+                "} " + super.toString();
+    }
 }
 

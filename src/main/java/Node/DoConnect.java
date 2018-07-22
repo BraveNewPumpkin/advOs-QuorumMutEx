@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class DoConnect implements Runnable {
     private final WebSocketConnector webSocketConnector;
-    private Semaphore connectingSynchronizer;
+    private final Semaphore connectingSynchronizer;
     private final ThisNodeInfo thisNodeInfo;
 
     @Autowired

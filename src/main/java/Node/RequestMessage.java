@@ -21,5 +21,12 @@ public class RequestMessage extends NodeMessage {
     public int getSourceTimestamp() {
         return sourceTimestamp;
     }
+
+    @Override
+    public String toString() {
+        return "RequestMessage{" +
+                "sourceTimestamp=" + sourceTimestamp +
+                "} " + super.toString();
+    }
 }
 

@@ -14,10 +14,16 @@ public class GrantMessage extends SimpleTargetableMessage {
     public int getCriticalSectionNumber() {
         return criticalSectionNumber;
     }
-    `
 
     public void setCriticalSectionNumber(int criticalSectionNumber) {
         this.criticalSectionNumber = criticalSectionNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "GrantMessage{" +
+                "criticalSectionNumber=" + criticalSectionNumber +
+                "} " + super.toString();
     }
 }
 

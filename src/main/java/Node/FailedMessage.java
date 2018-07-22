@@ -7,5 +7,10 @@ public class FailedMessage extends SimpleTargetableMessage {
     public FailedMessage(int sourceUID, int target) {
         super(sourceUID, target);
     }
+
+    @Override
+    public String toString() {
+        return "FailedMessage{} " + super.toString();
+    }
 }
 

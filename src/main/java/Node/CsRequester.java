@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class CsRequester {
     private final QuorumMutExService quorumMutExService;
     private final CsRequesterInfo csRequesterInfo;
+    private final Semaphore connectingSynchronizer;
     private final ThisNodeInfo thisNodeInfo;
     private final Random random;
 
@@ -21,17 +23,25 @@ public class CsRequester {
         QuorumMutExService quorumMutExService,
         @Qualifier("Node/NodeConfigurator/csRequester")
         CsRequesterInfo csRequesterInfo,
+        @Qualifier("Node/ConnectConfig/connectingSynchronizer")
+        Semaphore connectingSynchronizer,
         @Qualifier("Node/NodeConfigurator/thisNodeInfo")
         ThisNodeInfo thisNodeInfo
     ) {
         this.quorumMutExService = quorumMutExService;
         this.csRequesterInfo = csRequesterInfo;
+        this.connectingSynchronizer = connectingSynchronizer;
         this.thisNodeInfo = thisNodeInfo;
 
         random = new Random();
     }
 
     public void startRequesting(){
+        try {
+            connectingSynchronizer.acquire();
+        } catch(java.lang.InterruptedException e) {
+            //ignore
+        }
         for(int i = 0; i < thisNodeInfo.getNumberOfRequests(); i++) {
                 waitRandomInterRequestDelay();
                 double csExecutionDelay = getRandomCsExecutionTime();

@@ -52,6 +52,7 @@ public class QuorumMutExService {
     public void cs_leave() {
         quorumMutExInfo.incrementScalarClock();
         quorumMutExInfo.setFailedReceived(false);
+        quorumMutExInfo.getInquiriesPending().clear();
         quorumMutExController.sendReleaseMessage();
     }
 
@@ -64,7 +65,7 @@ public class QuorumMutExService {
             if(compareResult < 0) {
                 //prevent duplicate inquires to same active with boolean
                 if(!quorumMutExInfo.isInquireSent()) {
-                    quorumMutExController.sendInquireMessage(activeRequest.getSourceUid());
+                    quorumMutExController.sendInquireMessage(activeRequest.getSourceUid(), activeRequest.getSourceTimestamp());
                     quorumMutExInfo.setInquireSent(true);
                 }
             } else {
@@ -107,13 +108,18 @@ public class QuorumMutExService {
         }
     }
 
-    public void processInquire(int sourceUid) {
-        //TODO check if currently in critical section
-        if(quorumMutExInfo.isFailedReceived()) {
-            quorumMutExController.sendYieldMessage(sourceUid);
-            quorumMutExInfo.decrementGrantsReceived();
-        } else {
-            quorumMutExInfo.getInquiriesPending().add(sourceUid);
+    public void processInquire(int sourceUid, int sourceTimeStamp) {
+        //check to make sure this is not an outdated message
+        if(sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
+            //check if currently in critical section
+            if(!criticalSectionLock.hasQueuedThreads()) {
+                if (quorumMutExInfo.isFailedReceived()) {
+                    quorumMutExController.sendYieldMessage(sourceUid);
+                    quorumMutExInfo.decrementGrantsReceived();
+                } else {
+                    quorumMutExInfo.getInquiriesPending().add(sourceUid);
+                }
+            }
         }
     }
 

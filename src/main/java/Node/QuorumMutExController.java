@@ -114,7 +114,7 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processInquireCall = () -> {
                 int sourceUid = message.getSourceUID();
-                quorumMutExService.processInquire(sourceUid);
+                quorumMutExService.processInquire(sourceUid, message.getSourceTimeStamp());
             };
             Thread processInquireThread = new Thread(processInquireCall);
             processInquireThread.start();
@@ -190,10 +190,11 @@ public class QuorumMutExController {
         log.trace("FailedMessage message sent");
     }
 
-    public void sendInquireMessage(int targetUid) throws MessagingException {
+    public void sendInquireMessage(int targetUid, int timeStamp) throws MessagingException {
         InquireMessage message = new InquireMessage(
                 thisNodeInfo.getUid(),
-                targetUid
+                targetUid,
+                timeStamp
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending inquire message: {}", message);
