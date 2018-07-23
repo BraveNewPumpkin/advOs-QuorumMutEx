@@ -66,9 +66,9 @@ public class QuorumMutExService {
         }
     }
 
-    public void intakeRequest(int sourceUid, int sourceClock) {
+    public void intakeRequest(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
-            CsRequest newRequest = new CsRequest(sourceUid, sourceClock);
+            CsRequest newRequest = new CsRequest(sourceUid, sourceScalarClock);
             CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
             //check if we have active
             log.trace("in intake request");
@@ -114,7 +114,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processRelease(int sourceUid, int sourceCriticalSectionNumber) {
+    public void processRelease(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
             quorumMutExInfo.setInquireSent(false);
@@ -135,7 +135,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processFailed(int sourceUid) {
+    public void processFailed(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             quorumMutExInfo.setFailedReceived(true);
             quorumMutExInfo.getInquiriesPending().parallelStream().forEach((inquiry) -> {
@@ -154,7 +154,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processGrant(int sourceUid, int sourceCriticalSectionNumber) {
+    public void processGrant(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
             quorumMutExInfo.incrementGrantsReceived();
@@ -165,7 +165,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processInquire(int sourceUid, int sourceScalarClock) {
+    public void processInquire(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             //check if currently in critical section
             if (criticalSectionLock.hasQueuedThreads()) {
@@ -193,7 +193,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void processYield(int sourceUid) {
+    public void processYield(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             quorumMutExInfo.setInquireSent(false);
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();

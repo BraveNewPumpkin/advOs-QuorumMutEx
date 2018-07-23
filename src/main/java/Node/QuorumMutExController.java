@@ -44,7 +44,8 @@ public class QuorumMutExController {
         Runnable intakeRequestCall = () -> {
             int sourceUid = message.getSourceUID();
             int sourceScalarClock = message.getSourceScalarClock();
-            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock);
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
         };
         Thread intakeRequestThread = new Thread(intakeRequestCall);
         intakeRequestThread.start();
@@ -58,8 +59,9 @@ public class QuorumMutExController {
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable processReleaseCall = () -> {
             int sourceUid = message.getSourceUID();
+            int sourceScalarClock = message.getSourceScalarClock();
             int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
-            quorumMutExService.processRelease(sourceUid, sourceCriticalSectionNumber);
+            quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
         };
         Thread processReleaseThread = new Thread(processReleaseCall);
         processReleaseThread.start();
@@ -78,7 +80,9 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processFailedCall = () -> {
                 int sourceUid = message.getSourceUID();
-                quorumMutExService.processFailed(sourceUid);
+                int sourceScalarClock = message.getSourceScalarClock();
+                int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+                quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             Thread processFailedThread = new Thread(processFailedCall);
             processFailedThread.start();
@@ -98,8 +102,9 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processGrantCall = () -> {
                 int sourceUid = message.getSourceUID();
+                int sourceScalarClock = message.getSourceScalarClock();
                 int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
-                quorumMutExService.processGrant(sourceUid, sourceCriticalSectionNumber);
+                quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             Thread processGrantThread = new Thread(processGrantCall);
             processGrantThread.start();
@@ -120,7 +125,8 @@ public class QuorumMutExController {
             Runnable processInquireCall = () -> {
                 int sourceUid = message.getSourceUID();
                 int sourceScalarClock = message.getSourceScalarClock();
-                quorumMutExService.processInquire(sourceUid, sourceScalarClock);
+                int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+                quorumMutExService.processInquire(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             Thread processInquireThread = new Thread(processInquireCall);
             processInquireThread.start();
@@ -140,7 +146,9 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processYieldCall = () -> {
                 int sourceUid = message.getSourceUID();
-                quorumMutExService.processYield(sourceUid);
+                int sourceScalarClock = message.getSourceScalarClock();
+                int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+                quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             Thread processYieldThread = new Thread(processYieldCall);
             processYieldThread.start();
