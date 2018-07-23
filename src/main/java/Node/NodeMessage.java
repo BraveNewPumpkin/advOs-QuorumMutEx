@@ -36,4 +36,13 @@ public abstract class NodeMessage {
     public void setSourceCriticalSectionNumber(int sourceCriticalSectionNumber) {
         this.sourceCriticalSectionNumber = sourceCriticalSectionNumber;
     }
+
+    @Override
+    public String toString() {
+        return "NodeMessage{" +
+                "sourceUID=" + sourceUID +
+                ", sourceScalarClock=" + sourceScalarClock +
+                ", sourceCriticalSectionNumber=" + sourceCriticalSectionNumber +
+                '}';
+    }
 }
