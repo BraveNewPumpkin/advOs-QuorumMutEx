@@ -23,6 +23,8 @@ public class QuorumMutExService {
 
     private final Semaphore criticalSectionLock;
 
+    private final Object messageProcessingSynchronizer;
+
     @Autowired
     public QuorumMutExService(
             @Lazy QuorumMutExController quorumMutExController,
@@ -37,9 +39,10 @@ public class QuorumMutExService {
         this.thisNodeInfo = thisNodeInfo;
 
         criticalSectionLock = new Semaphore(0);
+        messageProcessingSynchronizer = new Object();
     }
 
-    public synchronized void cs_enter() {
+    public void cs_enter() {
         //wait until we are allowed to enter cs
         quorumMutExController.sendRequestMessage();
         try {
@@ -49,92 +52,120 @@ public class QuorumMutExService {
         }
     }
 
-    public synchronized void cs_leave() {
-        quorumMutExInfo.incrementScalarClock();
-        quorumMutExInfo.setFailedReceived(false);
-        quorumMutExInfo.getInquiriesPending().clear();
-        quorumMutExInfo.resetGrantsReceived();
-        quorumMutExController.sendReleaseMessage();
-    }
-
-    public synchronized void intakeRequest(int sourceUid, int sourceClock) {
-        CsRequest newRequest = new CsRequest(sourceUid, sourceClock);
-        CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
-        //check if we have active
-        if(quorumMutExInfo.isLocked()) {
-            int compareResult = newRequest.compareTo(activeRequest);
-            if(compareResult < 0) {
-                //prevent duplicate inquires to same active with boolean
-                if(!quorumMutExInfo.isInquireSent()) {
-                    quorumMutExController.sendInquireMessage(activeRequest.getSourceUid(), activeRequest.getSourceTimestamp());
-                    quorumMutExInfo.setInquireSent(true);
-                }
-            } else {
-                quorumMutExController.sendFailedMessage(sourceUid);
-            }
-            quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
-        } else {
-            quorumMutExInfo.setActiveRequest(newRequest);
-            quorumMutExInfo.setLocked(true);
-            quorumMutExController.sendGrantMessage(sourceUid);
+    public void cs_leave() {
+        synchronized (messageProcessingSynchronizer) {
+            quorumMutExInfo.incrementScalarClock();
+            quorumMutExInfo.setFailedReceived(false);
+            quorumMutExInfo.getInquiriesPending().clear();
+            quorumMutExInfo.resetGrantsReceived();
+            quorumMutExController.sendReleaseMessage();
         }
     }
 
-    public synchronized void processRelease(int sourceUid, int sourceCriticalSectionNumber) {
-        csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
-        quorumMutExInfo.setInquireSent(false);
-        //set new active to first request from queue
-        Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
-        if(requestQueue.size() > 0) {
-            CsRequest nextActiveRequest = requestQueue.remove();
-            quorumMutExInfo.setActiveRequest(nextActiveRequest);
-            quorumMutExController.sendGrantMessage(nextActiveRequest.getSourceUid());
-        } else {
-            quorumMutExInfo.setLocked(false);
-        }
-    }
-
-    public synchronized void processFailed(int sourceUid) {
-        quorumMutExInfo.setFailedReceived(true);
-        quorumMutExInfo.getInquiriesPending().parallelStream().forEach((uid) -> {
-            quorumMutExController.sendYieldMessage(sourceUid);
-        });
-    }
-
-    public synchronized void processGrant(int sourceUid, int sourceCriticalSectionNumber) {
-        csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
-        quorumMutExInfo.incrementGrantsReceived();
-        //check if we have all grants and can run critical section
-        if(checkAllGrantsReceived()) {
-            criticalSectionLock.release();
-        }
-    }
-
-    public synchronized void processInquire(int sourceUid, int sourceTimeStamp) {
-        //check to make sure this is not an outdated message
-        if(sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
-            //check if currently in critical section
-            if(criticalSectionLock.hasQueuedThreads()) {
-                if (quorumMutExInfo.isFailedReceived()) {
-                    quorumMutExController.sendYieldMessage(sourceUid);
-                    quorumMutExInfo.decrementGrantsReceived();
+    public void intakeRequest(int sourceUid, int sourceClock) {
+        synchronized (messageProcessingSynchronizer) {
+            CsRequest newRequest = new CsRequest(sourceUid, sourceClock);
+            CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
+            //check if we have active
+            //TODO remove
+            log.debug("in intake request");
+            if (quorumMutExInfo.isLocked()) {
+                //TODO remove
+                log.debug("is locked");
+                int compareResult = newRequest.compareTo(activeRequest);
+                if (compareResult < 0) {
+                    //TODO remove
+                    log.debug("new request had smaller timestamp");
+                    //prevent duplicate inquires to same active with boolean
+                    if (!quorumMutExInfo.isInquireSent()) {
+                        //TODO remove
+                        log.debug("have not yet sent inquire");
+                        quorumMutExController.sendInquireMessage(activeRequest.getSourceUid(), activeRequest.getSourceTimestamp());
+                        quorumMutExInfo.setInquireSent(true);
+                    } else {
+                        log.debug("already sent inquire so not sending.");
+                    }
                 } else {
-                    quorumMutExInfo.getInquiriesPending().add(sourceUid);
+                    //TODO remove
+                    log.debug("new request had larger or equal timestamp");
+                    quorumMutExController.sendFailedMessage(sourceUid);
+                }
+                quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
+            } else {
+                //TODO remove
+                log.debug("is not locked");
+                quorumMutExInfo.setActiveRequest(newRequest);
+                quorumMutExInfo.setLocked(true);
+                quorumMutExController.sendGrantMessage(sourceUid);
+            }
+        }
+    }
+
+    public void processRelease(int sourceUid, int sourceCriticalSectionNumber) {
+        synchronized (messageProcessingSynchronizer) {
+            csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
+            quorumMutExInfo.setInquireSent(false);
+            //set new active to first request from queue
+            Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
+            if (requestQueue.size() > 0) {
+                CsRequest nextActiveRequest = requestQueue.remove();
+                quorumMutExInfo.setActiveRequest(nextActiveRequest);
+                quorumMutExController.sendGrantMessage(nextActiveRequest.getSourceUid());
+            } else {
+                quorumMutExInfo.setLocked(false);
+            }
+        }
+    }
+
+    public void processFailed(int sourceUid) {
+        synchronized (messageProcessingSynchronizer) {
+            quorumMutExInfo.setFailedReceived(true);
+            quorumMutExInfo.getInquiriesPending().parallelStream().forEach((uid) -> {
+                quorumMutExController.sendYieldMessage(uid);
+            });
+        }
+    }
+
+    public void processGrant(int sourceUid, int sourceCriticalSectionNumber) {
+        synchronized (messageProcessingSynchronizer) {
+            csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
+            quorumMutExInfo.incrementGrantsReceived();
+            //check if we have all grants and can run critical section
+            if (checkAllGrantsReceived()) {
+                criticalSectionLock.release();
+            }
+        }
+    }
+
+    public void processInquire(int sourceUid, int sourceTimeStamp) {
+        synchronized (messageProcessingSynchronizer) {
+            //check to make sure this is not an outdated message
+            if (sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
+                //check if currently in critical section
+                if (criticalSectionLock.hasQueuedThreads()) {
+                    if (quorumMutExInfo.isFailedReceived()) {
+                        quorumMutExController.sendYieldMessage(sourceUid);
+                        quorumMutExInfo.decrementGrantsReceived();
+                    } else {
+                        quorumMutExInfo.getInquiriesPending().add(sourceUid);
+                    }
                 }
             }
         }
     }
 
-    public synchronized void processYield(int sourceUid) {
-        quorumMutExInfo.setInquireSent(false);
-        quorumMutExInfo.setLocked(false);
-        //swap active and head of queue
-        Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
-        CsRequest headOfQueue = requestQueue.remove();
-        requestQueue.add(quorumMutExInfo.getActiveRequest());
-        quorumMutExInfo.setActiveRequest(headOfQueue);
-        //send grant to active
-        quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
+    public void processYield(int sourceUid) {
+        synchronized (messageProcessingSynchronizer) {
+            quorumMutExInfo.setInquireSent(false);
+            quorumMutExInfo.setLocked(false);
+            //swap active and head of queue
+            Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
+            CsRequest headOfQueue = requestQueue.remove();
+            requestQueue.add(quorumMutExInfo.getActiveRequest());
+            quorumMutExInfo.setActiveRequest(headOfQueue);
+            //send grant to active
+            quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
+        }
     }
 
     public boolean checkAllGrantsReceived() {
