@@ -43,8 +43,8 @@ public class QuorumMutExController {
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable intakeRequestCall = () -> {
             int sourceUid = message.getSourceUID();
-            int sourceTimestamp = message.getSourceTimestamp();
-            quorumMutExService.intakeRequest(sourceUid, sourceTimestamp);
+            int sourceScalarClock = message.getSourceScalarClock();
+            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock);
         };
         Thread intakeRequestThread = new Thread(intakeRequestCall);
         intakeRequestThread.start();
@@ -58,7 +58,7 @@ public class QuorumMutExController {
         //spawn in separate thread to allow the message processing thread to return to threadpool
         Runnable processReleaseCall = () -> {
             int sourceUid = message.getSourceUID();
-            int sourceCriticalSectionNumber = message.getCriticalSectionNumber();
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
             quorumMutExService.processRelease(sourceUid, sourceCriticalSectionNumber);
         };
         Thread processReleaseThread = new Thread(processReleaseCall);
@@ -98,7 +98,8 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processGrantCall = () -> {
                 int sourceUid = message.getSourceUID();
-                quorumMutExService.processGrant(sourceUid, message.getCriticalSectionNumber());
+                int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+                quorumMutExService.processGrant(sourceUid, sourceCriticalSectionNumber);
             };
             Thread processGrantThread = new Thread(processGrantCall);
             processGrantThread.start();
@@ -118,7 +119,8 @@ public class QuorumMutExController {
             //spawn in separate thread to allow the message processing thread to return to threadpool
             Runnable processInquireCall = () -> {
                 int sourceUid = message.getSourceUID();
-                quorumMutExService.processInquire(sourceUid, message.getSourceTimeStamp());
+                int sourceScalarClock = message.getSourceScalarClock();
+                quorumMutExService.processInquire(sourceUid, sourceScalarClock);
             };
             Thread processInquireThread = new Thread(processInquireCall);
             processInquireThread.start();
@@ -145,10 +147,11 @@ public class QuorumMutExController {
         }
     }
 
-    public void sendRequestMessage() throws MessagingException {
+    public void sendRequestMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         RequestMessage message = new RequestMessage(
-                thisNodeInfo.getUid(),
-                quorumMutExInfo.getScalarClock()
+                thisNodeUid,
+                scalarClock,
+                criticalSectionNumber
                 );
         if(log.isDebugEnabled()){
             log.debug("--->sending request message: {}", message);
@@ -157,11 +160,12 @@ public class QuorumMutExController {
         log.trace("RequestMessage message sent");
     }
 
-    public void sendReleaseMessage() throws MessagingException {
+    public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         ReleaseMessage message = new ReleaseMessage(
-                thisNodeInfo.getUid(),
-                csRequesterInfo.getCriticalSectionNumber()
-        );
+            thisNodeUid,
+            scalarClock,
+            criticalSectionNumber
+            );
         if(log.isDebugEnabled()){
             log.debug("--->sending release message: {}", message);
         }
@@ -169,11 +173,12 @@ public class QuorumMutExController {
         log.trace("ReleaseMessage message sent");
     }
 
-    public void sendGrantMessage(int targetUid) throws MessagingException {
+    public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         GrantMessage message = new GrantMessage(
-                thisNodeInfo.getUid(),
+                thisNodeUid,
                 targetUid,
-                csRequesterInfo.getCriticalSectionNumber()
+                scalarClock,
+                criticalSectionNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending grant message: {}", message);
@@ -182,10 +187,12 @@ public class QuorumMutExController {
         log.trace("GrantMessage message sent");
     }
 
-    public void sendFailedMessage(int targetUid) throws MessagingException {
+    public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         FailedMessage message = new FailedMessage(
-                thisNodeInfo.getUid(),
-                targetUid
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending failed message: {}", message);
@@ -194,11 +201,12 @@ public class QuorumMutExController {
         log.trace("FailedMessage message sent");
     }
 
-    public void sendInquireMessage(int targetUid, int timeStamp) throws MessagingException {
+    public void sendInquireMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         InquireMessage message = new InquireMessage(
-                thisNodeInfo.getUid(),
+                thisNodeUid,
                 targetUid,
-                timeStamp
+                scalarClock,
+                criticalSectionNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending inquire message: {}", message);
@@ -207,10 +215,12 @@ public class QuorumMutExController {
         log.trace("InquireMessage message sent");
     }
 
-    public void sendYieldMessage(int targetUid) throws MessagingException {
+    public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
         YieldMessage message = new YieldMessage(
-                thisNodeInfo.getUid(),
-                targetUid
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending yield message: {}", message);

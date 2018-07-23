@@ -1,25 +1,16 @@
 package Node;
 
 public class InquireMessage extends SimpleTargetableMessage {
-    private int sourceTimeStamp;
-
     public InquireMessage() {
     }
 
-    public InquireMessage(int sourceUID, int target, int timeStamp) {
-        super(sourceUID, target);
-        sourceTimeStamp = timeStamp;
-    }
-
-    public int getSourceTimeStamp() {
-        return sourceTimeStamp;
+    public InquireMessage(int sourceUID, int target, int scalarClock, int criticalSectionNumber) {
+        super(sourceUID, target, scalarClock, criticalSectionNumber);
     }
 
     @Override
     public String toString() {
-        return "InquireMessage{" +
-                "sourceTimeStamp=" + sourceTimeStamp +
-                "} " + super.toString();
+        return "InquireMessage{} " + super.toString();
     }
 }
 

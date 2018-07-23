@@ -4,8 +4,8 @@ public class FailedMessage extends SimpleTargetableMessage {
     public FailedMessage() {
     }
 
-    public FailedMessage(int sourceUID, int target) {
-        super(sourceUID, target);
+    public FailedMessage(int sourceUID, int target, int scalarClock, int criticalSectionNumber) {
+        super(sourceUID, target, scalarClock, criticalSectionNumber);
     }
 
     @Override

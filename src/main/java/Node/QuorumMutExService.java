@@ -40,7 +40,11 @@ public class QuorumMutExService {
 
     public void cs_enter() {
         //wait until we are allowed to enter cs
-        quorumMutExController.sendRequestMessage();
+        quorumMutExController.sendRequestMessage(
+            thisNodeInfo.getUid(),
+            quorumMutExInfo.getScalarClock(),
+            csRequesterInfo.getCriticalSectionNumber()
+        );
         try {
             criticalSectionLock.acquire();
         } catch(java.lang.InterruptedException e) {
@@ -54,7 +58,11 @@ public class QuorumMutExService {
             quorumMutExInfo.setFailedReceived(false);
             quorumMutExInfo.getInquiriesPending().clear();
             quorumMutExInfo.resetGrantsReceived();
-            quorumMutExController.sendReleaseMessage();
+            quorumMutExController.sendReleaseMessage(
+                thisNodeInfo.getUid(),
+                quorumMutExInfo.getScalarClock(),
+                csRequesterInfo.getCriticalSectionNumber()
+            );
         }
     }
 
@@ -72,21 +80,36 @@ public class QuorumMutExService {
                     //prevent duplicate inquires to same active with boolean
                     if (!quorumMutExInfo.isInquireSent()) {
                         log.trace("have not yet sent inquire");
-                        quorumMutExController.sendInquireMessage(activeRequest.getSourceUid(), activeRequest.getSourceTimestamp());
+                        quorumMutExController.sendInquireMessage(
+                            thisNodeInfo.getUid(),
+                            activeRequest.getSourceUid(),
+                            activeRequest.getSourceTimestamp(),
+                            csRequesterInfo.getCriticalSectionNumber()
+                        );
                         quorumMutExInfo.setInquireSent(true);
                     } else {
                         log.trace("already sent inquire so not sending.");
                     }
                 } else {
                     log.trace("new request had larger or equal timestamp");
-                    quorumMutExController.sendFailedMessage(sourceUid);
+                    quorumMutExController.sendFailedMessage(
+                        thisNodeInfo.getUid(),
+                        sourceUid,
+                        quorumMutExInfo.getScalarClock(),
+                        csRequesterInfo.getCriticalSectionNumber()
+                    );
                 }
                 quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
             } else {
                 log.trace("is not locked");
                 quorumMutExInfo.setActiveRequest(newRequest);
                 quorumMutExInfo.setLocked(true);
-                quorumMutExController.sendGrantMessage(sourceUid);
+                quorumMutExController.sendGrantMessage(
+                    thisNodeInfo.getUid(),
+                    sourceUid,
+                    quorumMutExInfo.getScalarClock(),
+                    csRequesterInfo.getCriticalSectionNumber()
+                );
             }
         }
     }
@@ -100,7 +123,12 @@ public class QuorumMutExService {
             if (requestQueue.size() > 0) {
                 CsRequest nextActiveRequest = requestQueue.remove();
                 quorumMutExInfo.setActiveRequest(nextActiveRequest);
-                quorumMutExController.sendGrantMessage(nextActiveRequest.getSourceUid());
+                quorumMutExController.sendGrantMessage(
+                    thisNodeInfo.getUid(),
+                    nextActiveRequest.getSourceUid(),
+                    quorumMutExInfo.getScalarClock(),
+                    csRequesterInfo.getCriticalSectionNumber()
+                );
             } else {
                 quorumMutExInfo.setLocked(false);
             }
@@ -113,7 +141,12 @@ public class QuorumMutExService {
             quorumMutExInfo.getInquiriesPending().parallelStream().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 if (inquiry.getSourceTimeStamp() == quorumMutExInfo.getScalarClock()) {
-                    quorumMutExController.sendYieldMessage(inquiry.getSourceUid());
+                    quorumMutExController.sendYieldMessage(
+                        thisNodeInfo.getUid(),
+                        inquiry.getSourceUid(),
+                        quorumMutExInfo.getScalarClock(),
+                        csRequesterInfo.getCriticalSectionNumber()
+                    );
                 } else {
                     log.trace("ignoring stale inquiry: {}", inquiry);
                 }
@@ -132,22 +165,28 @@ public class QuorumMutExService {
         }
     }
 
-    public void processInquire(int sourceUid, int sourceTimeStamp) {
+    public void processInquire(int sourceUid, int sourceScalarClock) {
         synchronized (messageProcessingSynchronizer) {
             //check if currently in critical section
             if (criticalSectionLock.hasQueuedThreads()) {
                 if (quorumMutExInfo.isFailedReceived()) {
                     //check to make sure this is not an outdated message
-                    if (sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
-                        quorumMutExController.sendYieldMessage(sourceUid);
+                    int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
+                    if (sourceScalarClock == thisNodeScalarClock) {
+                        quorumMutExController.sendYieldMessage(
+                                thisNodeInfo.getUid(),
+                                sourceUid,
+                                thisNodeScalarClock,
+                                csRequesterInfo.getCriticalSectionNumber()
+                        );
                         quorumMutExInfo.decrementGrantsReceived();
                     } else {
                         if(log.isTraceEnabled()) {
-                            log.trace("inquiry's timestamp was not equal to current; ignoring. inquiryTimestamp: {}  current timestamp: {}", sourceTimeStamp, quorumMutExInfo.getScalarClock());
+                            log.trace("inquiry's timestamp was not equal to current; ignoring. inquiryTimestamp: {}  current timestamp: {}", sourceScalarClock, quorumMutExInfo.getScalarClock());
                         }
                     }
                 } else {
-                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceTimeStamp);
+                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock);
                     quorumMutExInfo.getInquiriesPending().add(inquiry);
                 }
             }
@@ -165,7 +204,12 @@ public class QuorumMutExService {
                 quorumMutExInfo.setActiveRequest(headOfQueue);
 
                 //send grant to active
-                quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
+                quorumMutExController.sendGrantMessage(
+                        thisNodeInfo.getUid(),
+                        quorumMutExInfo.getActiveRequest().getSourceUid(),
+                        quorumMutExInfo.getScalarClock(),
+                        csRequesterInfo.getCriticalSectionNumber()
+                        );
             } else {
                 log.trace("processing yield from {}, but request queue was empty.", sourceUid);
                 quorumMutExInfo.setLocked(false);

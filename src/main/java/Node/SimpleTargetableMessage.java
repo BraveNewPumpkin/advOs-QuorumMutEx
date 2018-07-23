@@ -6,8 +6,8 @@ public abstract class SimpleTargetableMessage extends NodeMessage implements Tar
     public SimpleTargetableMessage() {
     }
 
-    public SimpleTargetableMessage(int sourceUID, int target) {
-        super(sourceUID);
+    public SimpleTargetableMessage(int sourceUID, int target, int scalarClock, int criticalSectionNumber) {
+        super(sourceUID, scalarClock, criticalSectionNumber);
         this.target = target;
     }
 
