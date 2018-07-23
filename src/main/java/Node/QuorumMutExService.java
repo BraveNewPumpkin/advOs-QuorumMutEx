@@ -6,12 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.Random;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -67,33 +63,27 @@ public class QuorumMutExService {
             CsRequest newRequest = new CsRequest(sourceUid, sourceClock);
             CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
             //check if we have active
-            //TODO remove
-            log.debug("in intake request");
+            log.trace("in intake request");
             if (quorumMutExInfo.isLocked()) {
-                //TODO remove
-                log.debug("is locked");
+                log.trace("is locked");
                 int compareResult = newRequest.compareTo(activeRequest);
                 if (compareResult < 0) {
-                    //TODO remove
-                    log.debug("new request had smaller timestamp");
+                    log.trace("new request had smaller timestamp");
                     //prevent duplicate inquires to same active with boolean
                     if (!quorumMutExInfo.isInquireSent()) {
-                        //TODO remove
-                        log.debug("have not yet sent inquire");
+                        log.trace("have not yet sent inquire");
                         quorumMutExController.sendInquireMessage(activeRequest.getSourceUid(), activeRequest.getSourceTimestamp());
                         quorumMutExInfo.setInquireSent(true);
                     } else {
-                        log.debug("already sent inquire so not sending.");
+                        log.trace("already sent inquire so not sending.");
                     }
                 } else {
-                    //TODO remove
-                    log.debug("new request had larger or equal timestamp");
+                    log.trace("new request had larger or equal timestamp");
                     quorumMutExController.sendFailedMessage(sourceUid);
                 }
                 quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
             } else {
-                //TODO remove
-                log.debug("is not locked");
+                log.trace("is not locked");
                 quorumMutExInfo.setActiveRequest(newRequest);
                 quorumMutExInfo.setLocked(true);
                 quorumMutExController.sendGrantMessage(sourceUid);
@@ -120,8 +110,13 @@ public class QuorumMutExService {
     public void processFailed(int sourceUid) {
         synchronized (messageProcessingSynchronizer) {
             quorumMutExInfo.setFailedReceived(true);
-            quorumMutExInfo.getInquiriesPending().parallelStream().forEach((uid) -> {
-                quorumMutExController.sendYieldMessage(uid);
+            quorumMutExInfo.getInquiriesPending().parallelStream().forEach((inquiry) -> {
+                //check to make sure this is not an outdated message
+                if (inquiry.getSourceTimeStamp() == quorumMutExInfo.getScalarClock()) {
+                    quorumMutExController.sendYieldMessage(inquiry.getSourceUid());
+                } else {
+                    log.trace("ignoring stale inquiry: {}", inquiry);
+                }
             });
         }
     }
@@ -139,16 +134,21 @@ public class QuorumMutExService {
 
     public void processInquire(int sourceUid, int sourceTimeStamp) {
         synchronized (messageProcessingSynchronizer) {
-            //check to make sure this is not an outdated message
-            if (sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
-                //check if currently in critical section
-                if (criticalSectionLock.hasQueuedThreads()) {
-                    if (quorumMutExInfo.isFailedReceived()) {
+            //check if currently in critical section
+            if (criticalSectionLock.hasQueuedThreads()) {
+                if (quorumMutExInfo.isFailedReceived()) {
+                    //check to make sure this is not an outdated message
+                    if (sourceTimeStamp == quorumMutExInfo.getScalarClock()) {
                         quorumMutExController.sendYieldMessage(sourceUid);
                         quorumMutExInfo.decrementGrantsReceived();
                     } else {
-                        quorumMutExInfo.getInquiriesPending().add(sourceUid);
+                        if(log.isTraceEnabled()) {
+                            log.trace("inquiry's timestamp was not equal to current; ignoring. inquiryTimestamp: {}  current timestamp: {}", sourceTimeStamp, quorumMutExInfo.getScalarClock());
+                        }
                     }
+                } else {
+                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceTimeStamp);
+                    quorumMutExInfo.getInquiriesPending().add(inquiry);
                 }
             }
         }
@@ -158,11 +158,15 @@ public class QuorumMutExService {
         synchronized (messageProcessingSynchronizer) {
             quorumMutExInfo.setInquireSent(false);
             quorumMutExInfo.setLocked(false);
-            //swap active and head of queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
-            CsRequest headOfQueue = requestQueue.remove();
-            requestQueue.add(quorumMutExInfo.getActiveRequest());
-            quorumMutExInfo.setActiveRequest(headOfQueue);
+            if(requestQueue.size() > 0) {
+                //swap active and head of queue
+                CsRequest headOfQueue = requestQueue.remove();
+                requestQueue.add(quorumMutExInfo.getActiveRequest());
+                quorumMutExInfo.setActiveRequest(headOfQueue);
+            } else {
+                log.trace("processing yield from {}, but request queue was empty.", sourceUid);
+            }
             //send grant to active
             quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
         }

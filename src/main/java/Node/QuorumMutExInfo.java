@@ -7,7 +7,7 @@ import java.util.Queue;
 public class QuorumMutExInfo {
     private int scalarClock;
     private final PriorityQueue<CsRequest> waitingRequestQueue;
-    private final Queue<Integer> inquiriesPending;
+    private final Queue<ReceivedInquiry> inquiriesPending;
     private CsRequest activeRequest;
     private boolean isLocked;
     private boolean isInquireSent;
@@ -17,7 +17,7 @@ public class QuorumMutExInfo {
     public QuorumMutExInfo() {
         this.scalarClock = 0;
         waitingRequestQueue = new PriorityQueue<>();
-        inquiriesPending = new LinkedList<>();
+        inquiriesPending = new LinkedList<ReceivedInquiry>();
         isLocked = false;
         isInquireSent = false;
         isFailedReceived = false;
@@ -64,7 +64,7 @@ public class QuorumMutExInfo {
         isInquireSent = inquireSent;
     }
 
-    public Queue<Integer> getInquiriesPending() {
+    public Queue<ReceivedInquiry> getInquiriesPending() {
         return inquiriesPending;
     }
 

@@ -43,6 +43,7 @@ public class CsRequester {
             //ignore
         }
         for(int i = 0; i < thisNodeInfo.getNumberOfRequests(); i++) {
+                log.trace("request number: {}", i);
                 waitRandomInterRequestDelay();
                 double csExecutionDelay = getRandomCsExecutionTime();
                 long roundedCsExecutionDelay = Math.round(csExecutionDelay);
