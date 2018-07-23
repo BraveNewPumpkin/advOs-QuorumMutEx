@@ -157,18 +157,19 @@ public class QuorumMutExService {
     public void processYield(int sourceUid) {
         synchronized (messageProcessingSynchronizer) {
             quorumMutExInfo.setInquireSent(false);
-            quorumMutExInfo.setLocked(false);
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             if(requestQueue.size() > 0) {
                 //swap active and head of queue
                 CsRequest headOfQueue = requestQueue.remove();
                 requestQueue.add(quorumMutExInfo.getActiveRequest());
                 quorumMutExInfo.setActiveRequest(headOfQueue);
+
+                //send grant to active
+                quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
             } else {
                 log.trace("processing yield from {}, but request queue was empty.", sourceUid);
+                quorumMutExInfo.setLocked(false);
             }
-            //send grant to active
-            quorumMutExController.sendGrantMessage(quorumMutExInfo.getActiveRequest().getSourceUid());
         }
     }
 
