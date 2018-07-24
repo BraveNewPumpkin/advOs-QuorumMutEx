@@ -158,8 +158,6 @@ public class QuorumMutExController {
             };
             QuorumMutExWork work = new QuorumMutExWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
             workQueue.add(work);
-            Thread processYieldThread = new Thread(processYieldCall);
-            processYieldThread.start();
         }
     }
 
