@@ -18,7 +18,6 @@ public class QuorumMutExService {
     private final ThisNodeInfo thisNodeInfo;
 
     private final Semaphore criticalSectionLock;
-
     private final Object messageProcessingSynchronizer;
 
     @Autowired
