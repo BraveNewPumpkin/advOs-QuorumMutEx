@@ -25,8 +25,8 @@ public class QuorumMutExWork  implements Comparable<QuorumMutExWork> {
 
     @Override
     public int compareTo(QuorumMutExWork o) {
-        int thisScalarClock = getScalarClock();
-        int otherScalarClock = o.getScalarClock();
+        int thisScalarClock = getCriticalSectionNumber();
+        int otherScalarClock = o.getCriticalSectionNumber();
         if(thisScalarClock < otherScalarClock) {
             return -1;
         } else if(thisScalarClock == otherScalarClock) {

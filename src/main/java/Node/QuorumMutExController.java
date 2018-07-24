@@ -8,6 +8,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.Queue;
+
 @Controller
 @Slf4j
 public class QuorumMutExController {
@@ -16,245 +18,228 @@ public class QuorumMutExController {
     private final ThisNodeInfo thisNodeInfo;
     private final QuorumMutExInfo quorumMutExInfo;
     private final CsRequesterInfo csRequesterInfo;
-
-    private final Object messageProcessingSynchronizer;
+    private final Queue<QuorumMutExWork> workQueue;
 
     @Autowired
     public QuorumMutExController(
             QuorumMutExService quorumMutExService,
             SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
-                    ThisNodeInfo thisNodeInfo,
+            ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/QuorumMutExConfig/quorumMutExInfo")
-                    QuorumMutExInfo quorumMutExInfo,
+            QuorumMutExInfo quorumMutExInfo,
             @Qualifier("Node/NodeConfigurator/csRequester")
-                    CsRequesterInfo csRequesterInfo,
-            @Qualifier("Node/QuorumMutExConfig/messageProcessingSynchronizer")
-                    Object messageProcessingSynchronizer
-    ){
+            CsRequesterInfo csRequesterInfo,
+            @Qualifier("Node/QuorumMutExConfig/workQueue")
+            Queue<QuorumMutExWork> workQueue
+            ){
         this.quorumMutExService = quorumMutExService;
         this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.quorumMutExInfo = quorumMutExInfo;
         this.csRequesterInfo = csRequesterInfo;
-        this.messageProcessingSynchronizer=messageProcessingSynchronizer;
+        this.workQueue = workQueue;
     }
 
     @MessageMapping("/requestMessage")
     public void requestMessage(RequestMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received request message {}", message);
-            }
-            //spawn in separate thread to allow the message processing thread to return to threadpool
-            Runnable intakeRequestCall = () -> {
-                int sourceUid = message.getSourceUID();
-                int sourceScalarClock = message.getSourceScalarClock();
-                quorumMutExService.intakeRequest(sourceUid, sourceScalarClock);
-            };
-            Thread intakeRequestThread = new Thread(intakeRequestCall);
-            intakeRequestThread.start();
+        if (log.isDebugEnabled()) {
+            log.debug("<---received request message {}", message);
         }
+        //spawn in separate thread to allow the message processing thread to return to threadpool
+        int sourceUid = message.getSourceUID();
+        int sourceScalarClock = message.getSourceScalarClock();
+        int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+        Runnable intakeRequestCall = () -> {
+            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+        };
+        QuorumMutExWork work = new QuorumMutExWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
+        workQueue.add(work);
     }
 
     @MessageMapping("/releaseMessage")
     public void releaseMessage(ReleaseMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (log.isDebugEnabled()) {
-                log.debug("<---received release message {}", message);
-            }
-            //spawn in separate thread to allow the message processing thread to return to threadpool
-            Runnable processReleaseCall = () -> {
-                int sourceUid = message.getSourceUID();
-                int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
-                quorumMutExService.processRelease(sourceUid, sourceCriticalSectionNumber);
-            };
-            Thread processReleaseThread = new Thread(processReleaseCall);
-            processReleaseThread.start();
+        if (log.isDebugEnabled()) {
+            log.debug("<---received release message {}", message);
         }
+        //spawn in separate thread to allow the message processing thread to return to threadpool
+        int sourceUid = message.getSourceUID();
+        int sourceScalarClock = message.getSourceScalarClock();
+        int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+        Runnable processReleaseCall = () -> {
+            quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+        };
+        QuorumMutExWork work = new QuorumMutExWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
+        workQueue.add(work);
     }
 
     @MessageMapping("/failedMessage")
     public void failedMessage(FailedMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (thisNodeInfo.getUid() != message.getTarget()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("<---received  failed message {}", message);
-                }
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
-                }
-                //spawn in separate thread to allow the message processing thread to return to threadpool
-                Runnable processFailedCall = () -> {
-                    int sourceUid = message.getSourceUID();
-                    quorumMutExService.processFailed(sourceUid);
-                };
-                Thread processFailedThread = new Thread(processFailedCall);
-                processFailedThread.start();
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  failed message {}", message);
             }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+            }
+            //spawn in separate thread to allow the message processing thread to return to threadpool
+            int sourceUid = message.getSourceUID();
+            int sourceScalarClock = message.getSourceScalarClock();
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            Runnable processFailedCall = () -> {
+                quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            };
+            QuorumMutExWork work = new QuorumMutExWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
+            workQueue.add(work);
         }
     }
 
     @MessageMapping("/grantMessage")
     public void grantMessage(GrantMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (thisNodeInfo.getUid() != message.getTarget()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("<---received  grant message {}", message);
-                }
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
-                }
-                //spawn in separate thread to allow the message processing thread to return to threadpool
-                Runnable processGrantCall = () -> {
-                    int sourceUid = message.getSourceUID();
-                    int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
-                    quorumMutExService.processGrant(sourceUid, sourceCriticalSectionNumber);
-                };
-                Thread processGrantThread = new Thread(processGrantCall);
-                processGrantThread.start();
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+               log.trace("<---received  grant message {}", message);
             }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+            }
+            //spawn in separate thread to allow the message processing thread to return to threadpool
+            int sourceUid = message.getSourceUID();
+            int sourceScalarClock = message.getSourceScalarClock();
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            Runnable processGrantCall = () -> {
+                quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            };
+            QuorumMutExWork work = new QuorumMutExWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
+            workQueue.add(work);
         }
     }
 
     @MessageMapping("/inquireMessage")
     public void inquireMessage(InquireMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (thisNodeInfo.getUid() != message.getTarget()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("<---received  inquire message {}", message);
-                }
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
-                }
-                //spawn in separate thread to allow the message processing thread to return to threadpool
-                Runnable processInquireCall = () -> {
-                    int sourceUid = message.getSourceUID();
-                    int sourceScalarClock = message.getSourceScalarClock();
-                    quorumMutExService.processInquire(sourceUid, sourceScalarClock);
-                };
-                Thread processInquireThread = new Thread(processInquireCall);
-                processInquireThread.start();
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  inquire message {}", message);
             }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+            }
+            //spawn in separate thread to allow the message processing thread to return to threadpool
+            int sourceUid = message.getSourceUID();
+            int sourceScalarClock = message.getSourceScalarClock();
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            Runnable processInquireCall = () -> {
+                quorumMutExService.processInquire(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            };
+            QuorumMutExWork work = new QuorumMutExWork(processInquireCall, sourceScalarClock, sourceCriticalSectionNumber);
+            workQueue.add(work);
         }
     }
 
     @MessageMapping("/yieldMessage")
     public void yieldMessage(YieldMessage message) {
-        synchronized (messageProcessingSynchronizer) {
-            if (thisNodeInfo.getUid() != message.getTarget()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("<---received  yield message {}", message);
-                }
-            } else {
-                if (log.isDebugEnabled()) {
-                    log.debug("<---received yield message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
-                }
-                //spawn in separate thread to allow the message processing thread to return to threadpool
-                Runnable processYieldCall = () -> {
-                    int sourceUid = message.getSourceUID();
-                    quorumMutExService.processYield(sourceUid);
-                };
-                Thread processYieldThread = new Thread(processYieldCall);
-                processYieldThread.start();
+        if(thisNodeInfo.getUid() != message.getTarget()) {
+            if (log.isTraceEnabled()) {
+                log.trace("<---received  yield message {}", message);
             }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("<---received yield message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+            }
+            //spawn in separate thread to allow the message processing thread to return to threadpool
+            int sourceUid = message.getSourceUID();
+            int sourceScalarClock = message.getSourceScalarClock();
+            int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            Runnable processYieldCall = () -> {
+                quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            };
+            QuorumMutExWork work = new QuorumMutExWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
+            workQueue.add(work);
         }
     }
 
     public void sendRequestMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            RequestMessage message = new RequestMessage(
-                    thisNodeUid,
-                    scalarClock,
-                    criticalSectionNumber
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending request message: {}", message);
-            }
-            template.convertAndSend("/topic/requestMessage", message);
-            log.trace("RequestMessage message sent");
+        RequestMessage message = new RequestMessage(
+                thisNodeUid,
+                scalarClock,
+                criticalSectionNumber
+                );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending request message: {}", message);
         }
+        template.convertAndSend("/topic/requestMessage", message);
+        log.trace("RequestMessage message sent");
     }
 
     public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            ReleaseMessage message = new ReleaseMessage(
-                    thisNodeUid,
-                    scalarClock,
-                    criticalSectionNumber
+        ReleaseMessage message = new ReleaseMessage(
+            thisNodeUid,
+            scalarClock,
+            criticalSectionNumber
             );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending release message: {}", message);
-            }
-            template.convertAndSend("/topic/releaseMessage", message);
-            log.trace("ReleaseMessage message sent");
+        if(log.isDebugEnabled()){
+            log.debug("--->sending release message: {}", message);
         }
+        template.convertAndSend("/topic/releaseMessage", message);
+        log.trace("ReleaseMessage message sent");
     }
 
     public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            GrantMessage message = new GrantMessage(
-                    thisNodeUid,
-                    targetUid,
-                    scalarClock,
-                    criticalSectionNumber
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending grant message: {}", message);
-            }
-            template.convertAndSend("/topic/grantMessage", message);
-            log.trace("GrantMessage message sent");
+        GrantMessage message = new GrantMessage(
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending grant message: {}", message);
         }
+        template.convertAndSend("/topic/grantMessage", message);
+        log.trace("GrantMessage message sent");
     }
 
     public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            FailedMessage message = new FailedMessage(
-                    thisNodeUid,
-                    targetUid,
-                    scalarClock,
-                    criticalSectionNumber
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending failed message: {}", message);
-            }
-            template.convertAndSend("/topic/failedMessage", message);
-            log.trace("FailedMessage message sent");
+        FailedMessage message = new FailedMessage(
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending failed message: {}", message);
         }
+        template.convertAndSend("/topic/failedMessage", message);
+        log.trace("FailedMessage message sent");
     }
 
     public void sendInquireMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            InquireMessage message = new InquireMessage(
-                    thisNodeUid,
-                    targetUid,
-                    scalarClock,
-                    criticalSectionNumber
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending inquire message: {}", message);
-            }
-            template.convertAndSend("/topic/inquireMessage", message);
-            log.trace("InquireMessage message sent");
+        InquireMessage message = new InquireMessage(
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending inquire message: {}", message);
         }
+        template.convertAndSend("/topic/inquireMessage", message);
+        log.trace("InquireMessage message sent");
     }
 
     public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
-        synchronized (messageProcessingSynchronizer) {
-            YieldMessage message = new YieldMessage(
-                    thisNodeUid,
-                    targetUid,
-                    scalarClock,
-                    criticalSectionNumber
-            );
-            if (log.isDebugEnabled()) {
-                log.debug("--->sending yield message: {}", message);
-            }
-            template.convertAndSend("/topic/yieldMessage", message);
-            log.trace("YieldMessage message sent");
+        YieldMessage message = new YieldMessage(
+                thisNodeUid,
+                targetUid,
+                scalarClock,
+                criticalSectionNumber
+        );
+        if(log.isDebugEnabled()){
+            log.debug("--->sending yield message: {}", message);
         }
+        template.convertAndSend("/topic/yieldMessage", message);
+        log.trace("YieldMessage message sent");
     }
 }

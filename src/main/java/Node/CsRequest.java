@@ -33,4 +33,12 @@ public class CsRequest implements Comparable<CsRequest> {
             return 1;
         }
     }
+
+    @Override
+    public String toString() {
+        return "CsRequest{" +
+                "sourceUid=" + sourceUid +
+                ", sourceTimestamp=" + sourceTimestamp +
+                '}';
+    }
 }
