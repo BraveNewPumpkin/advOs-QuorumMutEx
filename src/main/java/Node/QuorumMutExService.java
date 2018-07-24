@@ -139,7 +139,7 @@ public class QuorumMutExService {
             quorumMutExInfo.setFailedReceived(true);
             quorumMutExInfo.getInquiriesPending().parallelStream().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
-                if (inquiry.getSourceTimeStamp() == quorumMutExInfo.getScalarClock()) {
+                if (inquiry.getSourceCriticalSectionNumber() == csRequesterInfo.getCriticalSectionNumber()) {
                     quorumMutExController.sendYieldMessage(
                         thisNodeInfo.getUid(),
                         inquiry.getSourceUid(),
@@ -185,7 +185,7 @@ public class QuorumMutExService {
                         }
                     }
                 } else {
-                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock);
+                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
                     quorumMutExInfo.getInquiriesPending().add(inquiry);
                 }
             }

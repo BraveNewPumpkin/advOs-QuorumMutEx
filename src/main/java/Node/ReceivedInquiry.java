@@ -3,10 +3,12 @@ package Node;
 public class ReceivedInquiry {
     private final int sourceUid;
     private final int sourceTimeStamp;
+    private final int sourceCriticalSectionNumber;
 
-    public ReceivedInquiry(int sourceUid, int sourceTimeStamp) {
+    public ReceivedInquiry(int sourceUid, int sourceTimeStamp, int sourceCriticalSectionNumber) {
         this.sourceUid = sourceUid;
         this.sourceTimeStamp = sourceTimeStamp;
+        this.sourceCriticalSectionNumber = sourceCriticalSectionNumber;
     }
 
     public int getSourceUid() {
@@ -15,5 +17,9 @@ public class ReceivedInquiry {
 
     public int getSourceTimeStamp() {
         return sourceTimeStamp;
+    }
+
+    public int getSourceCriticalSectionNumber() {
+        return sourceCriticalSectionNumber;
     }
 }

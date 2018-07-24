@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
@@ -27,6 +28,7 @@ public class DoStartQuorumMutExConsumer implements Runnable {
             try {
                 QuorumMutExWork quorumMutExWork = workQueue.take();
                 quorumMutExWork.getWork().run();
+                TimeUnit.MILLISECONDS.sleep(50);
             } catch(java.lang.InterruptedException e) {
                 //ignore
             }
