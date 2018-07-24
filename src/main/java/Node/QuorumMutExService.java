@@ -70,13 +70,15 @@ public class QuorumMutExService {
             log.trace("processing request sourceUid: {} sourceScalarClock: {} sourceCriticalSectionNumber: {}", sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             CsRequest newRequest = new CsRequest(sourceUid, sourceScalarClock);
             CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
+            Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             //check if we have active
             log.trace("in intake request");
             if (quorumMutExInfo.isLocked()) {
                 log.trace("is locked");
-                int compareResult = newRequest.compareTo(activeRequest);
-                if (compareResult < 0) {
-                    log.trace("new request had smaller timestamp");
+                int newRequestCompareActiveResult = newRequest.compareTo(activeRequest);
+                boolean isNewRequestSmallerThanActive = newRequestCompareActiveResult < 0;
+                if (isNewRequestSmallerThanActive) {
+                    log.trace("new request had smaller timestamp than active {}", activeRequest.toString());
                     //prevent duplicate inquires to same active with boolean
                     if (!quorumMutExInfo.isInquireSent()) {
                         log.trace("have not yet sent inquire");
@@ -90,8 +92,22 @@ public class QuorumMutExService {
                     } else {
                         log.trace("already sent inquire so not sending.");
                     }
+                    if(requestQueue.size() > 0) {
+                        CsRequest headOfQueue = quorumMutExInfo.getWaitingRequestQueue().element();
+                        int newRequestCompareHeadOfQueueResult = newRequest.compareTo(activeRequest);
+                        boolean isNewRequestSmallerThanHeadOfQueue = newRequestCompareHeadOfQueueResult < 0;
+                        if (isNewRequestSmallerThanHeadOfQueue) {
+                            log.trace("new request had smaller timestamp than head of queue {}", headOfQueue.toString());
+                            quorumMutExController.sendFailedMessage(
+                                    thisNodeInfo.getUid(),
+                                    headOfQueue.getSourceUid(),
+                                    quorumMutExInfo.getScalarClock(),
+                                    csRequesterInfo.getCriticalSectionNumber()
+                            );
+                        }
+                    }
                 } else {
-                    log.trace("new request had larger or equal timestamp");
+                    log.trace("new request had larger or equal timestamp than active {}", activeRequest.toString());
                     quorumMutExController.sendFailedMessage(
                         thisNodeInfo.getUid(),
                         sourceUid,
@@ -99,7 +115,7 @@ public class QuorumMutExService {
                         csRequesterInfo.getCriticalSectionNumber()
                     );
                 }
-                quorumMutExInfo.getWaitingRequestQueue().add(newRequest);
+                requestQueue.add(newRequest);
             } else {
                 log.trace("is not locked");
                 quorumMutExInfo.setActiveRequest(newRequest);
