@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
+import java.util.function.Predicate;
 
 @Service
 @Slf4j
@@ -137,17 +138,31 @@ public class QuorumMutExService {
             quorumMutExInfo.setInquireSent(false);
             //set new active to first request from queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
-            if (requestQueue.size() > 0) {
-                CsRequest nextActiveRequest = requestQueue.remove();
-                quorumMutExInfo.setActiveRequest(nextActiveRequest);
-                quorumMutExController.sendGrantMessage(
-                    thisNodeInfo.getUid(),
-                    nextActiveRequest.getSourceUid(),
-                    quorumMutExInfo.getScalarClock(),
-                    csRequesterInfo.getCriticalSectionNumber()
-                );
+            CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
+            if(activeRequest.getSourceUid() == sourceUid) {
+                //the release was for the active request
+                if (requestQueue.size() > 0) {
+                    CsRequest nextActiveRequest = requestQueue.remove();
+                    quorumMutExInfo.setActiveRequest(nextActiveRequest);
+                    quorumMutExController.sendGrantMessage(
+                            thisNodeInfo.getUid(),
+                            nextActiveRequest.getSourceUid(),
+                            quorumMutExInfo.getScalarClock(),
+                            csRequesterInfo.getCriticalSectionNumber()
+                    );
+                } else {
+                    quorumMutExInfo.setLocked(false);
+                }
             } else {
-                quorumMutExInfo.setLocked(false);
+                //the release was not for active request so check the queue
+                Predicate<CsRequest> doesRequestMatchRelease = (csRequest) -> {
+                    return csRequest.getSourceUid() == sourceUid;
+                };
+                boolean isRequestRemoved = requestQueue.removeIf(doesRequestMatchRelease);
+                if (!isRequestRemoved) {
+                    log.trace("tried to release for request which was not in queue.");
+                }
+                //TODO should we send grant?
             }
         }
     }
