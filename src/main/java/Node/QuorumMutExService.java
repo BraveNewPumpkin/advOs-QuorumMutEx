@@ -179,7 +179,7 @@ public class QuorumMutExService {
         synchronized (messageProcessingSynchronizer) {
             log.trace("processing failed sourceUid: {} sourceScalarClock: {} sourceCriticalSectionNumber: {}", sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             quorumMutExInfo.setFailedReceived(true);
-            quorumMutExInfo.getInquiriesPending().parallelStream().forEach((inquiry) -> {
+            quorumMutExInfo.getInquiriesPending().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 if (inquiry.getSourceCriticalSectionNumber() == csRequesterInfo.getCriticalSectionNumber()) {
                     quorumMutExController.sendYieldMessage(
@@ -188,6 +188,7 @@ public class QuorumMutExService {
                         quorumMutExInfo.getScalarClock(),
                         csRequesterInfo.getCriticalSectionNumber()
                     );
+                    quorumMutExInfo.decrementGrantsReceived();
                 } else {
                     log.trace("ignoring stale inquiry: {}", inquiry);
                 }
