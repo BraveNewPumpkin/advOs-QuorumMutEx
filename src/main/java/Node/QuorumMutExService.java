@@ -95,13 +95,21 @@ public class QuorumMutExService {
                     }
                     if(requestQueue.size() > 0) {
                         CsRequest headOfQueue = quorumMutExInfo.getWaitingRequestQueue().element();
-                        int newRequestCompareHeadOfQueueResult = newRequest.compareTo(activeRequest);
+                        int newRequestCompareHeadOfQueueResult = newRequest.compareTo(headOfQueue);
                         boolean isNewRequestSmallerThanHeadOfQueue = newRequestCompareHeadOfQueueResult < 0;
                         if (isNewRequestSmallerThanHeadOfQueue) {
                             log.trace("new request had smaller timestamp than head of queue {}", headOfQueue.toString());
                             quorumMutExController.sendFailedMessage(
                                     thisNodeInfo.getUid(),
                                     headOfQueue.getSourceUid(),
+                                    quorumMutExInfo.getScalarClock(),
+                                    csRequesterInfo.getCriticalSectionNumber()
+                            );
+                        } else {
+                            log.trace("new request had larger timestamp than head of queue {}", headOfQueue.toString());
+                            quorumMutExController.sendFailedMessage(
+                                    thisNodeInfo.getUid(),
+                                    sourceUid,
                                     quorumMutExInfo.getScalarClock(),
                                     csRequesterInfo.getCriticalSectionNumber()
                             );
@@ -207,12 +215,13 @@ public class QuorumMutExService {
                 if (quorumMutExInfo.isFailedReceived()) {
                     //check to make sure this is not an outdated message
                     int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
-                    if (sourceScalarClock == thisNodeScalarClock) {
+                    int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
+                    if (sourceCriticalSectionNumber == thisNodeCriticalSectionNumber) {
                         quorumMutExController.sendYieldMessage(
                                 thisNodeInfo.getUid(),
                                 sourceUid,
                                 thisNodeScalarClock,
-                                csRequesterInfo.getCriticalSectionNumber()
+                                thisNodeCriticalSectionNumber
                         );
                         quorumMutExInfo.decrementGrantsReceived();
                     } else {
