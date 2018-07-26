@@ -1,8 +1,6 @@
 package Node;
 
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 public class QuorumMutExInfo {
     private int scalarClock;
@@ -12,7 +10,7 @@ public class QuorumMutExInfo {
     private boolean isLocked;
     private boolean isInquireSent;
     private boolean isFailedReceived;
-    private int grantsReceived;
+    private Set<Integer> grantsReceived;
 
     public QuorumMutExInfo() {
         this.scalarClock = 0;
@@ -21,7 +19,7 @@ public class QuorumMutExInfo {
         isLocked = false;
         isInquireSent = false;
         isFailedReceived = false;
-        grantsReceived = 0;
+        grantsReceived = new HashSet<Integer>();
     }
 
     public int getScalarClock () {
@@ -76,19 +74,23 @@ public class QuorumMutExInfo {
         isFailedReceived = failedReceived;
     }
 
-    public int getGrantsReceived() {
-        return grantsReceived;
+    public int getNumGrantsReceived() {
+        return grantsReceived.size();
     }
 
-    public void incrementGrantsReceived() {
-        grantsReceived++;
+    public boolean isGrantReceived(int grantorUid) {
+        return grantsReceived.contains(grantorUid);
     }
 
-    public void decrementGrantsReceived() {
-        grantsReceived--;
+    public void addGrantReceived(int grantorUid) {
+        grantsReceived.add(grantorUid);
     }
 
-    public void resetGrantsReceived(){
-        grantsReceived=0;
+    public void removeGrantReceived(int grantorUid) {
+        grantsReceived.remove(grantorUid);
+    }
+
+    public void resetGrantsReceived() {
+        grantsReceived.clear();
     }
 }
