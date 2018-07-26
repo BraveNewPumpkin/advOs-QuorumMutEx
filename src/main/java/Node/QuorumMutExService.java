@@ -181,7 +181,7 @@ public class QuorumMutExService {
             quorumMutExInfo.setFailedReceived(true);
             quorumMutExInfo.getInquiriesPending().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
-                if (inquiry.getSourceCriticalSectionNumber() == csRequesterInfo.getCriticalSectionNumber()) {
+                if (inquiry.getSourceTimeStamp() == quorumMutExInfo.getScalarClock()) {
                     int inquirySourceUid = inquiry.getSourceUid();
                     quorumMutExController.sendYieldMessage(
                         thisNodeInfo.getUid(),
@@ -228,7 +228,7 @@ public class QuorumMutExService {
                     //check to make sure this is not an outdated message
                     int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
                     int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
-                    if (sourceCriticalSectionNumber == thisNodeCriticalSectionNumber) {
+                    if (sourceScalarClock == thisNodeScalarClock) {
                         quorumMutExController.sendYieldMessage(
                                 thisNodeInfo.getUid(),
                                 sourceUid,
