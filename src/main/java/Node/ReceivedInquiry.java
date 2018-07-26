@@ -22,4 +22,13 @@ public class ReceivedInquiry {
     public int getSourceCriticalSectionNumber() {
         return sourceCriticalSectionNumber;
     }
+
+    @Override
+    public String toString() {
+        return "ReceivedInquiry{" +
+                "sourceUid=" + sourceUid +
+                ", sourceTimeStamp=" + sourceTimeStamp +
+                ", sourceCriticalSectionNumber=" + sourceCriticalSectionNumber +
+                '}';
+    }
 }
