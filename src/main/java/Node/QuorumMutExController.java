@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.Queue;
+import java.util.UUID;
 
 @Controller
 @Slf4j
@@ -50,8 +51,9 @@ public class QuorumMutExController {
         int sourceUid = message.getSourceUID();
         int sourceScalarClock = message.getSourceScalarClock();
         int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+        UUID requestId = message.getRequestId();
         Runnable intakeRequestCall = () -> {
-            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
         };
         QuorumMutExWork work = new QuorumMutExWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
         workQueue.add(work);
@@ -66,8 +68,9 @@ public class QuorumMutExController {
         int sourceUid = message.getSourceUID();
         int sourceScalarClock = message.getSourceScalarClock();
         int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+        UUID requestId = message.getRequestId();
         Runnable processReleaseCall = () -> {
-            quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
         };
         QuorumMutExWork work = new QuorumMutExWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
         workQueue.add(work);
@@ -87,8 +90,9 @@ public class QuorumMutExController {
             int sourceUid = message.getSourceUID();
             int sourceScalarClock = message.getSourceScalarClock();
             int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            UUID requestId = message.getRequestId();
             Runnable processFailedCall = () -> {
-                quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
             };
             QuorumMutExWork work = new QuorumMutExWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
             workQueue.add(work);
@@ -109,8 +113,9 @@ public class QuorumMutExController {
             int sourceUid = message.getSourceUID();
             int sourceScalarClock = message.getSourceScalarClock();
             int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            UUID requestId = message.getRequestId();
             Runnable processGrantCall = () -> {
-                quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
             };
             QuorumMutExWork work = new QuorumMutExWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
             workQueue.add(work);
@@ -161,12 +166,13 @@ public class QuorumMutExController {
         }
     }
 
-    public void sendRequestMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
+    public void sendRequestMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
         RequestMessage message = new RequestMessage(
                 thisNodeUid,
                 scalarClock,
-                criticalSectionNumber
-                );
+                criticalSectionNumber,
+                requestId
+        );
         if(log.isDebugEnabled()){
             log.debug("--->sending request message: {}", message);
         }
@@ -174,12 +180,13 @@ public class QuorumMutExController {
         log.trace("RequestMessage message sent");
     }
 
-    public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
+    public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
         ReleaseMessage message = new ReleaseMessage(
-            thisNodeUid,
-            scalarClock,
-            criticalSectionNumber
-            );
+                thisNodeUid,
+                scalarClock,
+                criticalSectionNumber,
+                requestId
+        );
         if(log.isDebugEnabled()){
             log.debug("--->sending release message: {}", message);
         }
@@ -187,12 +194,13 @@ public class QuorumMutExController {
         log.trace("ReleaseMessage message sent");
     }
 
-    public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
+    public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
         GrantMessage message = new GrantMessage(
                 thisNodeUid,
                 targetUid,
                 scalarClock,
-                criticalSectionNumber
+                criticalSectionNumber,
+                requestId
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending grant message: {}", message);
@@ -201,12 +209,13 @@ public class QuorumMutExController {
         log.trace("GrantMessage message sent");
     }
 
-    public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
+    public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
         FailedMessage message = new FailedMessage(
                 thisNodeUid,
                 targetUid,
                 scalarClock,
-                criticalSectionNumber
+                criticalSectionNumber,
+                requestId
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending failed message: {}", message);
