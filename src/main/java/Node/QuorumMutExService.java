@@ -182,13 +182,21 @@ public class QuorumMutExService {
             quorumMutExInfo.getInquiriesPending().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 if (inquiry.getSourceCriticalSectionNumber() == csRequesterInfo.getCriticalSectionNumber()) {
+                    int inquirySourceUid = inquiry.getSourceUid();
                     quorumMutExController.sendYieldMessage(
                         thisNodeInfo.getUid(),
-                        inquiry.getSourceUid(),
+                        inquirySourceUid,
                         quorumMutExInfo.getScalarClock(),
                         csRequesterInfo.getCriticalSectionNumber()
                     );
-                    quorumMutExInfo.decrementGrantsReceived();
+                    if(quorumMutExInfo.isGrantReceived(inquirySourceUid)) {
+                        quorumMutExInfo.removeGrantReceived(inquirySourceUid);
+                        if(log.isTraceEnabled()) {
+                            log.trace("grants: {} -> {} of {}", quorumMutExInfo.getNumGrantsReceived() + 1, quorumMutExInfo.getNumGrantsReceived(), thisNodeInfo.getQuorum().size());
+                        }
+                    } else {
+                        log.trace("tried to remove grant that we didn't have from {}", inquirySourceUid);
+                    }
                 } else {
                     log.trace("ignoring stale inquiry: {}", inquiry);
                 }
@@ -200,7 +208,10 @@ public class QuorumMutExService {
         synchronized (messageProcessingSynchronizer) {
             log.trace("processing grant sourceUid: {} sourceScalarClock: {} sourceCriticalSectionNumber: {}", sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
-            quorumMutExInfo.incrementGrantsReceived();
+            quorumMutExInfo.addGrantReceived(sourceUid);
+            if(log.isTraceEnabled()) {
+                log.trace("grants: {} -> {} of {}", quorumMutExInfo.getNumGrantsReceived() - 1, quorumMutExInfo.getNumGrantsReceived(), thisNodeInfo.getQuorum().size());
+            }
             //check if we have all grants and can run critical section
             if (checkAllGrantsReceived()) {
                 criticalSectionLock.release();
@@ -224,7 +235,10 @@ public class QuorumMutExService {
                                 thisNodeScalarClock,
                                 thisNodeCriticalSectionNumber
                         );
-                        quorumMutExInfo.decrementGrantsReceived();
+                        quorumMutExInfo.removeGrantReceived(sourceUid);
+                        if(log.isTraceEnabled()) {
+                            log.trace("grants: {} -> {} of {}", quorumMutExInfo.getNumGrantsReceived() + 1, quorumMutExInfo.getNumGrantsReceived(), thisNodeInfo.getQuorum().size());
+                        }
                     } else {
                         if(log.isTraceEnabled()) {
                             log.trace("inquiry's timestamp was not equal to current; ignoring. inquiryTimestamp: {}  current timestamp: {}", sourceScalarClock, quorumMutExInfo.getScalarClock());
@@ -264,7 +278,7 @@ public class QuorumMutExService {
     }
 
     public boolean checkAllGrantsReceived() {
-        int numGrantsReceived = quorumMutExInfo.getGrantsReceived();
+        int numGrantsReceived = quorumMutExInfo.getNumGrantsReceived();
         int quorumSize = thisNodeInfo.getQuorum().size();
         return numGrantsReceived == quorumSize;
     }
