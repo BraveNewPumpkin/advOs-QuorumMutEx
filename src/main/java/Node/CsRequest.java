@@ -1,12 +1,16 @@
 package Node;
 
+import java.util.UUID;
+
 public class CsRequest implements Comparable<CsRequest> {
     private final int sourceUid;
     private final int sourceTimestamp;
+    private final UUID requestId;
 
-    public CsRequest(int sourceUid, int sourceTimestamp) {
+    public CsRequest(int sourceUid, int sourceTimestamp, UUID requestId) {
         this.sourceUid = sourceUid;
         this.sourceTimestamp = sourceTimestamp;
+        this.requestId = requestId;
     }
 
     public int getSourceUid() {
@@ -15,6 +19,10 @@ public class CsRequest implements Comparable<CsRequest> {
 
     public int getSourceTimestamp() {
         return sourceTimestamp;
+    }
+
+    public UUID getRequestId() {
+        return requestId;
     }
 
     @Override
@@ -39,6 +47,7 @@ public class CsRequest implements Comparable<CsRequest> {
         return "CsRequest{" +
                 "sourceUid=" + sourceUid +
                 ", sourceTimestamp=" + sourceTimestamp +
+                ", requestId=" + requestId +
                 '}';
     }
 }
