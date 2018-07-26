@@ -61,7 +61,7 @@ public class QuorumMutExService {
             quorumMutExController.sendReleaseMessage(
                 thisNodeInfo.getUid(),
                 quorumMutExInfo.getScalarClock(),
-                csRequesterInfo.getCriticalSectionNumber()
+                csRequesterInfo.getCriticalSectionNumber() - 1
             );
         }
     }
@@ -142,7 +142,7 @@ public class QuorumMutExService {
     public void processRelease(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
         synchronized (messageProcessingSynchronizer) {
             log.trace("processing release sourceUid: {} sourceScalarClock: {} sourceCriticalSectionNumber: {}", sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
-            csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
+            csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber + 1);
             quorumMutExInfo.setInquireSent(false);
             //set new active to first request from queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
