@@ -51,6 +51,8 @@ public class QuorumMutExService {
             requestId
         );
 
+        thisNodeCsRequestId = requestId;
+
         try {
             criticalSectionLock.acquire();
         } catch(java.lang.InterruptedException e) {
