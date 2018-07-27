@@ -115,7 +115,7 @@ public class QuorumMutExService {
                                     headOfQueue.getSourceUid(),
                                     quorumMutExInfo.getScalarClock(),
                                     csRequesterInfo.getCriticalSectionNumber(),
-                                    requestId
+                                    headOfQueue.getRequestId()
                             );
                         } else {
                             log.trace("new request had larger timestamp than head of queue {}", headOfQueue.toString());
