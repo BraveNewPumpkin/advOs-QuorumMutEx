@@ -246,6 +246,7 @@ public class NodeConfigurator {
                     return doesIntersectionHold;
             }
         }
+
         return doesIntersectionHold;
     }
 
