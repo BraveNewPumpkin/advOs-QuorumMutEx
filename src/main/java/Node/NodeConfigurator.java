@@ -120,6 +120,9 @@ public class NodeConfigurator {
         int thisNodeUid=0;
         int numOfNodes=0, meanInterRequestDelay=0,meanCsExecutionTime=0, numberOfRequests=0;
 
+        //for testing intersection property
+        ArrayList<ArrayList<Integer>> quorumList = new ArrayList<>();
+
         try(
                 InputStream is = configResource.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -129,67 +132,70 @@ public class NodeConfigurator {
                     continue;
                 }
                 Queue<String> words = new LinkedList<>(Arrays.asList(line.trim().split("\\s+")));
-                if(words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
+                if (words.size() == 0 || words.size() == 1 && words.peek().equals("")) {
                     continue;
                 }
 
-                if(words.peek().matches("\\D+")){
+                if (words.peek().matches("\\D+")) {
                     continue;
                 }
-                if(!validLine1 && words.size()>=4){
-                    numOfNodes=Integer.parseInt(words.remove());
-                    meanInterRequestDelay=Integer.parseInt(words.remove());
-                    meanCsExecutionTime=Integer.parseInt(words.remove());
-                    numberOfRequests=Integer.parseInt(words.remove());
-                    validLine1=true;
-                }
-                else if(!nodeDetails && count<numOfNodes){
+                if (!validLine1 && words.size() >= 4) {
+                    numOfNodes = Integer.parseInt(words.remove());
+                    meanInterRequestDelay = Integer.parseInt(words.remove());
+                    meanCsExecutionTime = Integer.parseInt(words.remove());
+                    numberOfRequests = Integer.parseInt(words.remove());
+                    validLine1 = true;
+                } else if (!nodeDetails && count < numOfNodes) {
                     //read node details
 
                     int uid = Integer.parseInt(words.remove());
                     String hostName = words.remove();
                     int port = Integer.parseInt(words.remove());
 
-                    if(thisNodeHostName.equals(hostName)){
+                    if (thisNodeHostName.equals(hostName)) {
                         hasThisNodeUidBeenFound = true;
                         thisNodeUid = uid;
                     }
-                    if(isLocal) {
+                    if (isLocal) {
                         hostName = "localhost";
                     }
                     NodeInfo nodeInfo = new NodeInfo(uid, hostName, port);
                     nodes.put(uid, nodeInfo);
                     count++;
 
-                    if(count==numOfNodes) {
+                    if (count == numOfNodes) {
                         nodeDetails = true;
-                        count=0; //reusing count variable for counting nodes while extracting neighbors
+                        count = 0; //reusing count variable for counting nodes while extracting neighbors
                     }
-                }
-                else if(!quorumDetails && count<numOfNodes){
+                } else if (!quorumDetails && count < numOfNodes) {
                     //Read neighbors
-                    if(!hasThisNodeUidBeenFound) {
+                    if (!hasThisNodeUidBeenFound) {
                         throw new ConfigurationException("could not find node matching HOSTNAME");
                     }
-                    if(count!=thisNodeUid) {
-                        count++;
-                        continue;
-                    }
 
-                    int size=words.size();
-                    for(int i=0;i<size;i++){
-                        String str=words.remove();
+                    ArrayList<Integer> currentQuorumList = new ArrayList<>();
+//                    if(count!=thisNodeUid) {
+//                        count++;
+//                        continue;
+//                    }
 
-                        if(str.matches("\\d+")){
-                            quorum.add(Integer.parseInt(str));
-                        }
-                        else {
+                    int size = words.size();
+                    for (int i = 0; i < size; i++) {
+                        String str = words.remove();
+
+                        if (str.matches("\\d+")) {
+                            if (count == thisNodeUid) {
+                                quorum.add(Integer.parseInt(str));
+                            }
+                            currentQuorumList.add(Integer.parseInt(str));
+                        } else {
                             break;
                         }
                     }
+                    quorumList.add(currentQuorumList);
                     count++;
-                    if(count==numOfNodes)
-                        quorumDetails=true;
+                    if (count == numOfNodes)
+                        quorumDetails = true;
                 }
             }
         }
@@ -197,7 +203,51 @@ public class NodeConfigurator {
             log.error(e.getMessage());
         }
 
+        boolean doesIntersectionHold = checkIfIntersectionHolds(quorumList);
+        if(doesIntersectionHold)
+            log.debug("Intersection Property Holds");
+        else
+            log.debug("Intersection Property Does Not Hold");
         return new NodeConfig(thisNodeUid, numOfNodes, nodes, meanInterRequestDelay, meanCsExecutionTime, numberOfRequests, quorum);
+    }
+
+    public boolean checkIfIntersectionHolds(ArrayList<ArrayList<Integer>> quorumList){
+        boolean doesIntersectionHold=true;
+        for(int i=0;i<quorumList.size();i++){
+            for(int j=0;j<quorumList.size();j++){
+                if(i==j){
+                    continue;
+                }
+                ArrayList<Integer> firstQuorum = quorumList.get(i);
+                ArrayList<Integer> secondQuorum = quorumList.get(j);
+
+                Collections.sort(firstQuorum);
+                Collections.sort(secondQuorum);
+
+                int index1=0, index2=0;
+                boolean doTwoQuorumsHold=false;
+
+                while(index1!=firstQuorum.size() && index2!=secondQuorum.size()){
+                    int first = firstQuorum.get(index1);
+                    int second = secondQuorum.get(index2);
+                    if(first==second){
+                        doTwoQuorumsHold=true;
+                        index1++;
+                        index2++;
+                        break;
+                    }
+                    else if(first<second)
+                        index1++;
+                    else
+                        index2++;
+                }
+                doesIntersectionHold=doesIntersectionHold && doTwoQuorumsHold;
+                if(!doesIntersectionHold)
+                    return doesIntersectionHold;
+            }
+        }
+
+        return doesIntersectionHold;
     }
 
     private class NodeConfig {

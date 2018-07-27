@@ -28,4 +28,8 @@ public class QuorumMutExConfig {
     public PriorityBlockingQueue<QuorumMutExWork> getWorkQueue() {
         return new PriorityBlockingQueue<>();
     }
+
+    @Bean
+    @Qualifier("Node/QuorumMutExConfig/messageProcessingSynchronizer")
+    public Object getMessageProcessingSynchronizer() { return new Object();}
 }

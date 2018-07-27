@@ -27,7 +27,7 @@ public class DoStartQuorumMutExConsumer implements Runnable {
             try {
                 QuorumMutExWork quorumMutExWork = workQueue.take();
                 quorumMutExWork.getWork().run();
-                TimeUnit.MILLISECONDS.sleep(50);
+                TimeUnit.MILLISECONDS.sleep(10);
             } catch(java.lang.InterruptedException e) {
                 //ignore
             }
