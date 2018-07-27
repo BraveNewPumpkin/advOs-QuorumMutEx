@@ -13,6 +13,10 @@ public class ReleaseMessage extends NodeMessage implements RequestIdentifiable {
         this.requestId = requestId;
     }
 
+    public void setRequestId(UUID requestId) {
+        this.requestId = requestId;
+    }
+
     @Override
     public UUID getRequestId(){
         return requestId;

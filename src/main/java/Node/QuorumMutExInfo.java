@@ -10,7 +10,7 @@ public class QuorumMutExInfo {
     private boolean isLocked;
     private boolean isInquireSent;
     private boolean isFailedReceived;
-    private Set<Integer> grantsReceived;
+    private Map<UUID, Set<Integer>> grantsReceived;
 
     public QuorumMutExInfo() {
         this.scalarClock = 0;
@@ -19,7 +19,7 @@ public class QuorumMutExInfo {
         isLocked = false;
         isInquireSent = false;
         isFailedReceived = false;
-        grantsReceived = new HashSet<Integer>();
+        grantsReceived = new HashMap<>();
     }
 
     public int getScalarClock () {
@@ -74,23 +74,43 @@ public class QuorumMutExInfo {
         isFailedReceived = failedReceived;
     }
 
-    public int getNumGrantsReceived() {
-        return grantsReceived.size();
+    public int getNumGrantsReceived(UUID requestId) {
+        int numGrantsReceived = 0;
+        if(grantsReceived.containsKey(requestId)) {
+            Set<Integer> grantsReceivedForRequest = grantsReceived.get(requestId);
+            numGrantsReceived = grantsReceivedForRequest.size();
+        }
+        return numGrantsReceived;
     }
 
-    public boolean isGrantReceived(int grantorUid) {
-        return grantsReceived.contains(grantorUid);
+    public boolean isGrantReceived(UUID requestId, int grantorUid) {
+        boolean isGrantReceived = false;
+        if(grantsReceived.containsKey(requestId)) {
+            Set<Integer> grantsReceivedForRequest = grantsReceived.get(requestId);
+            if(grantsReceivedForRequest.contains(grantorUid)) {
+                isGrantReceived = true;
+            }
+        }
+        return isGrantReceived;
     }
 
-    public void addGrantReceived(int grantorUid) {
-        grantsReceived.add(grantorUid);
+    public void addGrantReceived(UUID requestId, int grantorUid) {
+        Set<Integer> grantsReceivedForRequest;
+        if(grantsReceived.containsKey(requestId)) {
+            grantsReceivedForRequest = grantsReceived.get(requestId);
+        } else {
+            grantsReceivedForRequest = new HashSet<Integer>(1);
+        }
+        grantsReceivedForRequest.add(grantorUid);
+        grantsReceived.put(requestId, grantsReceivedForRequest);
     }
 
-    public void removeGrantReceived(int grantorUid) {
-        grantsReceived.remove(grantorUid);
+    public void removeGrantReceived(UUID requestId, int grantorUid) {
+        Set<Integer> grantsReceivedForRequest = grantsReceived.get(requestId);
+        grantsReceivedForRequest.remove(grantorUid);
     }
 
-    public void resetGrantsReceived() {
-        grantsReceived.clear();
+    public void resetGrantsReceived(UUID requestId) {
+        grantsReceived.remove(requestId);
     }
 }
