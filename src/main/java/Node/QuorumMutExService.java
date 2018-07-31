@@ -172,7 +172,7 @@ public class QuorumMutExService {
             //set new active to first request from queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
-            if(activeRequest.getRequestId() == requestId) {
+            if(activeRequest.getRequestId().equals(requestId)) {
                 //the release was for the active request
                 if (requestQueue.size() > 0) {
                     CsRequest nextActiveRequest = requestQueue.remove();
