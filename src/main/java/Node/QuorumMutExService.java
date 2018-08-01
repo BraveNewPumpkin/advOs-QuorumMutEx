@@ -264,7 +264,7 @@ public class QuorumMutExService {
             }
             Queue<ReceivedInquiry> pendingInquiries = quorumMutExInfo.getInquiriesPendingGrant();
             pendingInquiries.forEach((inquiry) -> {
-                if(inquiry.getRequestId().equals(requestId)){
+                if(inquiry.getRequestId().equals(requestId) && inquiry.getSourceUid() == sourceUid){
                     respondToOrStoreInquiry(
                             inquiry.getSourceUid(),
                             inquiry.getSourceTimeStamp(),
