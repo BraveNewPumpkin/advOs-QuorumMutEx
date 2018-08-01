@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -213,7 +214,9 @@ public class QuorumMutExService {
                     requestId
             );
             quorumMutExInfo.setFailedReceived(requestId, true);
-            quorumMutExInfo.getInquiriesPendingFailed().forEach((inquiry) -> {
+            Queue<ReceivedInquiry> inquiriesToRemove = new LinkedList<>();
+            Queue<ReceivedInquiry> inquiriesPendingFailed = quorumMutExInfo.getInquiriesPendingFailed();
+            inquiriesPendingFailed.forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 UUID inquiryRequestId = inquiry.getRequestId();
                 if (inquiryRequestId.equals(thisNodeCsRequestId)) {
@@ -225,6 +228,7 @@ public class QuorumMutExService {
                             csRequesterInfo.getCriticalSectionNumber(),
                             inquiryRequestId
                     );
+                    inquiriesToRemove.add(inquiry);
                     if(quorumMutExInfo.isGrantReceived(inquiryRequestId, inquirySourceUid)) {
                         quorumMutExInfo.removeGrantReceived(inquiryRequestId, inquirySourceUid);
                         if(log.isTraceEnabled()) {
@@ -242,6 +246,7 @@ public class QuorumMutExService {
                     log.error("ignoring mismatched inquiry: {}", inquiry);
                 }
             });
+            inquiriesPendingFailed.removeAll(inquiriesToRemove);
         }
     }
 
