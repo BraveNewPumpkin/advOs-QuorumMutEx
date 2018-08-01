@@ -5,9 +5,10 @@ import java.util.*;
 public class QuorumMutExInfo {
     private int scalarClock;
     private final PriorityQueue<CsRequest> waitingRequestQueue;
-    private final Queue<ReceivedInquiry> inquiriesPending;
+    private final Queue<ReceivedInquiry> inquiriesPendingFailed;
+    private final Queue<ReceivedInquiry> inquiriesPendingGrant;
     private CsRequest activeRequest;
-    private boolean isLocked;
+    private boolean isActive;
     private boolean isInquireSent;
     private boolean isFailedReceived;
     private Map<UUID, Set<Integer>> grantsReceived;
@@ -15,8 +16,9 @@ public class QuorumMutExInfo {
     public QuorumMutExInfo() {
         this.scalarClock = 0;
         waitingRequestQueue = new PriorityQueue<>();
-        inquiriesPending = new LinkedList<ReceivedInquiry>();
-        isLocked = false;
+        inquiriesPendingFailed = new LinkedList<ReceivedInquiry>();
+        inquiriesPendingGrant = new LinkedList<ReceivedInquiry>();
+        isActive = false;
         isInquireSent = false;
         isFailedReceived = false;
         grantsReceived = new HashMap<>();
@@ -46,12 +48,12 @@ public class QuorumMutExInfo {
         return activeRequest;
     }
 
-    public void setLocked(boolean locked) {
-        isLocked = locked;
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
-    public boolean isLocked() {
-        return isLocked;
+    public boolean isActive() {
+        return isActive;
     }
 
     public boolean isInquireSent() {
@@ -62,8 +64,12 @@ public class QuorumMutExInfo {
         isInquireSent = inquireSent;
     }
 
-    public Queue<ReceivedInquiry> getInquiriesPending() {
-        return inquiriesPending;
+    public Queue<ReceivedInquiry> getInquiriesPendingFailed() {
+        return inquiriesPendingFailed;
+    }
+
+    public Queue<ReceivedInquiry> getInquiriesPendingGrant() {
+        return inquiriesPendingGrant;
     }
 
     public boolean isFailedReceived() {

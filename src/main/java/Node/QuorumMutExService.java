@@ -65,7 +65,7 @@ public class QuorumMutExService {
             csRequesterInfo.incrementCriticalSectionNumber();
             quorumMutExInfo.incrementScalarClock();
             quorumMutExInfo.setFailedReceived(false);
-            quorumMutExInfo.getInquiriesPending().clear();
+            quorumMutExInfo.getInquiriesPendingFailed().clear();
             quorumMutExInfo.resetGrantsReceived(thisNodeCsRequestId);
             quorumMutExController.sendReleaseMessage(
                     thisNodeInfo.getUid(),
@@ -89,7 +89,7 @@ public class QuorumMutExService {
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             //check if we have active
             log.trace("in intake request");
-            if (quorumMutExInfo.isLocked()) {
+            if (quorumMutExInfo.isActive()) {
                 log.trace("is locked");
                 int newRequestCompareActiveResult = newRequest.compareTo(activeRequest);
                 boolean isNewRequestSmallerThanActive = newRequestCompareActiveResult < 0;
@@ -147,7 +147,7 @@ public class QuorumMutExService {
             } else {
                 log.trace("is not locked");
                 quorumMutExInfo.setActiveRequest(newRequest);
-                quorumMutExInfo.setLocked(true);
+                quorumMutExInfo.setActive(true);
                 quorumMutExController.sendGrantMessage(
                         thisNodeInfo.getUid(),
                         sourceUid,
@@ -185,7 +185,7 @@ public class QuorumMutExService {
                             quorumMutExInfo.getActiveRequest().getRequestId()
                     );
                 } else {
-                    quorumMutExInfo.setLocked(false);
+                    quorumMutExInfo.setActive(false);
                 }
             } else {
                 log.trace("active requestId: {} != release requestId: {}", activeRequestId, requestId);
@@ -212,7 +212,7 @@ public class QuorumMutExService {
             );
             quorumMutExInfo.setFailedReceived(true);
             CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
-            quorumMutExInfo.getInquiriesPending().forEach((inquiry) -> {
+            quorumMutExInfo.getInquiriesPendingFailed().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 UUID inquiryRequestId = inquiry.getRequestId();
                 if (inquiryRequestId.equals(thisNodeCsRequestId)) {
@@ -253,6 +253,17 @@ public class QuorumMutExService {
             );
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
             quorumMutExInfo.addGrantReceived(requestId, sourceUid);
+            Queue<ReceivedInquiry> pendingInquiries = quorumMutExInfo.getInquiriesPendingGrant();
+            pendingInquiries.forEach((inquiry) -> {
+                if(inquiry.getRequestId().equals(requestId)){
+                    renameMe(
+                            inquiry.getSourceUid(),
+                            inquiry.getSourceTimeStamp(),
+                            inquiry.getSourceCriticalSectionNumber(),
+                            inquiry.getRequestId()
+                    );
+                }
+            });
             if(log.isTraceEnabled()) {
                 log.trace("grants: {} -> {} of {}",
                         quorumMutExInfo.getNumGrantsReceived(requestId) - 1,
@@ -280,41 +291,52 @@ public class QuorumMutExService {
                 CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
 
                 //Received an inquire when the process is not locked. Add it to inquiries pending
-                if(!quorumMutExInfo.isLocked()){
-                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                    quorumMutExInfo.getInquiriesPending().add(inquiry);
-                }
-                else {
-                    if (quorumMutExInfo.isFailedReceived()) {
-                        //check to make sure this is not an outdated message
-                        int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
-                        int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
-                        if (requestId.equals(thisNodeCsRequestId)) {
-                            quorumMutExController.sendYieldMessage(
-                                    thisNodeInfo.getUid(),
-                                    sourceUid,
-                                    thisNodeScalarClock,
-                                    thisNodeCriticalSectionNumber
-                            );
-                            quorumMutExInfo.removeGrantReceived(requestId, sourceUid);
-                            if (log.isTraceEnabled()) {
-                                log.trace("grants: {} -> {} of {}",
-                                        quorumMutExInfo.getNumGrantsReceived(requestId) + 1,
-                                        quorumMutExInfo.getNumGrantsReceived(requestId),
-                                        thisNodeInfo.getQuorum().size());
-                            }
-                        } else {
-                            if (log.isTraceEnabled()) {
-                                log.error("inquiry's requestId {} was not equal to active's {}; ignoring.", requestId, activeRequest.getRequestId());
-                            }
-                        }
+                if(quorumMutExInfo.isActive()) {
+                    //check that the inquire matches a current grant otherwise enqueue
+                    boolean hasMatchingGrant = quorumMutExInfo.isGrantReceived(requestId, sourceUid);
+                    if(hasMatchingGrant) {
+                        renameMe(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
                     } else {
                         ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                        quorumMutExInfo.getInquiriesPending().add(inquiry);
+                        quorumMutExInfo.getInquiriesPendingGrant().add(inquiry);
                     }
+                } else {
+                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+                    quorumMutExInfo.getInquiriesPendingFailed().add(inquiry);
                 }
             }
         }
+    }
+
+    public void renameMe(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber, UUID requestId) {
+        if (quorumMutExInfo.isFailedReceived()) {
+            //check to make sure this is not an outdated message
+            int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
+            int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
+            if (requestId.equals(thisNodeCsRequestId)) {
+                quorumMutExController.sendYieldMessage(
+                        thisNodeInfo.getUid(),
+                        sourceUid,
+                        thisNodeScalarClock,
+                        thisNodeCriticalSectionNumber
+                );
+                quorumMutExInfo.removeGrantReceived(requestId, sourceUid);
+                if (log.isTraceEnabled()) {
+                    log.trace("grants: {} -> {} of {}",
+                            quorumMutExInfo.getNumGrantsReceived(requestId) + 1,
+                            quorumMutExInfo.getNumGrantsReceived(requestId),
+                            thisNodeInfo.getQuorum().size());
+                }
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.error("inquiry's requestId {} was not equal to current sent request {}; ignoring.", requestId, thisNodeCsRequestId);
+                }
+            }
+        } else {
+            ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+            quorumMutExInfo.getInquiriesPendingFailed().add(inquiry);
+        }
+
     }
 
     public void processYield(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
@@ -342,7 +364,7 @@ public class QuorumMutExService {
                         );
             } else {
                 log.trace("processing yield from {}, but request queue was empty.", sourceUid);
-                quorumMutExInfo.setLocked(false);
+//                quorumMutExInfo.setActive(false);
             }
         }
     }
