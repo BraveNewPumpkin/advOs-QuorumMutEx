@@ -159,8 +159,9 @@ public class QuorumMutExController {
             final int sourceUid = message.getSourceUID();
             final int sourceScalarClock = message.getSourceScalarClock();
             final int sourceCriticalSectionNumber = message.getSourceCriticalSectionNumber();
+            final UUID sourceRequestId = message.getRequestId();
             final Runnable processYieldCall = () -> {
-                quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, sourceRequestId);
             };
             final QuorumMutExWork work = new QuorumMutExWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
             workQueue.add(work);

@@ -9,7 +9,7 @@ public class QuorumMutExInfo {
     private final Queue<ReceivedInquiry> inquiriesPendingGrant;
     private CsRequest activeRequest;
     private boolean isActive;
-    private boolean isInquireSent;
+    private Map<UUID, Boolean> inquiresSent;
     private Map<UUID, Boolean> failedsReceived;
     private Map<UUID, Set<Integer>> grantsReceived;
 
@@ -19,7 +19,7 @@ public class QuorumMutExInfo {
         inquiriesPendingFailed = new LinkedList<ReceivedInquiry>();
         inquiriesPendingGrant = new LinkedList<ReceivedInquiry>();
         isActive = false;
-        isInquireSent = false;
+        inquiresSent = new HashMap<>();
         failedsReceived = new HashMap<>();
         grantsReceived = new HashMap<>();
     }
@@ -56,12 +56,18 @@ public class QuorumMutExInfo {
         return isActive;
     }
 
-    public boolean isInquireSent() {
-        return isInquireSent;
+    public boolean isInquireSent(UUID requestId) {
+        return inquiresSent.getOrDefault(requestId, false);
     }
 
-    public void setInquireSent(boolean inquireSent) {
-        isInquireSent = inquireSent;
+    public void setInquireSent(UUID requestId, boolean inquireSent) {
+        if(inquireSent == true) {
+            failedsReceived.put(requestId, inquireSent);
+        } else {
+            if(failedsReceived.containsKey(requestId)) {
+                failedsReceived.remove(requestId);
+            }
+        }
     }
 
     public Queue<ReceivedInquiry> getInquiriesPendingFailed() {

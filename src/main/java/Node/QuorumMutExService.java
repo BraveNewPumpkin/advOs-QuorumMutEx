@@ -96,17 +96,18 @@ public class QuorumMutExService {
                 boolean isNewRequestSmallerThanActive = newRequestCompareActiveResult < 0;
                 if (isNewRequestSmallerThanActive) {
                     log.trace("new request had smaller timestamp than active {}", activeRequest.toString());
+                    UUID activeRequestId = activeRequest.getRequestId();
                     //prevent duplicate inquires to same active with boolean
-                    if (!quorumMutExInfo.isInquireSent()) {
+                    if (!quorumMutExInfo.isInquireSent(activeRequestId)) {
                         log.trace("have not yet sent inquire");
                         quorumMutExController.sendInquireMessage(
                                 thisNodeInfo.getUid(),
                                 activeRequest.getSourceUid(),
                                 activeRequest.getSourceTimestamp(),
                                 csRequesterInfo.getCriticalSectionNumber(),
-                                activeRequest.getRequestId()
+                                activeRequestId
                         );
-                        quorumMutExInfo.setInquireSent(true);
+                        quorumMutExInfo.setInquireSent(activeRequestId, true);
                     } else {
                         log.trace("already sent inquire so not sending.");
                     }
@@ -169,7 +170,7 @@ public class QuorumMutExService {
                     requestId
             );
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber + 1);
-            quorumMutExInfo.setInquireSent(false);
+            quorumMutExInfo.setInquireSent(requestId, false);
             //set new active to first request from queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             UUID activeRequestId = quorumMutExInfo.getActiveRequest().getRequestId();
@@ -309,14 +310,14 @@ public class QuorumMutExService {
         }
     }
 
-    public void processYield(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber) {
+    public void processYield(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber, UUID requestId) {
         synchronized (messageProcessingSynchronizer) {
             log.trace("processing yield sourceUid: {} sourceScalarClock: {} sourceCriticalSectionNumber: {}",
                     sourceUid,
                     sourceScalarClock,
                     sourceCriticalSectionNumber
             );
-            quorumMutExInfo.setInquireSent(false);
+            quorumMutExInfo.setInquireSent(requestId, false);
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
             if(requestQueue.size() > 0) {
                 //swap active and head of queue
