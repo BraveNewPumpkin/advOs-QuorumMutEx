@@ -64,7 +64,7 @@ public class QuorumMutExService {
         synchronized (messageProcessingSynchronizer) {
             csRequesterInfo.incrementCriticalSectionNumber();
             quorumMutExInfo.incrementScalarClock();
-            quorumMutExInfo.setFailedReceived(false);
+            quorumMutExInfo.setFailedReceived(thisNodeCsRequestId, false);
             quorumMutExInfo.getInquiriesPendingFailed().clear();
             quorumMutExInfo.removeInquiryPendingGrant(thisNodeCsRequestId);
             quorumMutExInfo.resetGrantsReceived(thisNodeCsRequestId);
@@ -211,7 +211,7 @@ public class QuorumMutExService {
                     sourceCriticalSectionNumber,
                     requestId
             );
-            quorumMutExInfo.setFailedReceived(true);
+            quorumMutExInfo.setFailedReceived(requestId, true);
             quorumMutExInfo.getInquiriesPendingFailed().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 UUID inquiryRequestId = inquiry.getRequestId();
@@ -340,7 +340,7 @@ public class QuorumMutExService {
     }
 
     public void respondToOrStoreInquiry(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber, UUID requestId) {
-        if (quorumMutExInfo.isFailedReceived()) {
+        if (quorumMutExInfo.isFailedReceived(requestId)) {
             //check to make sure this is not an outdated message
             int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
             int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();

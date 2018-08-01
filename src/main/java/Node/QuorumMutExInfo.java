@@ -10,7 +10,7 @@ public class QuorumMutExInfo {
     private CsRequest activeRequest;
     private boolean isActive;
     private boolean isInquireSent;
-    private boolean isFailedReceived;
+    private Map<UUID, Boolean> failedsReceived;
     private Map<UUID, Set<Integer>> grantsReceived;
 
     public QuorumMutExInfo() {
@@ -20,7 +20,7 @@ public class QuorumMutExInfo {
         inquiriesPendingGrant = new LinkedList<ReceivedInquiry>();
         isActive = false;
         isInquireSent = false;
-        isFailedReceived = false;
+        failedsReceived = new HashMap<>();
         grantsReceived = new HashMap<>();
     }
 
@@ -78,12 +78,18 @@ public class QuorumMutExInfo {
         }));
     }
 
-    public boolean isFailedReceived() {
-        return isFailedReceived;
+    public boolean isFailedReceived(UUID requestId) {
+        return failedsReceived.getOrDefault(requestId, false);
     }
 
-    public void setFailedReceived(boolean failedReceived) {
-        isFailedReceived = failedReceived;
+    public void setFailedReceived(UUID requestId, boolean failedReceived) {
+        if(failedReceived == true) {
+            failedsReceived.put(requestId, failedReceived);
+        } else {
+            if(failedsReceived.containsKey(requestId)) {
+                failedsReceived.remove(requestId);
+            }
+        }
     }
 
     public int getNumGrantsReceived(UUID requestId) {
