@@ -226,7 +226,7 @@ public class QuorumMutExService {
                     if(quorumMutExInfo.isGrantReceived(inquiryRequestId, inquirySourceUid)) {
                         quorumMutExInfo.removeGrantReceived(inquiryRequestId, inquirySourceUid);
                         if(log.isTraceEnabled()) {
-                            log.trace("grants: {} -> {} of {} for request: {}",
+                            log.trace("grants: {} -> {} of {} for requestId {}",
                                     quorumMutExInfo.getNumGrantsReceived(inquiryRequestId) + 1,
                                     quorumMutExInfo.getNumGrantsReceived(inquiryRequestId),
                                     thisNodeInfo.getQuorum().size(),
@@ -253,6 +253,14 @@ public class QuorumMutExService {
             );
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
             quorumMutExInfo.addGrantReceived(requestId, sourceUid);
+            if(log.isTraceEnabled()) {
+                log.trace("grants: {} -> {} of {} for requestId {}",
+                        quorumMutExInfo.getNumGrantsReceived(requestId) - 1,
+                        quorumMutExInfo.getNumGrantsReceived(requestId),
+                        thisNodeInfo.getQuorum().size(),
+                        requestId
+                );
+            }
             Queue<ReceivedInquiry> pendingInquiries = quorumMutExInfo.getInquiriesPendingGrant();
             pendingInquiries.forEach((inquiry) -> {
                 if(inquiry.getRequestId().equals(requestId)){
@@ -264,13 +272,6 @@ public class QuorumMutExService {
                     );
                 }
             });
-            if(log.isTraceEnabled()) {
-                log.trace("grants: {} -> {} of {}",
-                        quorumMutExInfo.getNumGrantsReceived(requestId) - 1,
-                        quorumMutExInfo.getNumGrantsReceived(requestId),
-                        thisNodeInfo.getQuorum().size()
-                );
-            }
             //check if we have all grants and can run critical section
             if (checkAllGrantsReceived(requestId)) {
                 criticalSectionLock.release();
@@ -301,8 +302,7 @@ public class QuorumMutExService {
                         quorumMutExInfo.getInquiriesPendingGrant().add(inquiry);
                     }
                 } else {
-                    ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                    quorumMutExInfo.getInquiriesPendingFailed().add(inquiry);
+                    log.trace("ignoring inquire because we do not have an active request");
                 }
             }
         }
@@ -322,10 +322,12 @@ public class QuorumMutExService {
                 );
                 quorumMutExInfo.removeGrantReceived(requestId, sourceUid);
                 if (log.isTraceEnabled()) {
-                    log.trace("grants: {} -> {} of {}",
+                    log.trace("grants: {} -> {} of {} for requestId {}",
                             quorumMutExInfo.getNumGrantsReceived(requestId) + 1,
                             quorumMutExInfo.getNumGrantsReceived(requestId),
-                            thisNodeInfo.getQuorum().size());
+                            thisNodeInfo.getQuorum().size(),
+                            requestId
+                            );
                 }
             } else {
                 if (log.isTraceEnabled()) {
