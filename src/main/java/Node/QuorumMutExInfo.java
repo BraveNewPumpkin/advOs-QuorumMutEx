@@ -72,6 +72,12 @@ public class QuorumMutExInfo {
         return inquiriesPendingGrant;
     }
 
+    public boolean removeInquiryPendingGrant(UUID requestId) {
+        return  inquiriesPendingGrant.removeIf((inquiry -> {
+            return inquiry.getRequestId().equals(requestId);
+        }));
+    }
+
     public boolean isFailedReceived() {
         return isFailedReceived;
     }

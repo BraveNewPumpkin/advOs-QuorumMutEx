@@ -66,6 +66,7 @@ public class QuorumMutExService {
             quorumMutExInfo.incrementScalarClock();
             quorumMutExInfo.setFailedReceived(false);
             quorumMutExInfo.getInquiriesPendingFailed().clear();
+            quorumMutExInfo.removeInquiryPendingGrant(thisNodeCsRequestId);
             quorumMutExInfo.resetGrantsReceived(thisNodeCsRequestId);
             quorumMutExController.sendReleaseMessage(
                     thisNodeInfo.getUid(),
@@ -211,7 +212,6 @@ public class QuorumMutExService {
                     requestId
             );
             quorumMutExInfo.setFailedReceived(true);
-            CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
             quorumMutExInfo.getInquiriesPendingFailed().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
                 UUID inquiryRequestId = inquiry.getRequestId();
@@ -256,7 +256,7 @@ public class QuorumMutExService {
             Queue<ReceivedInquiry> pendingInquiries = quorumMutExInfo.getInquiriesPendingGrant();
             pendingInquiries.forEach((inquiry) -> {
                 if(inquiry.getRequestId().equals(requestId)){
-                    renameMe(
+                    respondToOrStoreInquiry(
                             inquiry.getSourceUid(),
                             inquiry.getSourceTimeStamp(),
                             inquiry.getSourceCriticalSectionNumber(),
@@ -295,7 +295,7 @@ public class QuorumMutExService {
                     //check that the inquire matches a current grant otherwise enqueue
                     boolean hasMatchingGrant = quorumMutExInfo.isGrantReceived(requestId, sourceUid);
                     if(hasMatchingGrant) {
-                        renameMe(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+                        respondToOrStoreInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
                     } else {
                         ReceivedInquiry inquiry = new ReceivedInquiry(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
                         quorumMutExInfo.getInquiriesPendingGrant().add(inquiry);
@@ -308,7 +308,7 @@ public class QuorumMutExService {
         }
     }
 
-    public void renameMe(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber, UUID requestId) {
+    public void respondToOrStoreInquiry(int sourceUid, int sourceScalarClock, int sourceCriticalSectionNumber, UUID requestId) {
         if (quorumMutExInfo.isFailedReceived()) {
             //check to make sure this is not an outdated message
             int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
@@ -363,7 +363,7 @@ public class QuorumMutExService {
                         quorumMutExInfo.getActiveRequest().getRequestId()
                         );
             } else {
-                log.trace("processing yield from {}, but request queue was empty.", sourceUid);
+                log.trace("got yield from {}, but request queue was empty.", sourceUid);
 //                quorumMutExInfo.setActive(false);
             }
         }
