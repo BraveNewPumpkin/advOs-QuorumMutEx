@@ -45,7 +45,7 @@ public class QuorumMutExController {
     @MessageMapping("/requestMessage")
     public void requestMessage(RequestMessage message) {
         if (log.isDebugEnabled()) {
-            log.debug("<---received request message {}", message);
+//            log.debug("<---received request message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
         final int sourceUid = message.getSourceUID();
@@ -62,7 +62,7 @@ public class QuorumMutExController {
     @MessageMapping("/releaseMessage")
     public void releaseMessage(ReleaseMessage message) {
         if (log.isDebugEnabled()) {
-            log.debug("<---received release message {}", message);
+//            log.debug("<---received release message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
         final int sourceUid = message.getSourceUID();
@@ -84,7 +84,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+//                log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -107,7 +107,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+//                log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -130,7 +130,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+//                log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -153,7 +153,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received yield message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+//                log.debug("<---received yield message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -240,12 +240,13 @@ public class QuorumMutExController {
         log.trace("InquireMessage message sent");
     }
 
-    public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber) throws MessagingException {
+    public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
         final YieldMessage message = new YieldMessage(
                 thisNodeUid,
                 targetUid,
                 scalarClock,
-                criticalSectionNumber
+                criticalSectionNumber,
+                requestId
         );
         if(log.isDebugEnabled()){
             log.debug("--->sending yield message: {}", message);
