@@ -171,8 +171,8 @@ public class QuorumMutExService {
             quorumMutExInfo.setInquireSent(false);
             //set new active to first request from queue
             Queue<CsRequest> requestQueue = quorumMutExInfo.getWaitingRequestQueue();
-            CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
-            if(activeRequest.getRequestId().equals(requestId)) {
+            UUID activeRequestId = quorumMutExInfo.getActiveRequest().getRequestId();
+            if(activeRequestId.equals(requestId)) {
                 //the release was for the active request
                 if (requestQueue.size() > 0) {
                     CsRequest nextActiveRequest = requestQueue.remove();
@@ -188,6 +188,7 @@ public class QuorumMutExService {
                     quorumMutExInfo.setLocked(false);
                 }
             } else {
+                log.trace("active requestId: {} != release requestId: {}", activeRequestId, requestId);
                 //the release was not for active request so check the queue
                 Predicate<CsRequest> doesRequestMatchRelease = (csRequest) -> {
                     return csRequest.getSourceUid() == sourceUid;
@@ -210,11 +211,12 @@ public class QuorumMutExService {
                     requestId
             );
             quorumMutExInfo.setFailedReceived(true);
+            CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
             quorumMutExInfo.getInquiriesPending().forEach((inquiry) -> {
                 //check to make sure this is not an outdated message
-                if (inquiry.getSourceTimeStamp() == quorumMutExInfo.getScalarClock()) {
+                UUID inquiryRequestId = inquiry.getRequestId();
+                if (inquiryRequestId.equals(activeRequest.getRequestId())) {
                     int inquirySourceUid = inquiry.getSourceUid();
-                    UUID inquiryRequestId = inquiry.getRequestId();
                     quorumMutExController.sendYieldMessage(
                         thisNodeInfo.getUid(),
                         inquirySourceUid,
@@ -232,10 +234,10 @@ public class QuorumMutExService {
                             );
                         }
                     } else {
-                        log.trace("tried to remove grant that we didn't have from {}", inquirySourceUid);
+                        log.error("tried to remove grant that we didn't have from {}", inquirySourceUid);
                     }
                 } else {
-                    log.trace("ignoring stale inquiry: {}", inquiry);
+                    log.error("ignoring mismatched inquiry: {}", inquiry);
                 }
             });
         }
@@ -275,11 +277,12 @@ public class QuorumMutExService {
             );
             //check if currently in critical section
             if (criticalSectionLock.hasQueuedThreads()) {
+                CsRequest activeRequest = quorumMutExInfo.getActiveRequest();
                 if (quorumMutExInfo.isFailedReceived()) {
                     //check to make sure this is not an outdated message
                     int thisNodeScalarClock = quorumMutExInfo.getScalarClock();
                     int thisNodeCriticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
-                    if (sourceScalarClock == thisNodeScalarClock) {
+                    if (requestId.equals(activeRequest.getRequestId())) {
                         quorumMutExController.sendYieldMessage(
                                 thisNodeInfo.getUid(),
                                 sourceUid,
@@ -295,7 +298,7 @@ public class QuorumMutExService {
                         }
                     } else {
                         if(log.isTraceEnabled()) {
-                            log.trace("inquiry's timestamp was not equal to current; ignoring. inquiryTimestamp: {}  current timestamp: {}", sourceScalarClock, quorumMutExInfo.getScalarClock());
+                            log.error("inquiry's requestId {} was not equal to active's {}; ignoring.", requestId, activeRequest.getRequestId());
                         }
                     }
                 } else {
