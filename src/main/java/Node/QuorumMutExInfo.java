@@ -72,10 +72,10 @@ public class QuorumMutExInfo {
 
     public void setInquireSent(UUID requestId, boolean inquireSent) {
         if(inquireSent == true) {
-            failedsReceived.put(requestId, inquireSent);
+            inquiresSent.put(requestId, inquireSent);
         } else {
-            if(failedsReceived.containsKey(requestId)) {
-                failedsReceived.remove(requestId);
+            if(inquiresSent.containsKey(requestId)) {
+                inquiresSent.remove(requestId);
             }
         }
     }
