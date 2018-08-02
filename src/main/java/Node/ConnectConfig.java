@@ -15,12 +15,15 @@ import java.util.concurrent.Semaphore;
 @Slf4j
 public class ConnectConfig {
     private QuorumMutExController quorumMutExController;
+    private FifoController fifoController;
 
     @Autowired
     public ConnectConfig(
-            QuorumMutExController quorumMutExController
+            QuorumMutExController quorumMutExController,
+            FifoController fifoController
     ) {
         this.quorumMutExController = quorumMutExController;
+        this.fifoController=fifoController;
     }
 
     @Bean
@@ -32,7 +35,8 @@ public class ConnectConfig {
                 new MessageRouteInfo<>("/topic/failedMessage", FailedMessage.class, quorumMutExController::failedMessage),
                 new MessageRouteInfo<>("/topic/grantMessage", GrantMessage.class, quorumMutExController::grantMessage),
                 new MessageRouteInfo<>("/topic/inquireMessage", InquireMessage.class, quorumMutExController::inquireMessage),
-                new MessageRouteInfo<>("/topic/yieldMessage", YieldMessage.class, quorumMutExController::yieldMessage)
+                new MessageRouteInfo<>("/topic/yieldMessage", YieldMessage.class, quorumMutExController::yieldMessage),
+                new MessageRouteInfo<>("/topic/fifoResponseMessage", FifoResponseMessage.class, fifoController::receiveFifoResponseMessage)
         );
     }
 
