@@ -1,9 +1,10 @@
 package Node;
 
-public abstract class NodeMessage {
+public abstract class NodeMessage implements FifoRequest{
     private int sourceUID;
     private int sourceScalarClock;
     private int sourceCriticalSectionNumber;
+    protected FifoRequestId fifoRequestId;
 
     public NodeMessage(){}
 
@@ -38,11 +39,22 @@ public abstract class NodeMessage {
     }
 
     @Override
+    public void setFifoRequestId(FifoRequestId fifoRequestId) {
+        this.fifoRequestId = fifoRequestId;
+    }
+
+    @Override
+    public FifoRequestId getFifoRequestId() {
+        return fifoRequestId;
+    }
+
+    @Override
     public String toString() {
         return "NodeMessage{" +
                 "sourceUID=" + sourceUID +
                 ", sourceScalarClock=" + sourceScalarClock +
                 ", sourceCriticalSectionNumber=" + sourceCriticalSectionNumber +
+                ", fifoRequestId=" + fifoRequestId +
                 '}';
     }
 }

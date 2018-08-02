@@ -14,15 +14,16 @@ import java.util.UUID;
 @Slf4j
 public class QuorumMutExController {
     private final QuorumMutExService quorumMutExService;
+    private final FifoController fifoController;
     private final ThisNodeInfo thisNodeInfo;
     private final QuorumMutExInfo quorumMutExInfo;
     private final CsRequesterInfo csRequesterInfo;
     private final Queue<QuorumMutExInputWork> inputWorkQueue;
-    private final Queue<QuorumMutExSendWork> sendWorkQueue;
 
     @Autowired
     public QuorumMutExController(
             QuorumMutExService quorumMutExService,
+            FifoController fifoController,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/QuorumMutExConfig/quorumMutExInfo")
@@ -30,22 +31,20 @@ public class QuorumMutExController {
             @Qualifier("Node/NodeConfigurator/csRequester")
             CsRequesterInfo csRequesterInfo,
             @Qualifier("Node/QuorumMutExConfig/inputWorkQueue")
-            Queue<QuorumMutExInputWork> inputWorkQueue,
-            @Qualifier("Node/QuorumMutExConfig/sendWorkQueue")
-            Queue<QuorumMutExSendWork> sendWorkQueue
+            Queue<QuorumMutExInputWork> inputWorkQueue
             ){
         this.quorumMutExService = quorumMutExService;
+        this.fifoController = fifoController;
         this.thisNodeInfo = thisNodeInfo;
         this.quorumMutExInfo = quorumMutExInfo;
         this.csRequesterInfo = csRequesterInfo;
         this.inputWorkQueue = inputWorkQueue;
-        this.sendWorkQueue = sendWorkQueue;
     }
 
     @MessageMapping("/requestMessage")
     public void requestMessage(RequestMessage message) {
         if (log.isDebugEnabled()) {
-//            log.debug("<---received request message {}", message);
+            log.debug("<---received request message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
         final int sourceUid = message.getSourceUID();
@@ -54,6 +53,7 @@ public class QuorumMutExController {
         final UUID requestId = message.getRequestId();
         final Runnable intakeRequestCall = () -> {
             quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
         };
         final QuorumMutExInputWork work = new QuorumMutExInputWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
         inputWorkQueue.add(work);
@@ -62,7 +62,7 @@ public class QuorumMutExController {
     @MessageMapping("/releaseMessage")
     public void releaseMessage(ReleaseMessage message) {
         if (log.isDebugEnabled()) {
-//            log.debug("<---received release message {}", message);
+            log.debug("<---received release message {}", message);
         }
         //spawn in separate thread to allow the message processing thread to return to threadpool
         final int sourceUid = message.getSourceUID();
@@ -71,6 +71,7 @@ public class QuorumMutExController {
         final UUID requestId = message.getRequestId();
         final Runnable processReleaseCall = () -> {
             quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
         };
         final QuorumMutExInputWork work = new QuorumMutExInputWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
         inputWorkQueue.add(work);
@@ -80,11 +81,11 @@ public class QuorumMutExController {
     public void failedMessage(FailedMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received  failed message {}", message);
+                log.trace("<---received failed message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
-//                log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+                log.debug("<---received failed message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -93,6 +94,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processFailedCall = () -> {
                 quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -103,11 +105,11 @@ public class QuorumMutExController {
     public void grantMessage(GrantMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-               log.trace("<---received  grant message {}", message);
+               log.trace("<---received grant message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
-//                log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+                log.debug("<---received grant message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -116,6 +118,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processGrantCall = () -> {
                 quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -130,7 +133,7 @@ public class QuorumMutExController {
             }
         } else {
             if (log.isDebugEnabled()) {
-//                log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
+                log.debug("<---received inquire message {}  current Scalar Clock {}", message, quorumMutExInfo.getScalarClock());
             }
             //spawn in separate thread to allow the message processing thread to return to threadpool
             final int sourceUid = message.getSourceUID();
@@ -139,6 +142,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processInquireCall = () -> {
                 quorumMutExService.processInquire(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processInquireCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -162,6 +166,7 @@ public class QuorumMutExController {
             final UUID sourceRequestId = message.getRequestId();
             final Runnable processYieldCall = () -> {
                 quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, sourceRequestId);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -176,8 +181,7 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/requestMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 
     public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -188,8 +192,7 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/releaseMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 
     public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -201,8 +204,7 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/grantMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 
     public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -214,8 +216,7 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/failedMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 
     public void sendInquireMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -227,8 +228,7 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/inquireMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 
     public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -240,7 +240,6 @@ public class QuorumMutExController {
                 requestId
         );
         final String route = "/topic/yieldMessage";
-        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
-        sendWorkQueue.add(work);
+        fifoController.sendFifo(message, route);
     }
 }

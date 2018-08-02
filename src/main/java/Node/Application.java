@@ -35,11 +35,11 @@ public class Application {
         }
         quorumMutExInputConsumerThread.start();
 
-        DoStartQuorumMutExSendConsumer doStartQuorumMutExSendConsumer = context.getBean(DoStartQuorumMutExSendConsumer.class);
-        Thread quorumMutExSendConsumerThread = new Thread(doStartQuorumMutExSendConsumer);
+        DoStartFifoConsumer fifoConsumer = context.getBean(DoStartFifoConsumer.class);
+        Thread fifoConsumerThread = new Thread(fifoConsumer);
         if(log.isTraceEnabled()) {
-            log.trace("before running quorumMutExSendConsumer thread");
+            log.trace("before running fifoConsumerThread thread");
         }
-        quorumMutExSendConsumerThread.start();
+        fifoConsumerThread.start();
     }
 }

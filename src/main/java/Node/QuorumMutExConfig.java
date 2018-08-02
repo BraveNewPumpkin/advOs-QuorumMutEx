@@ -32,14 +32,6 @@ public class QuorumMutExConfig {
     }
 
     @Bean
-    @Qualifier("Node/QuorumMutExConfig/sendWorkQueue")
-    public BlockingQueue<QuorumMutExSendWork> getSendWorkQueue() {
-        return new LinkedBlockingQueue<>();
-    }
-
-
-
-    @Bean
     @Qualifier("Node/QuorumMutExConfig/messageProcessingSynchronizer")
     public Object getMessageProcessingSynchronizer() { return new Object();}
 }
