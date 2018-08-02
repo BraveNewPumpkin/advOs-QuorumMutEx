@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 @Configuration
@@ -24,10 +26,18 @@ public class QuorumMutExConfig {
     }
 
     @Bean
-    @Qualifier("Node/QuorumMutExConfig/workQueue")
-    public PriorityBlockingQueue<QuorumMutExWork> getWorkQueue() {
+    @Qualifier("Node/QuorumMutExConfig/inputWorkQueue")
+    public BlockingQueue<QuorumMutExInputWork> getInputWorkQueue() {
         return new PriorityBlockingQueue<>();
     }
+
+    @Bean
+    @Qualifier("Node/QuorumMutExConfig/sendWorkQueue")
+    public BlockingQueue<QuorumMutExSendWork> getSendWorkQueue() {
+        return new LinkedBlockingQueue<>();
+    }
+
+
 
     @Bean
     @Qualifier("Node/QuorumMutExConfig/messageProcessingSynchronizer")

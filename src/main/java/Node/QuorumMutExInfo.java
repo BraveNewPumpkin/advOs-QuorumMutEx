@@ -4,17 +4,19 @@ import java.util.*;
 
 public class QuorumMutExInfo {
     private int scalarClock;
+    private int numSentMessages;
     private final PriorityQueue<CsRequest> waitingRequestQueue;
     private final Queue<ReceivedInquiry> inquiriesPendingFailed;
     private final Queue<ReceivedInquiry> inquiriesPendingGrant;
     private CsRequest activeRequest;
     private boolean isActive;
-    private Map<UUID, Boolean> inquiresSent;
-    private Map<UUID, Boolean> failedsReceived;
-    private Map<UUID, Set<Integer>> grantsReceived;
+    private final Map<UUID, Boolean> inquiresSent;
+    private final Map<UUID, Boolean> failedsReceived;
+    private final Map<UUID, Set<Integer>> grantsReceived;
 
     public QuorumMutExInfo() {
-        this.scalarClock = 0;
+        scalarClock = 0;
+        numSentMessages = 0;
         waitingRequestQueue = new PriorityQueue<>();
         inquiriesPendingFailed = new LinkedList<ReceivedInquiry>();
         inquiriesPendingGrant = new LinkedList<ReceivedInquiry>();
@@ -34,6 +36,14 @@ public class QuorumMutExInfo {
 
     public void incrementScalarClock () {
         scalarClock++;
+    }
+
+    public int getNumSentMessages() {
+        return numSentMessages;
+    }
+
+    public void incrementNumSentMessages() {
+        numSentMessages++;
     }
 
     public PriorityQueue<CsRequest> getWaitingRequestQueue() {

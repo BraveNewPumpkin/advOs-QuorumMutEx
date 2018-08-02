@@ -5,18 +5,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Component
 @Slf4j
-public class DoStartQuorumMutExConsumer implements Runnable {
-    private final PriorityBlockingQueue<QuorumMutExWork> workQueue;
+public class DoStartQuorumMutExInputConsumer implements Runnable {
+    private final BlockingQueue<QuorumMutExInputWork> workQueue;
 
     @Autowired
-    public DoStartQuorumMutExConsumer(
-            @Qualifier("Node/QuorumMutExConfig/workQueue")
-            PriorityBlockingQueue<QuorumMutExWork> workQueue
+    public DoStartQuorumMutExInputConsumer(
+            @Qualifier("Node/QuorumMutExConfig/inputWorkQueue")
+            BlockingQueue<QuorumMutExInputWork> workQueue
     ) {
         this.workQueue = workQueue;
     }
@@ -25,8 +25,8 @@ public class DoStartQuorumMutExConsumer implements Runnable {
     public void run() {
         while(true) {
             try {
-                QuorumMutExWork quorumMutExWork = workQueue.take();
-                quorumMutExWork.getWork().run();
+                QuorumMutExInputWork quorumMutExInputWork = workQueue.take();
+                quorumMutExInputWork.getWork().run();
                 TimeUnit.MILLISECONDS.sleep(10);
             } catch(java.lang.InterruptedException e) {
                 //ignore

@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.Queue;
@@ -15,31 +14,32 @@ import java.util.UUID;
 @Slf4j
 public class QuorumMutExController {
     private final QuorumMutExService quorumMutExService;
-    private final SimpMessagingTemplate template;
     private final ThisNodeInfo thisNodeInfo;
     private final QuorumMutExInfo quorumMutExInfo;
     private final CsRequesterInfo csRequesterInfo;
-    private final Queue<QuorumMutExWork> workQueue;
+    private final Queue<QuorumMutExInputWork> inputWorkQueue;
+    private final Queue<QuorumMutExSendWork> sendWorkQueue;
 
     @Autowired
     public QuorumMutExController(
             QuorumMutExService quorumMutExService,
-            SimpMessagingTemplate template,
             @Qualifier("Node/NodeConfigurator/thisNodeInfo")
             ThisNodeInfo thisNodeInfo,
             @Qualifier("Node/QuorumMutExConfig/quorumMutExInfo")
             QuorumMutExInfo quorumMutExInfo,
             @Qualifier("Node/NodeConfigurator/csRequester")
             CsRequesterInfo csRequesterInfo,
-            @Qualifier("Node/QuorumMutExConfig/workQueue")
-            Queue<QuorumMutExWork> workQueue
+            @Qualifier("Node/QuorumMutExConfig/inputWorkQueue")
+            Queue<QuorumMutExInputWork> inputWorkQueue,
+            @Qualifier("Node/QuorumMutExConfig/sendWorkQueue")
+            Queue<QuorumMutExSendWork> sendWorkQueue
             ){
         this.quorumMutExService = quorumMutExService;
-        this.template = template;
         this.thisNodeInfo = thisNodeInfo;
         this.quorumMutExInfo = quorumMutExInfo;
         this.csRequesterInfo = csRequesterInfo;
-        this.workQueue = workQueue;
+        this.inputWorkQueue = inputWorkQueue;
+        this.sendWorkQueue = sendWorkQueue;
     }
 
     @MessageMapping("/requestMessage")
@@ -55,8 +55,8 @@ public class QuorumMutExController {
         final Runnable intakeRequestCall = () -> {
             quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
         };
-        final QuorumMutExWork work = new QuorumMutExWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
-        workQueue.add(work);
+        final QuorumMutExInputWork work = new QuorumMutExInputWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
+        inputWorkQueue.add(work);
     }
 
     @MessageMapping("/releaseMessage")
@@ -72,8 +72,8 @@ public class QuorumMutExController {
         final Runnable processReleaseCall = () -> {
             quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
         };
-        final QuorumMutExWork work = new QuorumMutExWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
-        workQueue.add(work);
+        final QuorumMutExInputWork work = new QuorumMutExInputWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
+        inputWorkQueue.add(work);
     }
 
     @MessageMapping("/failedMessage")
@@ -94,8 +94,8 @@ public class QuorumMutExController {
             final Runnable processFailedCall = () -> {
                 quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
             };
-            final QuorumMutExWork work = new QuorumMutExWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
-            workQueue.add(work);
+            final QuorumMutExInputWork work = new QuorumMutExInputWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
+            inputWorkQueue.add(work);
         }
     }
 
@@ -117,8 +117,8 @@ public class QuorumMutExController {
             final Runnable processGrantCall = () -> {
                 quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
             };
-            final QuorumMutExWork work = new QuorumMutExWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
-            workQueue.add(work);
+            final QuorumMutExInputWork work = new QuorumMutExInputWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
+            inputWorkQueue.add(work);
         }
     }
 
@@ -140,8 +140,8 @@ public class QuorumMutExController {
             final Runnable processInquireCall = () -> {
                 quorumMutExService.processInquire(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
             };
-            final QuorumMutExWork work = new QuorumMutExWork(processInquireCall, sourceScalarClock, sourceCriticalSectionNumber);
-            workQueue.add(work);
+            final QuorumMutExInputWork work = new QuorumMutExInputWork(processInquireCall, sourceScalarClock, sourceCriticalSectionNumber);
+            inputWorkQueue.add(work);
         }
     }
 
@@ -163,8 +163,8 @@ public class QuorumMutExController {
             final Runnable processYieldCall = () -> {
                 quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, sourceRequestId);
             };
-            final QuorumMutExWork work = new QuorumMutExWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
-            workQueue.add(work);
+            final QuorumMutExInputWork work = new QuorumMutExInputWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
+            inputWorkQueue.add(work);
         }
     }
 
@@ -175,11 +175,9 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending request message: {}", message);
-        }
-        template.convertAndSend("/topic/requestMessage", message);
-        log.trace("RequestMessage message sent");
+        final String route = "/topic/requestMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 
     public void sendReleaseMessage(int thisNodeUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -189,11 +187,9 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending release message: {}", message);
-        }
-        template.convertAndSend("/topic/releaseMessage", message);
-        log.trace("ReleaseMessage message sent");
+        final String route = "/topic/releaseMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 
     public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -204,11 +200,9 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending grant message: {}", message);
-        }
-        template.convertAndSend("/topic/grantMessage", message);
-        log.trace("GrantMessage message sent");
+        final String route = "/topic/grantMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 
     public void sendFailedMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -219,11 +213,9 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending failed message: {}", message);
-        }
-        template.convertAndSend("/topic/failedMessage", message);
-        log.trace("FailedMessage message sent");
+        final String route = "/topic/failedMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 
     public void sendInquireMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -234,11 +226,9 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending inquire message: {}", message);
-        }
-        template.convertAndSend("/topic/inquireMessage", message);
-        log.trace("InquireMessage message sent");
+        final String route = "/topic/inquireMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 
     public void sendYieldMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
@@ -249,10 +239,8 @@ public class QuorumMutExController {
                 criticalSectionNumber,
                 requestId
         );
-        if(log.isDebugEnabled()){
-            log.debug("--->sending yield message: {}", message);
-        }
-        template.convertAndSend("/topic/yieldMessage", message);
-        log.trace("YieldMessage message sent");
+        final String route = "/topic/yieldMessage";
+        final QuorumMutExSendWork work = new QuorumMutExSendWork<>(scalarClock, criticalSectionNumber, message, route);
+        sendWorkQueue.add(work);
     }
 }
