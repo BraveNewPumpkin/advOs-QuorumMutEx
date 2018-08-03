@@ -65,11 +65,11 @@ public class FifoController {
                 currentFifoRequestId
         );
 
-//        if(log.isDebugEnabled()){
-//            log.debug("--->sending fifoResponseMessage: {}", message);
-//        }
-//        template.convertAndSend("/topic/fifoResponseMessage", message);
-        sendFifo(message, "/topic/fifoResponseMessage");
+        if(log.isDebugEnabled()){
+            log.debug("--->sending fifoResponseMessage: {}", message);
+        }
+        template.convertAndSend("/topic/fifoResponseMessage", message);
+//        sendFifo(message, "/topic/fifoResponseMessage");
         log.trace("fifoResponseMessage message sent");
     }
 
