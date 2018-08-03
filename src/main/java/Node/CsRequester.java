@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CsRequester {
     private final QuorumMutExService quorumMutExService;
+    private final CriticalSectionReadWriter criticalSectionReadWriter;
     private final CsRequesterInfo csRequesterInfo;
     private final Semaphore connectingSynchronizer;
     private final ThisNodeInfo thisNodeInfo;
@@ -21,6 +22,7 @@ public class CsRequester {
     @Autowired
     public CsRequester(
         QuorumMutExService quorumMutExService,
+        CriticalSectionReadWriter criticalSectionReadWriter,
         @Qualifier("Node/NodeConfigurator/csRequester")
         CsRequesterInfo csRequesterInfo,
         @Qualifier("Node/ConnectConfig/connectingSynchronizer")
@@ -29,6 +31,7 @@ public class CsRequester {
         ThisNodeInfo thisNodeInfo
     ) {
         this.quorumMutExService = quorumMutExService;
+        this.criticalSectionReadWriter = criticalSectionReadWriter;
         this.csRequesterInfo = csRequesterInfo;
         this.connectingSynchronizer = connectingSynchronizer;
         this.thisNodeInfo = thisNodeInfo;
@@ -49,7 +52,9 @@ public class CsRequester {
                 long roundedCsExecutionDelay = Math.round(csExecutionDelay);
                 log.trace("csExecutionDelay: before rounding: {}. sleeping for {} milliseconds", csExecutionDelay, roundedCsExecutionDelay);
                 quorumMutExService.cs_enter();
-                log.info("running critical section number {}", csRequesterInfo.getCriticalSectionNumber());
+                int criticalSectionNumber = csRequesterInfo.getCriticalSectionNumber();
+                log.info("running critical section number {}", criticalSectionNumber);
+                criticalSectionReadWriter.writeCriticalSectionNumber(criticalSectionNumber);
                 try {
                     TimeUnit.MILLISECONDS.sleep(roundedCsExecutionDelay);
                 } catch (java.lang.InterruptedException e) {
