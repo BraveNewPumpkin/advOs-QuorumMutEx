@@ -12,6 +12,7 @@ public class QuorumMutExInfo {
     private Map<UUID, Boolean> inquiresSent;
     private Map<UUID, Boolean> failedsReceived;
     private Map<UUID, Set<Integer>> grantsReceived;
+    private Set<UUID> lastRelease;
 
     public QuorumMutExInfo() {
         this.scalarClock = 0;
@@ -22,6 +23,8 @@ public class QuorumMutExInfo {
         inquiresSent = new HashMap<>();
         failedsReceived = new HashMap<>();
         grantsReceived = new HashMap<>();
+
+        lastRelease=new HashSet<>();
     }
 
     public int getScalarClock () {
@@ -84,7 +87,14 @@ public class QuorumMutExInfo {
         }));
     }
 
-    public boolean isFailedReceived(UUID requestId) {
+    public boolean removeInquiryPendingGrant(UUID requestId, int sourceUid) {
+        return inquiriesPendingGrant.removeIf((inquiry -> {
+            return (inquiry.getRequestId().equals(requestId) && inquiry.getSourceUid() == sourceUid);
+        }));
+    }
+
+
+        public boolean isFailedReceived(UUID requestId) {
         return failedsReceived.getOrDefault(requestId, false);
     }
 
@@ -136,5 +146,29 @@ public class QuorumMutExInfo {
 
     public void resetGrantsReceived(UUID requestId) {
         grantsReceived.remove(requestId);
+    }
+
+    public int countNumOfFailedReceived(){
+        int count=0;
+        for(UUID req:failedsReceived.keySet()) {
+            if(failedsReceived.get(req)==true)
+                count++;
+        }
+        return count;
+    }
+
+    public Set<UUID> getLastRelease() {
+        return lastRelease;
+    }
+
+    public void setLastRelease(UUID lastRelease) {
+        this.lastRelease.add(lastRelease);
+    }
+
+    public boolean checkIfReleased(UUID requestID){
+        if(this.lastRelease.contains(requestID))
+            return true;
+        else
+            return false;
     }
 }

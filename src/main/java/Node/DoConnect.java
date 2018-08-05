@@ -35,7 +35,7 @@ public class DoConnect implements Runnable {
     public void run(){
         log.info("sleeping to allow other instances to spin up");
         try {
-            TimeUnit.SECONDS.sleep(25);
+            TimeUnit.SECONDS.sleep(30);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
@@ -44,7 +44,7 @@ public class DoConnect implements Runnable {
         List<StompSession> sessions = webSocketConnector.getSessions();
         log.info("sleeping to allow other instances to SUBSCRIBE");
         try {
-            TimeUnit.SECONDS.sleep(25);
+            TimeUnit.SECONDS.sleep(30);
         } catch (InterruptedException e) {
             log.warn("thread interrupted!");
         }
