@@ -53,7 +53,7 @@ public class QuorumMutExController {
         final UUID requestId = message.getRequestId();
         final Runnable intakeRequestCall = () -> {
             quorumMutExService.intakeRequest(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber,message.getClass().getSimpleName());
         };
         final QuorumMutExInputWork work = new QuorumMutExInputWork(intakeRequestCall, sourceScalarClock, sourceCriticalSectionNumber);
         inputWorkQueue.add(work);
@@ -71,7 +71,7 @@ public class QuorumMutExController {
         final UUID requestId = message.getRequestId();
         final Runnable processReleaseCall = () -> {
             quorumMutExService.processRelease(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+            fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber,message.getClass().getSimpleName());
         };
         final QuorumMutExInputWork work = new QuorumMutExInputWork(processReleaseCall, sourceScalarClock, sourceCriticalSectionNumber);
         inputWorkQueue.add(work);
@@ -94,7 +94,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processFailedCall = () -> {
                 quorumMutExService.processFailed(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, message.getClass().getSimpleName());
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processFailedCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -118,7 +118,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processGrantCall = () -> {
                 quorumMutExService.processGrant(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, message.getClass().getSimpleName());
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processGrantCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -142,7 +142,7 @@ public class QuorumMutExController {
             final UUID requestId = message.getRequestId();
             final Runnable processInquireCall = () -> {
                 quorumMutExService.processInquire(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, requestId);
-                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, message.getClass().getSimpleName());
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processInquireCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -166,7 +166,7 @@ public class QuorumMutExController {
             final UUID sourceRequestId = message.getRequestId();
             final Runnable processYieldCall = () -> {
                 quorumMutExService.processYield(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, sourceRequestId);
-                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber);
+                fifoController.sendFifoResponse(sourceUid, sourceScalarClock, sourceCriticalSectionNumber, message.getClass().getSimpleName());
             };
             final QuorumMutExInputWork work = new QuorumMutExInputWork(processYieldCall, sourceScalarClock, sourceCriticalSectionNumber);
             inputWorkQueue.add(work);
@@ -196,6 +196,7 @@ public class QuorumMutExController {
     }
 
     public void sendGrantMessage(int thisNodeUid, int targetUid, int scalarClock, int criticalSectionNumber, UUID requestId) throws MessagingException {
+        log.trace("Inside sendGrantMessage");
         final GrantMessage message = new GrantMessage(
                 thisNodeUid,
                 targetUid,

@@ -46,17 +46,17 @@ public class FifoController {
     public void receiveFifoResponseMessage(FifoResponseMessage message) {
         if(thisNodeInfo.getUid() != message.getTarget()) {
             if (log.isTraceEnabled()) {
-                log.trace("<---received FifoResponse message {}", message);
+//                log.trace("<---received FifoResponse message {}", message);
             }
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("<---received FifoResponse message {}", message);
+//                log.debug("<---received FifoResponse message {}", message);
             }
         }
         sendingFifoSynchronizer.release();
     }
 
-    public void sendFifoResponse(int targetUid, int sourceScalarClock, int sourceCriticalSectionNumber) throws MessagingException {
+    public void sendFifoResponse(int targetUid, int sourceScalarClock, int sourceCriticalSectionNumber, String className) throws MessagingException {
         final FifoResponseMessage message = new FifoResponseMessage(
                 thisNodeInfo.getUid(),
                 targetUid,
@@ -65,8 +65,11 @@ public class FifoController {
                 currentFifoRequestId
         );
 
+        createNewFifoRequestId(className);
+        message.setFifoRequestId(currentFifoRequestId);
+
         if(log.isDebugEnabled()){
-            log.debug("--->sending fifoResponseMessage: {}", message);
+//            log.debug("--->sending fifoResponseMessage: {}", message);
         }
         template.convertAndSend("/topic/fifoResponseMessage", message);
 //        sendFifo(message, "/topic/fifoResponseMessage");

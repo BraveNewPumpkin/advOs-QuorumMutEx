@@ -45,6 +45,8 @@ public class CsRequester {
         } catch(java.lang.InterruptedException e) {
             //ignore
         }
+        long global_startTime = System.currentTimeMillis();
+        log.trace("The start time initially is {}",global_startTime);
         for(int i = 0; i < thisNodeInfo.getNumberOfRequests(); i++) {
                 log.trace("request number: {}", i);
                 waitRandomInterRequestDelay();

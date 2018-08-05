@@ -24,6 +24,8 @@ public class QuorumMutExService {
     private final Object messageProcessingSynchronizer;
     private UUID thisNodeCsRequestId;
 
+    private long startTime, endTime, currentTime, sumrespTime=0;
+
     @Autowired
     public QuorumMutExService(
             @Lazy QuorumMutExController quorumMutExController,
@@ -53,6 +55,7 @@ public class QuorumMutExService {
         );
 
         thisNodeCsRequestId = requestId;
+        startTime=System.currentTimeMillis();
 
         try {
             criticalSectionLock.acquire();
@@ -75,6 +78,17 @@ public class QuorumMutExService {
                     csRequesterInfo.getCriticalSectionNumber() - 1,
                     thisNodeCsRequestId
             );
+            log.debug("Total messages sent = {}", quorumMutExInfo.getNumSentMessages());
+
+            endTime=System.currentTimeMillis();
+            currentTime = System.currentTimeMillis();
+
+            long responseTime = endTime-startTime;
+            sumrespTime=sumrespTime+responseTime;
+
+            log.trace("The Response Time = {}", responseTime);
+            log.trace("The Current Time = {}", currentTime);
+            log.trace("Sum of Response Time = {}", sumrespTime);
         }
     }
 
@@ -248,6 +262,11 @@ public class QuorumMutExService {
                 }
             });
             inquiriesPendingFailed.removeAll(inquiriesToRemove);
+
+            //Just Added
+            if(quorumMutExInfo.countNumOfFailedReceived()==thisNodeInfo.getQuorum().size()){
+                quorumMutExInfo.setFailedReceived(thisNodeCsRequestId, false);
+            }
         }
     }
 
@@ -261,6 +280,10 @@ public class QuorumMutExService {
             );
             csRequesterInfo.mergeCriticalSectionNumber(sourceCriticalSectionNumber);
             quorumMutExInfo.addGrantReceived(requestId, sourceUid);
+
+//            //just added
+//            quorumMutExInfo.setFailedReceived(requestId,false);
+
             if(log.isTraceEnabled()) {
                 log.trace("grants: {} -> {} of {} for requestId {}",
                         quorumMutExInfo.getNumGrantsReceived(requestId) - 1,
@@ -395,4 +418,5 @@ public class QuorumMutExService {
     private UUID generateUuid() {
         return UUID.randomUUID();
     }
+
 }

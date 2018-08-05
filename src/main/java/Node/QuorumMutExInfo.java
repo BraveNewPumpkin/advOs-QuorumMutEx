@@ -147,4 +147,13 @@ public class QuorumMutExInfo {
     public void resetGrantsReceived(UUID requestId) {
         grantsReceived.remove(requestId);
     }
+
+    public int countNumOfFailedReceived(){
+        int count=0;
+        for(UUID req:failedsReceived.keySet()) {
+            if(failedsReceived.get(req)==true)
+                count++;
+        }
+        return count;
+    }
 }
