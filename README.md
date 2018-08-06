@@ -1,6 +1,8 @@
 # Quorum Based Distributed Mutual Exclusion
 a practice implementation using Spring WebSocket of Maekawa's quorum based mutual exclusion algorithm.
 
+**USE BRANCH controllerProducerAndServiceConsumer**
+
 parameters are:
 
 **this.hostName** - the hostname to use when finding this nodes information in the config file
