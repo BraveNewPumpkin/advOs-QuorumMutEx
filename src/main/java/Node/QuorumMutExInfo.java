@@ -4,6 +4,7 @@ import java.util.*;
 
 public class QuorumMutExInfo {
     private int scalarClock;
+    private int numSentMessages;
     private final PriorityQueue<CsRequest> waitingRequestQueue;
     private final Queue<ReceivedInquiry> inquiriesPendingFailed;
     private final Queue<ReceivedInquiry> inquiriesPendingGrant;
@@ -37,6 +38,14 @@ public class QuorumMutExInfo {
 
     public void incrementScalarClock () {
         scalarClock++;
+    }
+
+    public int getNumSentMessages() {
+        return numSentMessages;
+    }
+
+    public void incrementNumSentMessages() {
+        numSentMessages++;
     }
 
     public PriorityQueue<CsRequest> getWaitingRequestQueue() {
