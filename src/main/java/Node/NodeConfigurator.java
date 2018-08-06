@@ -104,6 +104,7 @@ public class NodeConfigurator {
         return new Semaphore(1, true);
     }
 
+
     private NodeConfig readNodeConfig(
             String thisNodeHostName,
             Resource configResource
@@ -205,9 +206,9 @@ public class NodeConfigurator {
 
         boolean doesIntersectionHold = checkIfIntersectionHolds(quorumList);
         if(doesIntersectionHold)
-            log.debug("Intersection Property Holds");
+            log.debug("INTERSECTION PROPERTY HOLDS");
         else
-            log.debug("Intersection Property Does Not Hold");
+            log.debug("INTERSECTION PROPERTY DOES NOT HOLD");
         return new NodeConfig(thisNodeUid, numOfNodes, nodes, meanInterRequestDelay, meanCsExecutionTime, numberOfRequests, quorum);
     }
 
