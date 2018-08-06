@@ -1,4 +1,4 @@
-7 20 10 5
+7 30 10 10
 0 dc02.utdallas.edu 1232 # nodeID hostName l i s t e n P o r t
 1 dc03.utdallas.edu 1233
 2 dc04.utdallas.edu 1237
